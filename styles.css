@@ -1355,3 +1355,21 @@ input[type="checkbox"] {
     padding: 0 8px;
   }
 }
+
+.side-hand {
+  line-height: 0;
+}
+
+.side-hand .table-tile-img + .table-tile-img {
+  margin-top: calc((var(--side-tile-width) - var(--side-tile-long)) / 2 - 1px);
+}
+
+.dora-indicator-row {
+  column-gap: 0;
+  font-size: 0;
+  line-height: 0;
+}
+
+.dora-indicator-tile + .dora-indicator-tile {
+  margin-left: -1px;
+}
