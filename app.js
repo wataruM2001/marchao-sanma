@@ -382,7 +382,7 @@
 
     els.battleRoundLabel.textContent = `${windText(gameState.roundWind)}${gameState.handNumber}局`;
     if (els.battleHonbaKyotakuLabel) {
-      els.battleHonbaKyotakuLabel.textContent = `${gameState.honba}本場 供託${kyotakuCount}`;
+      els.battleHonbaKyotakuLabel.textContent = `${gameState.honba}本場 供託${kyotakuCount} 残${gameState.remainingDraws}`;
     }
     els.battleRemainingDraws.textContent = `残 ${gameState.remainingDraws}`;
     els.battleDealerLabel.textContent = `親 ${playerPositionLabel(dealerPlayer?.seat)}`;
@@ -592,7 +592,7 @@
     els.battleLeftName.textContent = `上家 ${leftPlayer?.name || "Player 3"}`;
     els.battleRoundLabel.textContent = Rules.roundLabel(state);
     if (els.battleHonbaKyotakuLabel) {
-      els.battleHonbaKyotakuLabel.textContent = `${state.honba || 0}本場 供託${kyotakuCount}`;
+      els.battleHonbaKyotakuLabel.textContent = `${state.honba || 0}本場 供託${kyotakuCount} 残--`;
     }
     els.battleRemainingDraws.textContent = "残りツモ --";
     els.battleDealerLabel.textContent = `親 ${state.players[dealer]?.name || `Player ${dealer + 1}`}`;
