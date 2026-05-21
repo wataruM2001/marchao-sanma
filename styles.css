@@ -1415,12 +1415,7 @@ input[type="checkbox"] {
 }
 
 .center-table-layout #battleRemainingDraws {
-  position: absolute;
-  left: 50%;
-  top: 8px;
-  transform: translateX(-50%);
-  font-size: calc(var(--center-river-tile-width) * 0.32);
-  white-space: nowrap;
+  display: none;
 }
 
 .self-hand-area {
