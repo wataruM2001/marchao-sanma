@@ -364,14 +364,45 @@
     return winds[(playerIndex - dealerIndex + 3) % 3] || "西家";
   }
 
-  function formatBattleScore(value) {
-    return `${Math.round(Number(value) || 0).toLocaleString("ja-JP")}点`;
+  function playerDisplaySeat(player, index) {
+    return player?.seat || Game.PLAYER_SEATS[index] || "self";
   }
 
-  function formatBattleChip(value) {
-    const rounded = Math.round(Number(value) || 0);
-    const sign = rounded > 0 ? "+" : "";
-    return `${sign}${rounded.toLocaleString("ja-JP")}pt`;
+  function playerDisplayPoints(player) {
+    return Number(player?.points ?? player?.score) || 0;
+  }
+
+  function playerDisplayChipPoints(player) {
+    return Number(player?.chips ?? player?.bonus) || 0;
+  }
+
+  function formatDisplayPoints(points) {
+    return String(Math.round((Number(points) || 0) / 100));
+  }
+
+  function formatDisplayChipPoints(chipPoints) {
+    const value = Math.round((Number(chipPoints) || 0) / 500);
+    if (value > 0) return `+${value}`;
+    if (value < 0) return String(value);
+    return "0";
+  }
+
+  function formatScoreDisplay(points, chipPoints) {
+    return `${formatDisplayPoints(points)}  ${formatDisplayChipPoints(chipPoints)}`;
+  }
+
+  function renderCenterScoreDisplay(players = []) {
+    const bySeat = {};
+    players.forEach((player, index) => {
+      bySeat[playerDisplaySeat(player, index)] = player;
+    });
+    return ["kamicha", "shimocha", "self"]
+      .map((seat) => {
+        const player = bySeat[seat];
+        const text = formatScoreDisplay(playerDisplayPoints(player), playerDisplayChipPoints(player));
+        return `<div class="score-display ${seat}-score">${escapeHtml(text)}</div>`;
+      })
+      .join("");
   }
 
   function renderCentralInfoPanel(gameState) {
@@ -389,19 +420,7 @@
     els.battleKyotakuLabel.textContent = `手番 ${playerPositionLabel(currentPlayer?.seat)}`;
     els.battleDoraIndicators.innerHTML = renderDoraIndicatorRow(gameState.doraIndicators);
     if (els.battlePlayerScores) {
-      els.battlePlayerScores.innerHTML = gameState.players
-        .map((player, index) => {
-          const seatWind = currentSeatWind(index, gameState.dealerIndex);
-          return `
-            <div class="central-player-row central-player-${escapeHtml(player.seat)}">
-              <span>${escapeHtml(playerPositionLabel(player.seat))}</span>
-              <strong>${escapeHtml(seatWind)}</strong>
-              <span>${escapeHtml(formatBattleScore(player.points))}</span>
-              <span>${escapeHtml(formatBattleChip(player.chips))}</span>
-            </div>
-          `;
-        })
-        .join("");
+      els.battlePlayerScores.innerHTML = renderCenterScoreDisplay(gameState.players);
     }
   }
 
@@ -604,7 +623,7 @@
     els.battleLeftFlowers.innerHTML = "";
     els.battleRightFlowers.innerHTML = "";
     els.battleDoraIndicators.innerHTML = "";
-    if (els.battlePlayerScores) els.battlePlayerScores.innerHTML = "";
+    if (els.battlePlayerScores) els.battlePlayerScores.innerHTML = renderCenterScoreDisplay(state.players);
     els.battleFlowerTiles.innerHTML = "";
     els.battleSelfRiver.innerHTML = "";
     els.battleLeftRiver.innerHTML = "";
