@@ -102,14 +102,14 @@ button {
   border-radius: 8px;
   overflow: hidden;
   background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.1), transparent 26%, rgba(0, 0, 0, 0.1) 74%),
-    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
-    linear-gradient(135deg, rgba(0, 0, 0, 0.08) 25%, transparent 25%),
-    #747a72;
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.08), transparent 48%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    #0b4a36;
   background-size:
     auto,
-    38px 38px,
-    42px 42px,
+    34px 34px,
+    34px 34px,
     auto;
 }
 
