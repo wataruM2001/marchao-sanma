@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオ三麻スコア卓</title>
-    <link rel="stylesheet" href="./styles.css?v=tight-hand-dora" />
+    <link rel="stylesheet" href="./styles.css?v=round-title-start-button" />
   </head>
   <body>
     <main class="app-shell">
@@ -38,8 +38,11 @@
           <div class="center-table-layout">
           <div class="dora-indicator-row" id="battleDoraIndicators"></div>
           <div class="center-tableau">
-            <div class="center-row">
-              <span id="battleRoundLabel">東1局0本場</span>
+            <div class="center-row round-info-row">
+              <div class="round-title-block">
+                <span id="battleRoundLabel">東1局</span>
+                <span id="battleHonbaKyotakuLabel">0本場 供託0</span>
+              </div>
               <strong id="battleRemainingDraws">残りツモ 37</strong>
             </div>
             <div class="central-score-grid" id="battlePlayerScores"></div>
@@ -51,10 +54,7 @@
               <span id="battleDealerLabel">親 Player 1</span>
               <span id="battleKyotakuLabel">供託0</span>
             </div>
-            <div class="battle-actions">
-              <button class="primary-button battle-start-button" id="battleStartButton" type="button">対局開始</button>
-              <span id="battleStatus">待機中</span>
-            </div>
+            <span id="battleStatus">待機中</span>
           </div>
 
           <div class="discard-river river-self" id="battleSelfRiver" aria-label="自分の捨て牌"></div>
@@ -64,6 +64,7 @@
 
           <div class="self-flower-lane" id="battleSelfFlowers" aria-label="自分の華牌"></div>
           <div class="self-hand-area">
+            <button class="primary-button battle-start-button" id="battleStartButton" type="button">対局開始</button>
             <div class="self-name" id="battleSelfName">自分</div>
             <div class="self-hand" id="battleSelfHand" aria-label="自分の手牌"></div>
           </div>
