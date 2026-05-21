@@ -1373,3 +1373,61 @@ input[type="checkbox"] {
 .dora-indicator-tile + .dora-indicator-tile {
   margin-left: -1px;
 }
+
+.center-table-layout .center-tableau {
+  position: relative;
+}
+
+.center-table-layout .round-info-row {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.round-title-block {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 20px);
+  width: calc(var(--center-river-tile-width) * 3);
+  transform: translate(-50%, -50%);
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  white-space: nowrap;
+}
+
+#battleRoundLabel {
+  width: 100%;
+  font-size: var(--center-river-tile-width);
+  line-height: 0.95;
+  color: #f3d88e;
+  font-weight: 900;
+}
+
+#battleHonbaKyotakuLabel {
+  width: 100%;
+  margin-top: 4px;
+  font-size: calc(var(--center-river-tile-width) * 0.32);
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.86);
+  font-weight: 900;
+}
+
+.center-table-layout #battleRemainingDraws {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  font-size: calc(var(--center-river-tile-width) * 0.32);
+  white-space: nowrap;
+}
+
+.self-hand-area {
+  gap: 10px;
+}
+
+.self-hand-area .battle-start-button {
+  min-height: 34px;
+  padding: 0 14px;
+}
