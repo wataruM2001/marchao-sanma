@@ -144,15 +144,15 @@
     });
     els.autoWinButton?.addEventListener("click", () => {
       autoWinEnabled = !autoWinEnabled;
-      renderAutoControlButtons();
+      handleAutoButtonStateChange(autoWinEnabled);
     });
     els.noCallButton?.addEventListener("click", () => {
       noCallEnabled = !noCallEnabled;
-      renderAutoControlButtons();
+      handleAutoButtonStateChange(noCallEnabled);
     });
     els.kanSkipButton?.addEventListener("click", () => {
       kanSkipEnabled = !kanSkipEnabled;
-      renderAutoControlButtons();
+      handleAutoButtonStateChange(kanSkipEnabled);
     });
 
     els.battleSelfHand?.addEventListener("click", (event) => {
@@ -561,6 +561,16 @@
     return true;
   }
 
+  function handleAutoButtonStateChange(shouldEvaluatePendingAction) {
+    if (shouldEvaluatePendingAction && settleBattleAutomation()) {
+      enterResultIfHandEnded();
+      renderBattleTable();
+      scheduleCpuTurn();
+      return;
+    }
+    renderAutoControlButtons();
+  }
+
   function settleBattleAutomation() {
     if (!battleState || appScreen !== "playing") return false;
     let changed = false;
@@ -633,6 +643,7 @@
       }
       lastHandResult = buildBattleHandResult(battleState);
       appScreen = "result";
+      resetBattleAutomationToggles();
     }
     return true;
   }
@@ -892,7 +903,6 @@
 
   function startNextBattleHand(nextRound) {
     resetBattleEffects();
-    resetBattleAutomationToggles();
     const previousPlayers = battleState.players.map((player) => ({
       name: player.name,
       points: player.points,
