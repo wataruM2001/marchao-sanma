@@ -1638,6 +1638,17 @@ input[type="checkbox"] {
   gap: 10px;
 }
 
+.auto-control-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 30px;
+  width: 100%;
+  padding-left: 10px;
+  min-height: 34px;
+}
+
 .battle-control-row {
   display: flex;
   align-items: center;
@@ -1657,6 +1668,22 @@ input[type="checkbox"] {
 .battle-action-button {
   min-height: 34px;
   padding: 0 14px;
+}
+
+.toggle-action-button {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: inherit;
+}
+
+.toggle-action-button.is-on {
+  opacity: 1;
+  filter: none;
+}
+
+.toggle-action-button.is-off {
+  opacity: 0.72;
+  filter: saturate(0.78) brightness(0.86);
 }
 
 .self-hand-area .battle-start-button {
