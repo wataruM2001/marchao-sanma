@@ -144,24 +144,15 @@
     });
     els.autoWinButton?.addEventListener("click", () => {
       autoWinEnabled = !autoWinEnabled;
-      settleBattleAutomation();
-      enterResultIfHandEnded();
-      renderBattleTable();
-      scheduleCpuTurn();
+      renderAutoControlButtons();
     });
     els.noCallButton?.addEventListener("click", () => {
       noCallEnabled = !noCallEnabled;
-      settleBattleAutomation();
-      enterResultIfHandEnded();
-      renderBattleTable();
-      scheduleCpuTurn();
+      renderAutoControlButtons();
     });
     els.kanSkipButton?.addEventListener("click", () => {
       kanSkipEnabled = !kanSkipEnabled;
-      settleBattleAutomation();
-      enterResultIfHandEnded();
-      renderBattleTable();
-      scheduleCpuTurn();
+      renderAutoControlButtons();
     });
 
     els.battleSelfHand?.addEventListener("click", (event) => {
