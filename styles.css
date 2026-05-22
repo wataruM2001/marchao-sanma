@@ -653,15 +653,15 @@ button {
 }
 
 .discard-river .table-tile-img.riichi-discard {
-  width: calc(var(--river-tile-width, 38px) * 0.71);
+  width: var(--river-tile-width, 38px);
   margin: 0;
-  transform: rotate(calc(var(--tile-rotation) + 90deg));
+  transform: rotate(calc(var(--tile-rotation) + 90deg)) scale(0.71);
   transform-origin: center;
 }
 
 .river-left .table-tile-img.riichi-discard,
 .river-right .table-tile-img.riichi-discard {
-  width: calc(var(--river-tile-width, 38px) * 0.71);
+  width: var(--river-tile-width, 38px);
   margin-block: 0;
   margin-inline: 0;
 }
