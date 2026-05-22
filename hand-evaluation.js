@@ -41,6 +41,7 @@
     "green",
     "red",
   ]);
+  const GREEN_BASE_IDS = new Set(["s2", "s3", "s4", "s6", "s8", "green"]);
   const MAX_STANDARD_MELDS = 4;
   const MAX_DORA_INDICATORS = 5;
 
@@ -502,10 +503,102 @@
     return (meld.baseIds || []).join("-");
   }
 
-  function detectYaku(candidate, features, context = {}) {
-    if (candidate.type === "kokushi") {
-      return [{ id: "kokushi", name: "kokushi", han: 13, yakuman: true, yakumanCount: 1 }];
+  function yakumanResult(id, name, yakumanCount = 1) {
+    return { id, name, han: 13, yakuman: true, isYakuman: true, yakumanCount };
+  }
+
+  function baseIdsFromCandidateOrTiles(candidateOrTiles) {
+    if (Array.isArray(candidateOrTiles)) {
+      return shapeTiles(candidateOrTiles).map(tileBaseId);
     }
+    return candidateBaseIds(candidateOrTiles);
+  }
+
+  function isManhon(candidateOrTiles) {
+    const baseIds = baseIdsFromCandidateOrTiles(candidateOrTiles);
+    return (
+      baseIds.length > 0 &&
+      baseIds.some((baseId) => baseSuit(baseId) === "man") &&
+      baseIds.every((baseId) => {
+        const suit = baseSuit(baseId);
+        return suit === "man" || suit === "honor";
+      })
+    );
+  }
+
+  function isDaisharin(candidateOrTiles) {
+    if (!candidateOrTiles || candidateOrTiles.type !== "chiitoitsu") return false;
+    const baseIds = baseIdsFromCandidateOrTiles(candidateOrTiles);
+    const suits = [...new Set(baseIds.map((baseId) => baseSuit(baseId)))];
+    return suits.length === 1 && (suits[0] === "pin" || suits[0] === "sou");
+  }
+
+  function countBaseIds(baseIds = []) {
+    return baseIds.reduce((counts, baseId) => {
+      counts[baseId] = (counts[baseId] || 0) + 1;
+      return counts;
+    }, {});
+  }
+
+  function hasTripletOrQuad(candidate, baseId) {
+    return (candidate.melds || []).some(
+      (meld) => (meld.type === "triplet" || meld.type === "quad") && meld.baseId === baseId
+    );
+  }
+
+  function isNineGates(candidate) {
+    const baseIds = candidateBaseIds(candidate);
+    if (baseIds.length !== 14) return false;
+    const suits = [...new Set(baseIds.map((baseId) => baseSuit(baseId)))];
+    if (suits.length !== 1 || !["pin", "sou"].includes(suits[0])) return false;
+    const prefix = NUMBERED_SUIT_PREFIX[suits[0]];
+    const counts = countBaseIds(baseIds);
+    return (
+      (counts[`${prefix}1`] || 0) >= 3 &&
+      (counts[`${prefix}9`] || 0) >= 3 &&
+      [2, 3, 4, 5, 6, 7, 8].every((number) => (counts[`${prefix}${number}`] || 0) >= 1)
+    );
+  }
+
+  function detectYakuman(candidate, features, context = {}) {
+    const yaku = [];
+    const baseIds = candidateBaseIds(candidate);
+    const allHonor = baseIds.length > 0 && baseIds.every((baseId) => baseSuit(baseId) === "honor");
+    const allTerminals = baseIds.length > 0 && baseIds.every((baseId) => {
+      const suit = baseSuit(baseId);
+      const number = baseNumber(baseId);
+      return ["man", "pin", "sou"].includes(suit) && (number === 1 || number === 9);
+    });
+    const windTriplets = WIND_ORDER.filter((baseId) => hasTripletOrQuad(candidate, baseId));
+    const windPair = WIND_ORDER.includes(features.pairBaseId) ? features.pairBaseId : "";
+
+    if (context.isTenhou) yaku.push(yakumanResult("tenhou", "天和"));
+    if (context.isChiihou) yaku.push(yakumanResult("chiihou", "地和"));
+    if (context.isRenhou) yaku.push(yakumanResult("renhou", "人和"));
+    if (candidate.type === "kokushi") yaku.push(yakumanResult("kokushi", "国士無双"));
+    if (candidate.type === "standard" && features.isMenzen && features.allTriplets && (features.isTsumo || features.waitType === "tanki")) {
+      yaku.push(yakumanResult("suuankou", "四暗刻"));
+    }
+    if (["white", "green", "red"].every((baseId) => hasTripletOrQuad(candidate, baseId))) {
+      yaku.push(yakumanResult("daisangen", "大三元"));
+    }
+    if (windTriplets.length === 3 && windPair) yaku.push(yakumanResult("shousuushi", "小四喜"));
+    if (windTriplets.length === 4) yaku.push(yakumanResult("daisuushi", "大四喜"));
+    if (allHonor) yaku.push(yakumanResult("tsuuiisou", "字一色"));
+    if (allTerminals) yaku.push(yakumanResult("chinroutou", "清老頭"));
+    if (baseIds.length > 0 && baseIds.every((baseId) => GREEN_BASE_IDS.has(baseId))) {
+      yaku.push(yakumanResult("ryuuiisou", "緑一色"));
+    }
+    if (features.quadCount === 4) yaku.push(yakumanResult("suukantsu", "四槓子"));
+    if (isNineGates(candidate)) yaku.push(yakumanResult("chuuren_poutou", "九連宝燈"));
+    if (isManhon(candidate)) yaku.push(yakumanResult("manhon", "萬混"));
+    if (isDaisharin(candidate)) yaku.push(yakumanResult("daisharin", "大車輪"));
+    return yaku;
+  }
+
+  function detectYaku(candidate, features, context = {}) {
+    const yakuman = detectYakuman(candidate, features, context);
+    if (yakuman.length > 0) return yakuman;
 
     const yaku = [];
     if (context.isRiichi) yaku.push({ id: "riichi", name: "riichi", han: 1 });
@@ -642,23 +735,45 @@
 
   function calculateChipPoints(allTiles, context = {}) {
     const tiles = Array.isArray(allTiles) ? allTiles : [];
-    const tileChips = tiles.filter((tile) => {
-      const kindId = tileKindId(tile);
-      return tile?.color === "blue" && (kindId === "p5_blue" || kindId === "s5_blue" || kindId === "flower_blue");
-    }).length;
-    const ippatsuChips = context.isIppatsu ? 1 : 0;
+    const tileChips = context.skipRegularChips
+      ? 0
+      : tiles.filter((tile) => {
+          const kindId = tileKindId(tile);
+          return tile?.color === "blue" && (kindId === "p5_blue" || kindId === "s5_blue" || kindId === "flower_blue");
+        }).length;
+    const ippatsuChips = context.skipRegularChips ? 0 : context.isIppatsu ? 1 : 0;
     const uraDoraHan =
-      context.uraDoraHan ??
+      context.skipRegularChips
+        ? 0
+        : context.uraDoraHan ??
       ((context.isRiichi || context.includeUraDora)
         ? countDoraFromIndicators(tiles, context.uraDoraIndicators).han
         : 0);
     const uraChips = Math.max(0, Math.floor(Number(uraDoraHan)));
-    const totalChips = tileChips + ippatsuChips + uraChips;
+    const yakumanChips = calculateYakumanChips(null, context).totalChips;
+    const totalChips = tileChips + ippatsuChips + uraChips + yakumanChips;
 
     return {
       tileChips,
       ippatsuChips,
       uraChips,
+      yakumanChips,
+      totalChips,
+      totalPoints: totalChips * 500,
+    };
+  }
+
+  function shouldApplyYakumanChips(yakuResults = []) {
+    return (yakuResults || []).some((yaku) => (yaku.yakuman || yaku.isYakuman) && !yaku.isKazoeYakuman);
+  }
+
+  function calculateYakumanChips(winResult, context = {}) {
+    if (!shouldApplyYakumanChips(context.yakuResults || winResult?.yaku || [])) {
+      return { yakumanChips: 0, totalChips: 0, totalPoints: 0 };
+    }
+    const totalChips = context.isTsumo || context.winType === "tsumo" ? 4 : 8;
+    return {
+      yakumanChips: totalChips,
       totalChips,
       totalPoints: totalChips * 500,
     };
@@ -745,7 +860,10 @@
   }
 
   function yakumanCount(yaku) {
-    return (yaku || []).reduce((sum, item) => sum + (item.yakuman ? Number(item.yakumanCount || 1) : 0), 0);
+    return (yaku || []).reduce(
+      (sum, item) => sum + ((item.yakuman || item.isYakuman) && !item.isKazoeYakuman ? Number(item.yakumanCount || 1) : 0),
+      0
+    );
   }
 
   function evaluateWinningCandidate(candidate, context = {}) {
@@ -767,7 +885,7 @@
     const dora = countedYakuman > 0
       ? { indicatorHan: 0, uraHan: 0, bonusHan: 0, totalHan: 0, doraBaseIds: [], uraDoraBaseIds: [] }
       : calculateDoraHan(allWinTiles, context.doraIndicators, context.uraDoraIndicators, context);
-    const chips = calculateChipPoints(allWinTiles, { ...context, uraDoraHan: dora.uraHan });
+    const chips = calculateChipPoints(allWinTiles, { ...context, yakuResults: yaku, uraDoraHan: dora.uraHan });
     const han = countedYakuman > 0 ? 13 * countedYakuman : yakuHan(yaku) + dora.totalHan;
     const points = calculateMarchaoSanmaPoints({
       han,
@@ -831,10 +949,15 @@
     getChiitoitsuCandidates,
     getKokushiCandidates,
     analyzeHandFeatures,
+    detectYakuman,
     detectYaku,
+    isManhon,
+    isDaisharin,
     nextDoraBaseId,
     calculateDoraHan,
     calculateChipPoints,
+    calculateYakumanChips,
+    shouldApplyYakumanChips,
     calculateMarchaoSanmaPoints,
     evaluateWinningCandidate,
     evaluateWinningHand,
