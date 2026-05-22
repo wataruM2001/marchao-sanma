@@ -10,6 +10,7 @@
   --blue: #276fbf;
   --gold: #be8b2c;
   --shadow: 0 18px 46px rgba(8, 33, 30, 0.18);
+  --battle-action-gap: calc(var(--hand-tile-width, 48px) * 1.5);
 }
 
 * {
@@ -1431,6 +1432,27 @@ input[type="checkbox"] {
 
 .self-hand-area {
   gap: 10px;
+}
+
+.battle-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--battle-action-gap);
+  width: 100%;
+  min-height: 34px;
+}
+
+.battle-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--battle-action-gap);
+  min-height: 34px;
+}
+
+.battle-action-button {
+  min-height: 34px;
+  padding: 0 14px;
 }
 
 .self-hand-area .battle-start-button {
