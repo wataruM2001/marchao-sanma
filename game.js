@@ -513,6 +513,30 @@
     return Boolean(player?.isRiichi) && !canTsumo(player, gameState) && !canRiichiAnkan(player, gameState);
   }
 
+  function canDiscardDuringActionPending(gameState) {
+    const pending = gameState?.pendingAction;
+    const actions = pending?.availableActions || {};
+    const player = gameState?.players?.[pending?.playerIndex];
+    return (
+      gameState?.phase === "actionPending" &&
+      pending?.source === "afterDraw" &&
+      pending.playerIndex === gameState.currentPlayerIndex &&
+      player?.seat === "self" &&
+      !actions.canRon &&
+      !actions.canTsumo &&
+      !actions.canPon &&
+      Boolean(actions.canRiichi || actions.canKan)
+    );
+  }
+
+  function skipOptionalSelfActionsBeforeDiscard(gameState) {
+    if (!canDiscardDuringActionPending(gameState)) return gameState;
+    const next = cloneGameState(gameState);
+    next.pendingAction = null;
+    next.phase = "discard";
+    return syncDrawWallState(next);
+  }
+
   function isNagashiYakuman(player, gameState) {
     const discards = player?.discards || [];
     if (!player || player.isRiichi || (player.melds || []).length > 0) return false;
@@ -1391,6 +1415,8 @@
     canRiichi,
     canRiichiAnkan,
     isNagashiYakuman,
+    canDiscardDuringActionPending,
+    skipOptionalSelfActionsBeforeDiscard,
     getWinningTiles,
     getAvailableActions,
     shouldAutoTsumogiriAfterRiichi,
