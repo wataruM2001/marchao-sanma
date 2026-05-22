@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオ三麻スコア卓</title>
-    <link rel="stylesheet" href="./styles.css?v=action-effects" />
+    <link rel="stylesheet" href="./styles.css?v=result-screen" />
   </head>
   <body>
     <main class="app-shell">
@@ -23,6 +23,20 @@
         <div class="battle-surface">
           <div class="table-vignette" aria-hidden="true"></div>
           <div class="battle-effect" id="battleEffect" aria-live="polite"></div>
+          <section class="battle-result-panel" id="battleResultPanel" hidden>
+            <h2 id="battleResultTitle">局結果</h2>
+            <div class="battle-result-body" id="battleResultBody"></div>
+            <div class="battle-result-actions">
+              <button class="primary-button battle-result-button" id="battleConfirmButton" type="button">確認</button>
+              <button class="primary-button battle-result-button" id="battleContinueButton" type="button" hidden>続行</button>
+              <button class="primary-button battle-result-button" id="battleEndButton" type="button" hidden>終了</button>
+            </div>
+          </section>
+          <section class="battle-settlement-panel" id="battleSettlementPanel" hidden>
+            <h2>半荘精算</h2>
+            <div class="battle-settlement-body" id="battleSettlementBody"></div>
+            <button class="primary-button battle-result-button" id="battleRestartButton" type="button">もう一度対局</button>
+          </section>
 
           <div class="opponent-hand opponent-left" aria-label="上家の手牌">
             <div class="opponent-name" id="battleLeftName">上家</div>
