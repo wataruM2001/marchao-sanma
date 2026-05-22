@@ -439,8 +439,8 @@ button {
   position: absolute;
   flex-direction: column;
   align-items: center;
-  min-width: calc(3 * var(--center-river-tile-width, 38px) + var(--center-river-tile-long, 54px) + 16px);
-  min-height: calc(var(--center-river-tile-long, 54px) + 16px);
+  min-width: calc(4 * var(--meld-tile-slot-size, 54px) + 3 * var(--meld-tile-gap, 4px) + 16px);
+  min-height: calc(var(--meld-tile-slot-size, 54px) + 16px);
   padding: clamp(5px, 0.7vw, 8px);
   border-radius: 8px;
   background: rgba(15, 21, 19, 0.34);
@@ -1401,10 +1401,16 @@ input[type="checkbox"] {
   --center-layout-gap: 4px;
   --center-river-tile-width: clamp(32px, 3vw, 42px);
   --center-river-tile-long: calc(var(--center-river-tile-width) * 1.40625);
-  --side-river-width: calc(4 * var(--center-river-tile-long));
-  --center-panel-width: calc(5 * var(--center-river-tile-width) + var(--center-river-tile-long));
-  --center-panel-height: calc(5 * var(--center-river-tile-width) + var(--center-river-tile-long));
-  --self-river-height: calc(3 * var(--center-river-tile-long));
+  --river-tile-gap: clamp(2px, 0.35vw, 5px);
+  --river-tile-slot-size: var(--center-river-tile-long);
+  --side-river-width: calc(4 * var(--river-tile-slot-size) + 3 * var(--river-tile-gap));
+  --center-panel-width: calc(6 * var(--river-tile-slot-size) + 5 * var(--river-tile-gap));
+  --center-panel-height: calc(6 * var(--river-tile-slot-size) + 5 * var(--river-tile-gap));
+  --self-river-height: calc(3 * var(--river-tile-slot-size) + 2 * var(--river-tile-gap));
+  --meld-tile-width: var(--center-river-tile-width);
+  --meld-tile-long: var(--center-river-tile-long);
+  --meld-tile-slot-size: var(--meld-tile-long);
+  --meld-tile-gap: var(--river-tile-gap);
   --center-layout-scale: 1;
   --center-layout-top: clamp(118px, 22vh, 168px);
   --center-layout-upshift: calc(var(--center-river-tile-long) * 1.5);
@@ -1606,6 +1612,99 @@ input[type="checkbox"] {
   grid-row: 2;
   width: var(--center-panel-width);
   height: var(--self-river-height);
+}
+
+.center-table-layout .discard-river {
+  --river-tile-slot-size: var(--center-river-tile-long);
+  grid-template-columns: repeat(6, var(--river-tile-slot-size));
+  grid-auto-rows: var(--river-tile-slot-size);
+  gap: var(--river-tile-gap);
+  align-content: start;
+  justify-content: start;
+  padding: 0;
+}
+
+.center-table-layout .river-left,
+.center-table-layout .river-right {
+  grid-template-columns: repeat(4, var(--river-tile-slot-size));
+  grid-template-rows: repeat(6, var(--river-tile-slot-size));
+  grid-auto-flow: column;
+  grid-auto-columns: var(--river-tile-slot-size);
+}
+
+.center-table-layout .river-left {
+  align-content: start;
+  justify-content: start;
+}
+
+.center-table-layout .river-right {
+  align-content: end;
+  justify-content: start;
+}
+
+.center-table-layout .river-self {
+  grid-template-columns: repeat(6, var(--river-tile-slot-size));
+  grid-template-rows: repeat(3, var(--river-tile-slot-size));
+  align-content: start;
+  justify-content: start;
+}
+
+.discard-tile-slot {
+  width: var(--river-tile-slot-size);
+  height: var(--river-tile-slot-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  line-height: 0;
+  direction: ltr;
+}
+
+.discard-river .discard-tile-slot .table-tile-img {
+  width: var(--river-tile-width);
+  margin: 0;
+}
+
+.discard-river .discard-tile-slot .table-tile-img.riichi-discard {
+  margin: 0;
+}
+
+.meld-group {
+  align-items: flex-end;
+  gap: var(--meld-tile-gap);
+  min-height: var(--meld-tile-slot-size);
+}
+
+.meld-tile-slot {
+  width: var(--meld-tile-slot-size);
+  height: var(--meld-tile-slot-size);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+  line-height: 0;
+}
+
+.meld-area .meld-tile-slot .table-tile-img {
+  width: var(--meld-tile-width);
+  margin: 0;
+}
+
+.meld-area .meld-tile-slot .table-tile-img.called-tile {
+  margin: 0;
+}
+
+.called-tile-stack {
+  width: var(--meld-tile-slot-size);
+  height: var(--meld-tile-slot-size);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.called-tile-stack .added-kan-tile {
+  top: auto;
+  bottom: calc(var(--meld-tile-width) * 0.35);
 }
 
 @media (max-width: 680px) {
