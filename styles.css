@@ -1694,6 +1694,10 @@ input[type="checkbox"] {
   filter: saturate(0.78) brightness(0.86);
 }
 
+#kanSkipButton {
+  display: none !important;
+}
+
 .self-hand-area .battle-start-button {
   min-height: 34px;
   padding: 0 14px;
