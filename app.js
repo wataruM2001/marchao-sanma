@@ -390,9 +390,7 @@
     lastHandResult = null;
     battleSettlement = null;
     settlementBreakdownVisible = false;
-    autoWinEnabled = true;
-    noCallEnabled = false;
-    kanSkipEnabled = false;
+    resetBattleAutomationToggles();
     const initialDealerIndex = randomBattleDealerIndex();
     battleState = createBattleHand({
       dealerIndex: initialDealerIndex,
@@ -730,6 +728,13 @@
     return Math.floor(Math.random() * 3);
   }
 
+  function resetBattleAutomationToggles() {
+    autoWinEnabled = true;
+    noCallEnabled = false;
+    kanSkipEnabled = false;
+    renderAutoControlButtons();
+  }
+
   function battleInitialSeatOrder(gameState) {
     const dealerIndex = Number.isInteger(gameState?.initialDealerIndex)
       ? gameState.initialDealerIndex
@@ -896,6 +901,7 @@
 
   function startNextBattleHand(nextRound) {
     resetBattleEffects();
+    resetBattleAutomationToggles();
     const previousPlayers = battleState.players.map((player) => ({
       name: player.name,
       points: player.points,
