@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオ三麻スコア卓</title>
-    <link rel="stylesheet" href="./styles.css?v=meld-display" />
+    <link rel="stylesheet" href="./styles.css?v=auto-kan-controls" />
   </head>
   <body>
     <main class="app-shell">
@@ -81,6 +81,10 @@
 
           <div class="self-flower-lane" id="battleSelfFlowers" aria-label="自分の華牌"></div>
           <div class="self-hand-area">
+            <div class="auto-control-row">
+              <button class="primary-button toggle-action-button is-on" id="autoWinButton" type="button" aria-pressed="true">自動和了</button>
+              <button class="primary-button toggle-action-button is-off" id="kanSkipButton" type="button" aria-pressed="false">カンスキップ</button>
+            </div>
             <div class="battle-control-row">
               <button class="primary-button battle-start-button" id="battleStartButton" type="button">対局開始</button>
               <div class="battle-action-buttons" id="battleActionButtons" aria-label="対局アクション"></div>
@@ -346,9 +350,9 @@
     </main>
 
     <script src="./tiles.js"></script>
-    <script src="./game.js?v=discard-controls"></script>
+    <script src="./game.js?v=auto-kan-controls"></script>
     <script src="./rules.js"></script>
     <script src="./hand-evaluation.js?v=north-yakuhai"></script>
-    <script src="./app.js?v=discard-controls"></script>
+    <script src="./app.js?v=auto-kan-controls"></script>
   </body>
 </html>
