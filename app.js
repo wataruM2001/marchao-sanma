@@ -7,6 +7,9 @@
   const STORAGE_KEY = "marchao-sanma-score-table-v1";
   let state = loadState();
   let battleState = null;
+  let appScreen = "start";
+  let lastHandResult = null;
+  let battleSettlement = null;
   let cpuTurnTimer = 0;
 
   const els = {
@@ -14,6 +17,15 @@
     resetButton: document.getElementById("resetButton"),
     battleTable: document.getElementById("battleTable"),
     battleEffect: document.getElementById("battleEffect"),
+    battleResultPanel: document.getElementById("battleResultPanel"),
+    battleResultTitle: document.getElementById("battleResultTitle"),
+    battleResultBody: document.getElementById("battleResultBody"),
+    battleConfirmButton: document.getElementById("battleConfirmButton"),
+    battleContinueButton: document.getElementById("battleContinueButton"),
+    battleEndButton: document.getElementById("battleEndButton"),
+    battleSettlementPanel: document.getElementById("battleSettlementPanel"),
+    battleSettlementBody: document.getElementById("battleSettlementBody"),
+    battleRestartButton: document.getElementById("battleRestartButton"),
     battleSelfHand: document.getElementById("battleSelfHand"),
     battleLeftHand: document.getElementById("battleLeftHand"),
     battleRightHand: document.getElementById("battleRightHand"),
@@ -97,7 +109,19 @@
 
   function bindEvents() {
     els.battleStartButton?.addEventListener("click", () => {
-      startBattleHand();
+      startBattleHanchan();
+    });
+    els.battleConfirmButton?.addEventListener("click", () => {
+      handleBattleResultConfirm();
+    });
+    els.battleContinueButton?.addEventListener("click", () => {
+      handleContinueOorasu();
+    });
+    els.battleEndButton?.addEventListener("click", () => {
+      handleEndOorasu();
+    });
+    els.battleRestartButton?.addEventListener("click", () => {
+      startBattleHanchan();
     });
 
     els.battleSelfHand?.addEventListener("click", (event) => {
@@ -310,13 +334,61 @@
     scheduleCpuTurn();
   }
 
+  function startBattleHanchan() {
+    if (!Game) {
+      els.battleStatus.textContent = "対局ロジックを読み込めませんでした";
+      return;
+    }
+    window.clearTimeout(cpuTurnTimer);
+    syncPlayersFromInputs();
+    appScreen = "playing";
+    lastHandResult = null;
+    battleSettlement = null;
+    battleState = createBattleHand({
+      dealerIndex: 0,
+      roundWind: "east",
+      handNumber: 1,
+      honba: 0,
+      kyotaku: 0,
+    });
+    enterResultIfHandEnded();
+    renderBattleTable();
+    scheduleCpuTurn();
+  }
+
+  function battlePlayerNames() {
+    return [
+      state.players[0]?.name || "Player 1",
+      state.players[1]?.name || "CPU 下家",
+      state.players[2]?.name || "CPU 上家",
+    ];
+  }
+
+  function createBattleHand(options, previousPlayers = null) {
+    const next = Game.startNewHand({
+      playerNames: battlePlayerNames(),
+      ...options,
+    });
+    if (previousPlayers) {
+      next.players.forEach((player, index) => {
+        const previous = previousPlayers[index];
+        if (!previous) return;
+        player.name = previous.name;
+        player.points = Number(previous.points) || 0;
+        player.chips = Number(previous.chips) || 0;
+      });
+    }
+    return Game.afterPlayerDraw(next);
+  }
+
   function handleHumanDiscard(tileId) {
-    if (!battleState || battleState.phase !== "discard") return;
+    if (!battleState || appScreen !== "playing" || battleState.phase !== "discard") return;
     const currentPlayer = battleState.players[battleState.currentPlayerIndex];
     if (currentPlayer?.seat !== "self") return;
     try {
       battleState = Game.discardTile(battleState, battleState.currentPlayerIndex, tileId);
       battleState = Game.afterPlayerDiscard(battleState);
+      enterResultIfHandEnded();
       renderBattleTable();
       scheduleCpuTurn();
     } catch (error) {
@@ -325,9 +397,10 @@
   }
 
   function handleBattleAction(action) {
-    if (!battleState || battleState.phase !== "actionPending") return;
+    if (!battleState || appScreen !== "playing" || battleState.phase !== "actionPending") return;
     try {
       battleState = Game.performPendingAction(battleState, action);
+      enterResultIfHandEnded();
       renderBattleTable();
       scheduleCpuTurn();
     } catch (error) {
@@ -337,26 +410,276 @@
 
   function scheduleCpuTurn() {
     window.clearTimeout(cpuTurnTimer);
-    if (!battleState || battleState.phase !== "discard") return;
+    if (!battleState || appScreen !== "playing" || battleState.phase !== "discard") return;
     const currentPlayer = battleState.players[battleState.currentPlayerIndex];
     if (!currentPlayer?.isCpu) return;
     cpuTurnTimer = window.setTimeout(runCpuTurn, 520);
   }
 
   function runCpuTurn() {
-    if (!battleState || battleState.phase !== "discard") return;
+    if (!battleState || appScreen !== "playing" || battleState.phase !== "discard") return;
     const currentPlayer = battleState.players[battleState.currentPlayerIndex];
     if (!currentPlayer?.isCpu) return;
     const discard = Game.decideCpuDiscard(currentPlayer, battleState);
     if (!discard) {
       battleState = Game.endHandAsRyukyoku(battleState);
+      enterResultIfHandEnded();
       renderBattleTable();
       return;
     }
     battleState = Game.discardTile(battleState, battleState.currentPlayerIndex, discard.id);
     battleState = Game.afterPlayerDiscard(battleState);
+    enterResultIfHandEnded();
     renderBattleTable();
     scheduleCpuTurn();
+  }
+
+  function enterResultIfHandEnded() {
+    if (!battleState || !["result", "ryukyoku"].includes(battleState.phase)) return false;
+    window.clearTimeout(cpuTurnTimer);
+    if (appScreen !== "result") {
+      if (battleState.phase === "ryukyoku") {
+        battleState = applyBattleRyukyokuSettlement(battleState);
+      }
+      lastHandResult = buildBattleHandResult(battleState);
+      appScreen = "result";
+    }
+    return true;
+  }
+
+  function applyBattleRyukyokuSettlement(gameState) {
+    if (gameState.lastAction?.ryukyokuSettled) return gameState;
+    const pointDeltas = [0, 0, 0];
+    const tenpaiPlayerIndexes = gameState.players
+      .map((player, index) => ({ player, index, waits: Game.getWinningTiles(player.hand) }))
+      .filter((entry) => entry.waits.length > 0)
+      .map((entry) => entry.index);
+    const notenPlayerIndexes = [0, 1, 2].filter((index) => !tenpaiPlayerIndexes.includes(index));
+
+    if (tenpaiPlayerIndexes.length === 1) {
+      const receiver = tenpaiPlayerIndexes[0];
+      notenPlayerIndexes.forEach((payer) => {
+        pointDeltas[receiver] += 1000;
+        pointDeltas[payer] -= 1000;
+      });
+    } else if (tenpaiPlayerIndexes.length === 2) {
+      const payer = notenPlayerIndexes[0];
+      tenpaiPlayerIndexes.forEach((receiver) => {
+        pointDeltas[receiver] += 1000;
+        pointDeltas[payer] -= 1000;
+      });
+    }
+
+    const next = {
+      ...gameState,
+      players: gameState.players.map((player, index) => ({
+        ...player,
+        points: Number(player.points) + pointDeltas[index],
+      })),
+      lastAction: {
+        ...(gameState.lastAction || {}),
+        pointDeltas,
+        chipDeltas: [0, 0, 0],
+        tenpaiPlayerIndexes,
+        dealerTenpai: tenpaiPlayerIndexes.includes(gameState.dealerIndex),
+        kyotakuBefore: Number(gameState.kyotaku) || 0,
+        kyotakuAfter: Number(gameState.kyotaku) || 0,
+        ryukyokuSettled: true,
+      },
+    };
+    return next;
+  }
+
+  function battleRoundText(gameState) {
+    return `${gameState.roundWind === "south" ? "南" : "東"}${gameState.handNumber}局`;
+  }
+
+  function isBattleOorasu(gameState) {
+    return gameState?.roundWind === "south" && Number(gameState.handNumber) === 3;
+  }
+
+  function nextBattleRoundInfo(gameState, dealerContinue, type) {
+    const sequence = [
+      { roundWind: "east", handNumber: 1 },
+      { roundWind: "east", handNumber: 2 },
+      { roundWind: "east", handNumber: 3 },
+      { roundWind: "south", handNumber: 1 },
+      { roundWind: "south", handNumber: 2 },
+      { roundWind: "south", handNumber: 3 },
+    ];
+    const currentIndex = Math.max(
+      0,
+      sequence.findIndex(
+        (round) => round.roundWind === gameState.roundWind && round.handNumber === gameState.handNumber
+      )
+    );
+    const nextRound = dealerContinue ? sequence[currentIndex] : sequence[Math.min(currentIndex + 1, sequence.length - 1)];
+    return {
+      ...nextRound,
+      dealerIndex: dealerContinue ? gameState.dealerIndex : (gameState.dealerIndex + 1) % 3,
+      honba: dealerContinue || type === "ryukyoku" ? Number(gameState.honba || 0) + 1 : 0,
+    };
+  }
+
+  function battlePlayerName(gameState, playerIndex) {
+    return gameState.players[playerIndex]?.name || `Player ${playerIndex + 1}`;
+  }
+
+  function pointRecordFromDeltas(deltas = []) {
+    return {
+      self: Number(deltas[0]) || 0,
+      shimocha: Number(deltas[1]) || 0,
+      kamicha: Number(deltas[2]) || 0,
+    };
+  }
+
+  function rankBattlePlayers(players = [], initialOrder = [0, 1, 2]) {
+    const orderRank = new Map(initialOrder.map((playerIndex, order) => [playerIndex, order]));
+    return players
+      .map((player, index) => ({ ...player, index }))
+      .sort((left, right) => {
+        if ((right.points || 0) !== (left.points || 0)) return (right.points || 0) - (left.points || 0);
+        return (orderRank.get(left.index) ?? 99) - (orderRank.get(right.index) ?? 99);
+      })
+      .map((player, index) => ({ ...player, rank: index + 1 }));
+  }
+
+  function isBattleSingleTop(players, playerIndex) {
+    const score = Number(players[playerIndex]?.points);
+    return Number.isFinite(score) && players.every((player, index) => index === playerIndex || score > Number(player.points));
+  }
+
+  function buildBattleHandResult(gameState) {
+    const action = gameState.lastAction || {};
+    const isRyukyoku = gameState.phase === "ryukyoku" || action.type === "ryukyoku";
+    const type = isRyukyoku ? "ryukyoku" : action.winType === "tsumo" ? "tsumo" : "ron";
+    const winnerIds = Number.isInteger(action.winnerIndex) ? [gameState.players[action.winnerIndex].id] : [];
+    const pointDeltas = action.pointDeltas || [0, 0, 0];
+    const chipDeltas = action.chipDeltas || [0, 0, 0];
+    const dealerContinue = isRyukyoku
+      ? Boolean(action.dealerTenpai)
+      : Number(action.winnerIndex) === gameState.dealerIndex;
+    const nextRound = nextBattleRoundInfo(gameState, dealerContinue, type);
+    const dealerTop = isBattleSingleTop(gameState.players, gameState.dealerIndex);
+    const isOorasu = isBattleOorasu(gameState);
+    const hasTobi = gameState.players.some((player) => Number(player.points) <= 0);
+    const requiresOorasuDealerChoice = isOorasu && dealerContinue && !dealerTop && !hasTobi;
+    const isHanchanEnded =
+      hasTobi ||
+      (isOorasu && !requiresOorasuDealerChoice && (!dealerContinue || dealerTop));
+    const endReason = hasTobi
+      ? "tobi"
+      : isOorasu && dealerContinue && dealerTop
+        ? "dealerTop"
+        : isOorasu && isHanchanEnded
+          ? "oorasu"
+          : "normal";
+
+    return {
+      type,
+      roundLabel: battleRoundText(gameState),
+      honbaBefore: Number(gameState.honba) || 0,
+      honbaAfter: nextRound.honba,
+      winnerIds,
+      loserId: Number.isInteger(action.discarderIndex) ? gameState.players[action.discarderIndex].id : undefined,
+      tenpaiPlayerIds: (action.tenpaiPlayerIndexes || []).map((index) => gameState.players[index].id),
+      pointChanges: pointRecordFromDeltas(pointDeltas),
+      chipChanges: pointRecordFromDeltas(chipDeltas),
+      kyotakuBefore: Number(action.kyotakuBefore ?? gameState.kyotaku) || 0,
+      kyotakuAfter: Number(action.kyotakuAfter ?? gameState.kyotaku) || 0,
+      nextRoundLabel: `${nextRound.roundWind === "south" ? "南" : "東"}${nextRound.handNumber}局${nextRound.honba}本場`,
+      nextRound,
+      isDealerContinue: dealerContinue,
+      isHanchanEnded,
+      requiresOorasuDealerChoice,
+      canContinueOorasu: requiresOorasuDealerChoice,
+      canEndOorasu: requiresOorasuDealerChoice,
+      endReason,
+      action,
+      rankings: rankBattlePlayers(gameState.players),
+    };
+  }
+
+  function handleBattleResultConfirm() {
+    if (!lastHandResult || lastHandResult.requiresOorasuDealerChoice) return;
+    if (lastHandResult.isHanchanEnded) {
+      battleSettlement = buildBattleSettlement(battleState);
+      appScreen = "settlement";
+      renderBattleTable();
+      return;
+    }
+    startNextBattleHand(lastHandResult.nextRound);
+  }
+
+  function handleContinueOorasu() {
+    if (!lastHandResult?.canContinueOorasu) return;
+    startNextBattleHand({
+      roundWind: battleState.roundWind,
+      handNumber: battleState.handNumber,
+      dealerIndex: battleState.dealerIndex,
+      honba: lastHandResult.honbaAfter,
+    });
+  }
+
+  function handleEndOorasu() {
+    if (!lastHandResult?.canEndOorasu) return;
+    lastHandResult = {
+      ...lastHandResult,
+      isHanchanEnded: true,
+      endReason: "dealerChoiceEnd",
+      requiresOorasuDealerChoice: false,
+    };
+    battleSettlement = buildBattleSettlement(battleState);
+    appScreen = "settlement";
+    renderBattleTable();
+  }
+
+  function startNextBattleHand(nextRound) {
+    const previousPlayers = battleState.players.map((player) => ({
+      name: player.name,
+      points: player.points,
+      chips: player.chips,
+    }));
+    appScreen = "playing";
+    lastHandResult = null;
+    battleSettlement = null;
+    battleState = createBattleHand(
+      {
+        dealerIndex: nextRound.dealerIndex,
+        roundWind: nextRound.roundWind,
+        handNumber: nextRound.handNumber,
+        honba: nextRound.honba,
+        kyotaku: Number(battleState.kyotaku) || 0,
+      },
+      previousPlayers
+    );
+    enterResultIfHandEnded();
+    renderBattleTable();
+    scheduleCpuTurn();
+  }
+
+  function buildBattleSettlement(gameState) {
+    const initialOrder = [0, 1, 2];
+    const kyotaku = Math.max(0, Math.floor(Number(gameState.kyotaku) || 0));
+    const settlementPlayers = gameState.players.map((player, index) => ({ ...player, index }));
+    const topBeforeKyotaku = rankBattlePlayers(settlementPlayers, initialOrder)[0];
+    if (topBeforeKyotaku && kyotaku > 0) {
+      settlementPlayers[topBeforeKyotaku.index].points += kyotaku * 1000;
+    }
+    const ranked = rankBattlePlayers(settlementPlayers, initialOrder);
+    return ranked.map((player) => {
+      const uma = player.rank === 1 ? 20 : player.rank === 3 ? -20 : 0;
+      const rankPoint = Math.round(((Number(player.points) || 0) - 40000) / 100) / 10;
+      const tobi = 0;
+      return {
+        ...player,
+        rankPoint,
+        uma,
+        tobi,
+        kyotakuRecovery: topBeforeKyotaku?.index === player.index ? kyotaku * 1000 : 0,
+        finalScore: Math.round((rankPoint + uma + tobi) * 10) / 10,
+      };
+    });
   }
 
   function battleStatusText() {
@@ -474,6 +797,124 @@
           `<button class="primary-button battle-action-button" type="button" data-battle-action="${action}">${label}</button>`
       )
       .join("");
+  }
+
+  function formatBattleDelta(value, suffix = "") {
+    const number = Number(value) || 0;
+    if (number > 0) return `+${number.toLocaleString("ja-JP")}${suffix}`;
+    if (number < 0) return `${number.toLocaleString("ja-JP")}${suffix}`;
+    return `0${suffix}`;
+  }
+
+  function battleResultTypeText(result) {
+    if (!result) return "";
+    if (result.type === "tsumo") return "ツモアガリ";
+    if (result.type === "doubleRon") return "ダブロン";
+    if (result.type === "ryukyoku") return "流局";
+    return "ロンアガリ";
+  }
+
+  function battleEndReasonText(reason) {
+    return {
+      normal: "",
+      tobi: "トビ",
+      oorasu: "オーラス終了",
+      dealerTop: "オーラス親1位",
+      dealerChoiceEnd: "オーラス親の終了選択",
+      userSelectedEnd: "終了選択",
+    }[reason] || "";
+  }
+
+  function renderBattleDeltaRows(record = {}, suffix = "") {
+    const seats = ["self", "shimocha", "kamicha"];
+    return seats
+      .map((seat, index) => {
+        const player = battleState?.players[index];
+        return `<li>${escapeHtml(playerPositionLabel(seat))} ${escapeHtml(player?.name || `Player ${index + 1}`)} ${escapeHtml(formatBattleDelta(record[seat], suffix))}</li>`;
+      })
+      .join("");
+  }
+
+  function renderBattleResultPanel() {
+    if (!els.battleResultPanel || !lastHandResult) return;
+    const result = lastHandResult;
+    const action = result.action || {};
+    const winnerName = Number.isInteger(action.winnerIndex) ? battlePlayerName(battleState, action.winnerIndex) : "";
+    const loserName = Number.isInteger(action.discarderIndex) ? battlePlayerName(battleState, action.discarderIndex) : "";
+    const endReasonText = battleEndReasonText(result.endReason);
+    const rankRows = result.rankings
+      .map(
+        (player) =>
+          `<li>${player.rank}位 ${escapeHtml(player.name)} ${Number(player.points).toLocaleString("ja-JP")}点</li>`
+      )
+      .join("");
+
+    els.battleResultTitle.textContent = `${result.roundLabel}${result.honbaBefore}本場 終了`;
+    els.battleResultBody.innerHTML = `
+      <section>
+        <h3>結果</h3>
+        <p>${escapeHtml(battleResultTypeText(result))}${winnerName ? `：${escapeHtml(winnerName)}` : ""}${loserName ? ` / 放銃：${escapeHtml(loserName)}` : ""}</p>
+      </section>
+      ${
+        result.type === "ryukyoku"
+          ? `<section><h3>聴牌</h3><p>${result.tenpaiPlayerIds.length ? result.tenpaiPlayerIds.map((id) => escapeHtml(battleState.players.find((player) => player.id === id)?.name || id)).join(" / ") : "全員ノーテン"}</p></section>`
+          : ""
+      }
+      <section>
+        <h3>点棒移動</h3>
+        <ul>${renderBattleDeltaRows(result.pointChanges, "点")}</ul>
+      </section>
+      <section>
+        <h3>祝儀</h3>
+        <ul>${renderBattleDeltaRows(result.chipChanges, "pt")}</ul>
+      </section>
+      <section>
+        <h3>供託</h3>
+        <p>${result.kyotakuBefore}本 → ${result.kyotakuAfter}本</p>
+      </section>
+      ${
+        result.requiresOorasuDealerChoice
+          ? `<section><h3>現在順位</h3><ul>${rankRows}</ul><p>親は1位ではないため、続行または終了を選択できます。</p></section>`
+          : ""
+      }
+      ${endReasonText ? `<section><h3>半荘終了理由</h3><p>${escapeHtml(endReasonText)}</p></section>` : ""}
+      ${!result.isHanchanEnded || result.requiresOorasuDealerChoice ? `<section><h3>次局</h3><p>${escapeHtml(result.nextRoundLabel)}</p></section>` : ""}
+    `;
+    els.battleConfirmButton.hidden = result.requiresOorasuDealerChoice;
+    els.battleContinueButton.hidden = !result.requiresOorasuDealerChoice;
+    els.battleEndButton.hidden = !result.requiresOorasuDealerChoice;
+  }
+
+  function renderBattleSettlementPanel() {
+    if (!els.battleSettlementPanel) return;
+    const settlement = battleSettlement || (battleState ? buildBattleSettlement(battleState) : []);
+    els.battleSettlementBody.innerHTML = settlement
+      .map(
+        (item) => `
+          <article class="battle-settlement-card">
+            <strong>${item.rank}位：${escapeHtml(item.name)}</strong>
+            <span>最終持ち点：${Number(item.points).toLocaleString("ja-JP")}</span>
+            <span>素点：${formatBattleDelta(item.rankPoint)}</span>
+            <span>ウマ：${formatBattleDelta(item.uma)}</span>
+            <span>祝儀：${formatBattleDelta(item.chips, "pt")}</span>
+            <span>トビ賞：${formatBattleDelta(item.tobi)}</span>
+            <span>供託回収：${formatBattleDelta(item.kyotakuRecovery, "点")}</span>
+            <b>最終スコア：${formatBattleDelta(item.finalScore)}</b>
+          </article>
+        `
+      )
+      .join("");
+  }
+
+  function renderBattleScreenPanels() {
+    const isResult = appScreen === "result";
+    const isSettlement = appScreen === "settlement";
+    if (els.battleResultPanel) els.battleResultPanel.hidden = !isResult;
+    if (els.battleSettlementPanel) els.battleSettlementPanel.hidden = !isSettlement;
+    if (els.battleStartButton) els.battleStartButton.hidden = appScreen !== "start";
+    if (els.battleActionButtons) els.battleActionButtons.hidden = appScreen !== "playing";
+    if (isResult) renderBattleResultPanel();
+    if (isSettlement) renderBattleSettlementPanel();
   }
 
   function renderBattleEffect(gameState) {
@@ -672,6 +1113,7 @@
     els.battleRightRiver.innerHTML = renderDiscardRiver(rightPlayer);
     els.battleLeftHand.innerHTML = renderBackTiles(leftPlayer?.hand.length || 0, "side", drawnTileIdForPlayer(battleState.players.indexOf(leftPlayer)));
     els.battleRightHand.innerHTML = renderBackTiles(rightPlayer?.hand.length || 0, "side", drawnTileIdForPlayer(battleState.players.indexOf(rightPlayer)));
+    renderBattleScreenPanels();
   }
 
   function renderEmptyBattleTable() {
@@ -706,6 +1148,7 @@
     els.battleRightRiver.innerHTML = "";
     els.battleLeftHand.innerHTML = renderBackTiles(13);
     els.battleRightHand.innerHTML = renderBackTiles(13);
+    renderBattleScreenPanels();
   }
 
   function renderBattleTile(tile, modifier = "", interactive = false, extraAttributes = "") {
