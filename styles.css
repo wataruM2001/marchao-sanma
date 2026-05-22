@@ -431,7 +431,7 @@ button {
 
 .self-meld-lane {
   flex: 0 0 auto;
-  max-width: min(34vw, 360px);
+  max-width: min(40vw, 420px);
   overflow: visible;
 }
 
@@ -439,6 +439,8 @@ button {
   position: absolute;
   flex-direction: column;
   align-items: center;
+  min-width: calc(3 * var(--center-river-tile-width, 38px) + var(--center-river-tile-long, 54px) + 16px);
+  min-height: calc(var(--center-river-tile-long, 54px) + 16px);
   padding: clamp(5px, 0.7vw, 8px);
   border-radius: 8px;
   background: rgba(15, 21, 19, 0.34);
@@ -458,6 +460,7 @@ button {
   display: flex;
   align-items: center;
   gap: 0;
+  min-height: var(--center-river-tile-long, 54px);
   font-size: 0;
   line-height: 0;
 }
@@ -469,6 +472,7 @@ button {
 }
 
 .meld-area .table-tile-img.called-tile {
+  margin-inline: calc((var(--center-river-tile-long, 54px) - var(--center-river-tile-width, 38px)) / 2);
   transform: rotate(calc(var(--meld-seat-rotation) + 90deg));
 }
 
@@ -476,12 +480,17 @@ button {
   position: relative;
   display: inline-grid;
   place-items: center;
-  width: calc(var(--center-river-tile-width, 38px) * 1.40625);
-  min-height: var(--center-river-tile-width, 38px);
+  width: var(--center-river-tile-long, 54px);
+  min-height: var(--center-river-tile-long, 54px);
 }
 
 .called-tile-stack .table-tile-img {
   width: var(--center-river-tile-width, clamp(22px, 2.7vw, 38px));
+  margin-inline: 0;
+}
+
+.meld-area .called-tile-stack .table-tile-img.called-tile {
+  margin-inline: 0;
 }
 
 .called-tile-stack .added-kan-tile {
@@ -644,8 +653,15 @@ button {
 }
 
 .discard-river .table-tile-img.riichi-discard {
+  margin-inline: calc((var(--river-tile-long, 54px) - var(--river-tile-width, 38px)) / 2);
   transform: rotate(calc(var(--tile-rotation) + 90deg));
   transform-origin: center;
+}
+
+.river-left .table-tile-img.riichi-discard,
+.river-right .table-tile-img.riichi-discard {
+  margin-block: calc((var(--river-tile-long, 54px) - var(--river-tile-width, 38px)) / 2);
+  margin-inline: 0;
 }
 
 .table-back {
@@ -1386,8 +1402,8 @@ input[type="checkbox"] {
   --center-river-tile-width: clamp(32px, 3vw, 42px);
   --center-river-tile-long: calc(var(--center-river-tile-width) * 1.40625);
   --side-river-width: calc(4 * var(--center-river-tile-long));
-  --center-panel-width: calc(6 * var(--center-river-tile-width));
-  --center-panel-height: calc(6 * var(--center-river-tile-width));
+  --center-panel-width: calc(5 * var(--center-river-tile-width) + var(--center-river-tile-long));
+  --center-panel-height: calc(5 * var(--center-river-tile-width) + var(--center-river-tile-long));
   --self-river-height: calc(3 * var(--center-river-tile-long));
   --center-layout-scale: 1;
   --center-layout-top: clamp(118px, 22vh, 168px);
