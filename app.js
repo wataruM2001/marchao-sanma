@@ -11,6 +11,8 @@
   let lastHandResult = null;
   let battleSettlement = null;
   let cpuTurnTimer = 0;
+  let autoWinEnabled = true;
+  let kanSkipEnabled = false;
 
   const els = {
     undoButton: document.getElementById("undoButton"),
@@ -51,6 +53,8 @@
     battleDealerLabel: document.getElementById("battleDealerLabel"),
     battleKyotakuLabel: document.getElementById("battleKyotakuLabel"),
     battleStartButton: document.getElementById("battleStartButton"),
+    autoWinButton: document.getElementById("autoWinButton"),
+    kanSkipButton: document.getElementById("kanSkipButton"),
     battleStatus: document.getElementById("battleStatus"),
     handForm: document.getElementById("handForm"),
     dealerSelect: document.getElementById("dealerSelect"),
@@ -125,6 +129,20 @@
     });
     els.battleRestartButton?.addEventListener("click", () => {
       startBattleHanchan();
+    });
+    els.autoWinButton?.addEventListener("click", () => {
+      autoWinEnabled = !autoWinEnabled;
+      settleBattleAutomation();
+      enterResultIfHandEnded();
+      renderBattleTable();
+      scheduleCpuTurn();
+    });
+    els.kanSkipButton?.addEventListener("click", () => {
+      kanSkipEnabled = !kanSkipEnabled;
+      settleBattleAutomation();
+      enterResultIfHandEnded();
+      renderBattleTable();
+      scheduleCpuTurn();
     });
 
     els.battleSelfHand?.addEventListener("click", (event) => {
@@ -334,6 +352,7 @@
       kyotaku: Math.floor((Number(state.kyotaku) || 0) / 1000),
     });
     battleState = Game.afterPlayerDraw(battleState);
+    settleBattleAutomation();
     renderBattleTable();
     scheduleCpuTurn();
   }
@@ -348,6 +367,8 @@
     appScreen = "playing";
     lastHandResult = null;
     battleSettlement = null;
+    autoWinEnabled = true;
+    kanSkipEnabled = false;
     battleState = createBattleHand({
       dealerIndex: 0,
       roundWind: "east",
@@ -355,6 +376,7 @@
       honba: 0,
       kyotaku: 0,
     });
+    settleBattleAutomation();
     enterResultIfHandEnded();
     renderBattleTable();
     scheduleCpuTurn();
@@ -397,6 +419,7 @@
     try {
       battleState = Game.discardTile(battleState, battleState.currentPlayerIndex, tileId);
       battleState = Game.afterPlayerDiscard(battleState);
+      settleBattleAutomation();
       enterResultIfHandEnded();
       renderBattleTable();
       scheduleCpuTurn();
@@ -419,15 +442,83 @@
     if (appScreen !== "playing") return;
     event.preventDefault();
     if (!battleState) return;
+    if (isSelfPonOrKanActionPending()) {
+      handleBattleAction("skip");
+      return;
+    }
     if (battleState.phase === "actionPending" && !Game.canDiscardDuringActionPending?.(battleState)) return;
     if (battleState.phase !== "discard" && battleState.phase !== "actionPending") return;
     discardDrawnTileAsTsumogiri();
+  }
+
+  function isSelfPendingAction() {
+    if (!battleState || battleState.phase !== "actionPending") return false;
+    const player = battleState.players[battleState.pendingAction?.playerIndex];
+    return player?.seat === "self";
+  }
+
+  function isSelfPonOrKanActionPending() {
+    if (!isSelfPendingAction()) return false;
+    const actions = battleState.pendingAction?.availableActions || {};
+    return Boolean(actions.canPon || actions.canKan);
+  }
+
+  function isSelfAutoWinPending() {
+    if (!autoWinEnabled || !isSelfPendingAction()) return false;
+    const actions = battleState.pendingAction?.availableActions || {};
+    return Boolean(actions.canRon || actions.canTsumo);
+  }
+
+  function removeKanFromPendingAction() {
+    const pending = battleState?.pendingAction;
+    const actions = pending?.availableActions || {};
+    if (!kanSkipEnabled || !isSelfPendingAction() || !actions.canKan) return false;
+    const nextActions = { ...actions, canKan: false };
+    const hasRemainingChoice = Boolean(
+      nextActions.canRon ||
+      nextActions.canTsumo ||
+      nextActions.canPon ||
+      nextActions.canRiichi
+    );
+    if (!hasRemainingChoice) {
+      battleState = Game.performPendingAction(battleState, "skip");
+      return true;
+    }
+    battleState = {
+      ...battleState,
+      pendingAction: {
+        ...pending,
+        availableActions: nextActions,
+        candidates: [],
+      },
+    };
+    return true;
+  }
+
+  function settleBattleAutomation() {
+    if (!battleState || appScreen !== "playing") return false;
+    let changed = false;
+    for (let guard = 0; guard < 6; guard += 1) {
+      if (isSelfAutoWinPending()) {
+        const actions = battleState.pendingAction?.availableActions || {};
+        battleState = Game.performPendingAction(battleState, actions.canTsumo ? "tsumo" : "ron");
+        changed = true;
+        continue;
+      }
+      if (removeKanFromPendingAction()) {
+        changed = true;
+        continue;
+      }
+      break;
+    }
+    return changed;
   }
 
   function handleBattleAction(action) {
     if (!battleState || appScreen !== "playing" || battleState.phase !== "actionPending") return;
     try {
       battleState = Game.performPendingAction(battleState, action);
+      settleBattleAutomation();
       enterResultIfHandEnded();
       renderBattleTable();
       scheduleCpuTurn();
@@ -457,6 +548,7 @@
     }
     battleState = Game.discardTile(battleState, battleState.currentPlayerIndex, discard.id);
     battleState = Game.afterPlayerDiscard(battleState);
+    settleBattleAutomation();
     enterResultIfHandEnded();
     renderBattleTable();
     scheduleCpuTurn();
@@ -681,6 +773,7 @@
       },
       previousPlayers
     );
+    settleBattleAutomation();
     enterResultIfHandEnded();
     renderBattleTable();
     scheduleCpuTurn();
@@ -825,6 +918,21 @@
           `<button class="primary-button battle-action-button" type="button" data-battle-action="${action}">${label}</button>`
       )
       .join("");
+  }
+
+  function renderAutoControlButtons() {
+    if (els.autoWinButton) {
+      els.autoWinButton.classList.toggle("is-on", autoWinEnabled);
+      els.autoWinButton.classList.toggle("is-off", !autoWinEnabled);
+      els.autoWinButton.setAttribute("aria-pressed", String(autoWinEnabled));
+      els.autoWinButton.textContent = "自動和了";
+    }
+    if (els.kanSkipButton) {
+      els.kanSkipButton.classList.toggle("is-on", kanSkipEnabled);
+      els.kanSkipButton.classList.toggle("is-off", !kanSkipEnabled);
+      els.kanSkipButton.setAttribute("aria-pressed", String(kanSkipEnabled));
+      els.kanSkipButton.textContent = "カンスキップ";
+    }
   }
 
   function formatBattleDelta(value, suffix = "") {
@@ -1189,6 +1297,7 @@
     els.battleLeftName.textContent = `上家 ${leftPlayer?.name || "CPU 上家"}`;
     renderCentralInfoPanel(battleState);
     renderBattleEffect(battleState);
+    renderAutoControlButtons();
     if (els.battleActionButtons) {
       els.battleActionButtons.innerHTML = renderBattleActionButtons(battleState);
     }
@@ -1244,6 +1353,7 @@
     els.battleRightFlowers.innerHTML = "";
     els.battleDoraIndicators.innerHTML = "";
     renderBattleEffect(null);
+    renderAutoControlButtons();
     if (els.battleActionButtons) els.battleActionButtons.innerHTML = "";
     if (els.battlePlayerScores) els.battlePlayerScores.innerHTML = renderCenterScoreDisplay(state.players);
     els.battleFlowerTiles.innerHTML = "";
