@@ -1472,11 +1472,15 @@
     return tiles;
   }
 
-  function renderMeldTile(tile, classes = "", useBack = false) {
+  function renderMeldTileImage(tile, classes = "", useBack = false) {
     if (!tile && !useBack) return "";
     const src = useBack ? Tiles.tileImagePath("blue_back") : tile.image;
     const label = useBack ? "裏向き牌" : tile.name || tile.baseId || tile.id;
     return `<img class="table-tile-img meld-tile ${classes}" src="${escapeHtml(src)}" alt="${escapeHtml(label)}" loading="lazy" />`;
+  }
+
+  function renderMeldTile(tile, classes = "", useBack = false) {
+    return `<span class="meld-tile-slot">${renderMeldTileImage(tile, classes, useBack)}</span>`;
   }
 
   function renderMeld(meld) {
@@ -1500,9 +1504,11 @@
           .map((tile, index) => {
             if (meld.type === "kakan" && index === calledIndex && meld.addedTile) {
               return `
-                <span class="called-tile-stack">
-                  ${renderMeldTile(tile, "called-tile")}
-                  ${renderMeldTile(meld.addedTile, "called-tile added-kan-tile")}
+                <span class="meld-tile-slot">
+                  <span class="called-tile-stack">
+                    ${renderMeldTileImage(tile, "called-tile")}
+                    ${renderMeldTileImage(meld.addedTile, "called-tile added-kan-tile")}
+                  </span>
                 </span>
               `;
             }
@@ -1562,7 +1568,11 @@
         ]
           .filter(Boolean)
           .join(" ");
-        return renderBattleTile(tile, classes, false, riverTileStyleForSeat(player?.seat, index));
+        return `<span class="discard-tile-slot" ${riverTileStyleForSeat(player?.seat, index)}>${renderBattleTile(
+          tile,
+          classes,
+          false
+        )}</span>`;
       })
       .join("");
     return tiles + renderRiverEffect(player);
