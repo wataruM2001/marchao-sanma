@@ -11,6 +11,10 @@
   let lastHandResult = null;
   let battleSettlement = null;
   let cpuTurnTimer = 0;
+  let battleEffectTimer = 0;
+  let activeBattleEffect = null;
+  let battleEffectQueue = [];
+  let lastBattleEffectSignature = "";
   let autoWinEnabled = true;
   let settlementBreakdownVisible = false;
 
@@ -117,6 +121,14 @@
 
   function removeKanSkipButtonIfPresent() {
     document.getElementById("kanSkipButton")?.remove();
+  }
+
+  function resetBattleEffectState() {
+    window.clearTimeout(battleEffectTimer);
+    activeBattleEffect = null;
+    battleEffectQueue = [];
+    lastBattleEffectSignature = "";
+    renderActiveBattleEffect();
   }
 
   function bindEvents() {
@@ -339,6 +351,7 @@
       return;
     }
     window.clearTimeout(cpuTurnTimer);
+    resetBattleEffectState();
     syncPlayersFromInputs();
     const initialDealerIndex = randomBattleDealerIndex();
     battleState = Game.startNewHand({
@@ -366,6 +379,7 @@
       return;
     }
     window.clearTimeout(cpuTurnTimer);
+    resetBattleEffectState();
     syncPlayersFromInputs();
     appScreen = "playing";
     lastHandResult = null;
@@ -789,6 +803,7 @@
   }
 
   function startNextBattleHand(nextRound) {
+    resetBattleEffectState();
     const previousPlayers = battleState.players.map((player) => ({
       name: player.name,
       points: player.points,
@@ -906,16 +921,19 @@
     return `${formatDisplayPoints(points)}  ${formatDisplayChipPoints(chipPoints)}`;
   }
 
-  function renderCenterScoreDisplay(players = []) {
+  function renderCenterScoreDisplay(players = [], dealerIndex = null) {
     const bySeat = {};
     players.forEach((player, index) => {
-      bySeat[playerDisplaySeat(player, index)] = player;
+      bySeat[playerDisplaySeat(player, index)] = { player, index };
     });
     return ["kamicha", "shimocha", "self"]
       .map((seat) => {
-        const player = bySeat[seat];
+        const entry = bySeat[seat];
+        const player = entry?.player;
         const text = formatScoreDisplay(playerDisplayPoints(player), playerDisplayChipPoints(player));
-        return `<div class="score-display ${seat}-score">${escapeHtml(text)}</div>`;
+        const isDealer = player?.isDealer || entry?.index === dealerIndex;
+        const classes = ["score-display", `${seat}-score`, isDealer ? "is-dealer" : ""].filter(Boolean).join(" ");
+        return `<div class="${classes}">${escapeHtml(text)}</div>`;
       })
       .join("");
   }
@@ -935,7 +953,7 @@
     els.battleKyotakuLabel.textContent = `手番 ${playerPositionLabel(currentPlayer?.seat)}`;
     els.battleDoraIndicators.innerHTML = renderDoraIndicatorRow(gameState.doraIndicators);
     if (els.battlePlayerScores) {
-      els.battlePlayerScores.innerHTML = renderCenterScoreDisplay(gameState.players);
+      els.battlePlayerScores.innerHTML = renderCenterScoreDisplay(gameState.players, gameState.dealerIndex);
     }
   }
 
@@ -1121,11 +1139,120 @@
     if (isSettlement) renderBattleSettlementPanel();
   }
 
-  function renderBattleEffect(gameState) {
-    const effect = gameState?.lastEffect || gameState?.lastAction?.effect || "";
+  function battleEffectSignature(gameState) {
+    const action = gameState?.lastAction;
+    if (!action) return "";
+    return [
+      action.type || "",
+      action.playerIndex ?? "",
+      action.winnerIndex ?? "",
+      action.discarderIndex ?? "",
+      action.tileId || "",
+      action.effect || "",
+      (action.flowers || []).join("|"),
+      gameState.phase || "",
+    ].join(":");
+  }
+
+  function flowerEffectTone(tileId) {
+    const definition = Tiles.getTileDefinition?.(tileId);
+    if (definition?.color === "blue" || String(tileId).includes("flower_blue")) return "flower-blue";
+    return "flower-red";
+  }
+
+  function battleEffectPlayerIndex(gameState, action) {
+    if (Number.isInteger(action?.winnerIndex)) return action.winnerIndex;
+    if (Number.isInteger(action?.playerIndex)) return action.playerIndex;
+    return Number.isInteger(gameState?.currentPlayerIndex) ? gameState.currentPlayerIndex : 0;
+  }
+
+  function battleEffectItemsForAction(gameState) {
+    const action = gameState?.lastAction;
+    if (!action) return [];
+    const playerIndex = battleEffectPlayerIndex(gameState, action);
+    const flowers = Array.isArray(action.flowers) ? action.flowers : [];
+    const flowerItems = flowers.map((tileId) => ({
+      text: "マーチャオ",
+      playerIndex,
+      classes: `marchao ${flowerEffectTone(tileId)}`,
+    }));
+    if (action.type === "flower" && action.tileId) {
+      flowerItems.push({
+        text: "マーチャオ",
+        playerIndex,
+        classes: `marchao ${flowerEffectTone(action.tileId)}`,
+      });
+    }
+    const effectText = action.effect || (action.afterKan ? gameState.lastEffect : "");
+    const actionEffect = effectText
+      ? [{ text: effectText, playerIndex, classes: "standard" }]
+      : [];
+    return [...flowerItems, ...actionEffect];
+  }
+
+  function riverElementForEffect(gameState, playerIndex) {
+    const seat = gameState?.players?.[playerIndex]?.seat;
+    if (seat === "self") return els.battleSelfRiver;
+    if (seat === "shimocha") return els.battleRightRiver;
+    if (seat === "kamicha") return els.battleLeftRiver;
+    return els.battleSelfRiver;
+  }
+
+  function positionBattleEffect(gameState, playerIndex) {
     if (!els.battleEffect) return;
-    els.battleEffect.textContent = effect;
-    els.battleEffect.hidden = !effect;
+    const target = riverElementForEffect(gameState, playerIndex);
+    const surface = els.battleTable?.querySelector(".battle-surface");
+    if (!target || !surface) {
+      els.battleEffect.style.left = "50%";
+      els.battleEffect.style.top = "50%";
+      return;
+    }
+    const targetRect = target.getBoundingClientRect();
+    const surfaceRect = surface.getBoundingClientRect();
+    els.battleEffect.style.left = `${targetRect.left - surfaceRect.left + targetRect.width / 2}px`;
+    els.battleEffect.style.top = `${targetRect.top - surfaceRect.top + targetRect.height / 2}px`;
+  }
+
+  function renderActiveBattleEffect() {
+    if (!els.battleEffect) return;
+    if (!activeBattleEffect) {
+      els.battleEffect.textContent = "";
+      els.battleEffect.hidden = true;
+      els.battleEffect.className = "battle-effect";
+      return;
+    }
+    positionBattleEffect(battleState, activeBattleEffect.playerIndex);
+    els.battleEffect.textContent = activeBattleEffect.text;
+    els.battleEffect.className = `battle-effect ${activeBattleEffect.classes || ""}`.trim();
+    els.battleEffect.hidden = false;
+  }
+
+  function playNextBattleEffect() {
+    window.clearTimeout(battleEffectTimer);
+    activeBattleEffect = battleEffectQueue.shift() || null;
+    renderActiveBattleEffect();
+    if (!activeBattleEffect) return;
+    battleEffectTimer = window.setTimeout(() => {
+      activeBattleEffect = null;
+      renderActiveBattleEffect();
+      playNextBattleEffect();
+    }, 500);
+  }
+
+  function queueBattleEffects(gameState) {
+    const signature = battleEffectSignature(gameState);
+    if (!signature || signature === lastBattleEffectSignature) return;
+    lastBattleEffectSignature = signature;
+    const items = battleEffectItemsForAction(gameState);
+    if (items.length === 0) return;
+    battleEffectQueue.push(...items);
+    if (!activeBattleEffect) playNextBattleEffect();
+  }
+
+  function renderBattleEffect(gameState) {
+    if (!els.battleEffect) return;
+    queueBattleEffects(gameState);
+    renderActiveBattleEffect();
   }
 
   function battleTileSortValue(tile) {
@@ -1423,7 +1550,7 @@
     renderBattleEffect(null);
     renderAutoControlButtons();
     if (els.battleActionButtons) els.battleActionButtons.innerHTML = "";
-    if (els.battlePlayerScores) els.battlePlayerScores.innerHTML = renderCenterScoreDisplay(state.players);
+    if (els.battlePlayerScores) els.battlePlayerScores.innerHTML = renderCenterScoreDisplay(state.players, dealer);
     els.battleFlowerTiles.innerHTML = "";
     els.battleSelfRiver.innerHTML = "";
     els.battleLeftRiver.innerHTML = "";
