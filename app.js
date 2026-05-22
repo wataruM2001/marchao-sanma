@@ -13,6 +13,7 @@
     undoButton: document.getElementById("undoButton"),
     resetButton: document.getElementById("resetButton"),
     battleTable: document.getElementById("battleTable"),
+    battleEffect: document.getElementById("battleEffect"),
     battleSelfHand: document.getElementById("battleSelfHand"),
     battleLeftHand: document.getElementById("battleLeftHand"),
     battleRightHand: document.getElementById("battleRightHand"),
@@ -475,6 +476,13 @@
       .join("");
   }
 
+  function renderBattleEffect(gameState) {
+    const effect = gameState?.lastEffect || gameState?.lastAction?.effect || "";
+    if (!els.battleEffect) return;
+    els.battleEffect.textContent = effect;
+    els.battleEffect.hidden = !effect;
+  }
+
   function battleTileSortValue(tile) {
     const suitOrder = { pin: 0, sou: 1, honor: 2, man: 3, flower: 4 };
     const honorOrder = {
@@ -614,12 +622,17 @@
     const leftPlayer = battleState.players.find((player) => player.seat === "kamicha");
     const currentPlayer = battleState.players[battleState.currentPlayerIndex];
     const openFlowers = battleState.players.flatMap((player) => player.flowers);
-    const canDiscard = battleState.phase === "discard" && currentPlayer?.seat === "self";
+    const canDiscard =
+      battleState.phase === "discard" &&
+      currentPlayer?.seat === "self" &&
+      (!battleState.riichiDeclaration ||
+        battleState.riichiDeclaration.playerIndex === battleState.currentPlayerIndex);
 
     els.battleSelfName.textContent = `自分 ${selfPlayer?.name || "Player 1"}`;
     els.battleRightName.textContent = `下家 ${rightPlayer?.name || "CPU 下家"}`;
     els.battleLeftName.textContent = `上家 ${leftPlayer?.name || "CPU 上家"}`;
     renderCentralInfoPanel(battleState);
+    renderBattleEffect(battleState);
     if (els.battleActionButtons) {
       els.battleActionButtons.innerHTML = renderBattleActionButtons(battleState);
     }
@@ -667,6 +680,7 @@
     els.battleLeftFlowers.innerHTML = "";
     els.battleRightFlowers.innerHTML = "";
     els.battleDoraIndicators.innerHTML = "";
+    renderBattleEffect(null);
     if (els.battleActionButtons) els.battleActionButtons.innerHTML = "";
     if (els.battlePlayerScores) els.battlePlayerScores.innerHTML = renderCenterScoreDisplay(state.players);
     els.battleFlowerTiles.innerHTML = "";
