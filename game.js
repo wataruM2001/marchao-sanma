@@ -881,8 +881,100 @@
     return syncDrawWallState(next);
   }
 
+  function evaluateWin(gameState, { winType, winnerIndex, winningTile } = {}) {
+    const evaluator = HandEval();
+    const winner = gameState.players[winnerIndex];
+    if (!evaluator?.evaluateWinningHand || !winner || !winningTile) return null;
+    const handTiles =
+      winType === "ron"
+        ? [...cloneTiles(winner.hand), cloneTile(winningTile)]
+        : cloneTiles(winner.hand);
+    const allWinTiles =
+      winType === "ron"
+        ? [...cloneTiles(winner.hand), cloneTile(winningTile), ...cloneTiles(winner.flowers)]
+        : [...cloneTiles(winner.hand), ...cloneTiles(winner.flowers)];
+    return evaluator.evaluateWinningHand(handTiles, winningTile, {
+      allWinTiles,
+      isTsumo: winType === "tsumo",
+      isMenzen: isMenzen(winner),
+      isRiichi: Boolean(winner.isRiichi),
+      isDealer: winnerIndex === gameState.dealerIndex,
+      doraIndicators: gameState.doraIndicators,
+      uraDoraIndicators: gameState.uraDoraIndicators,
+    });
+  }
+
+  function applyWinSettlement(gameState, { winType, winnerIndex, discarderIndex, evaluation } = {}) {
+    const pointDeltas = [0, 0, 0];
+    const chipDeltas = [0, 0, 0];
+    const best = evaluation?.best;
+    const honbaPoints = Math.max(0, Math.floor(Number(gameState.honba) || 0)) * 1000;
+    const kyotakuBefore = Math.max(0, Math.floor(Number(gameState.kyotaku) || 0));
+    const kyotakuPoints = kyotakuBefore * 1000;
+
+    if (best?.points) {
+      if (winType === "tsumo") {
+        const childPayment = best.points.payments.find((payment) => payment.payer === "child")?.amount || 0;
+        const parentPayment = best.points.payments.find((payment) => payment.payer === "parent")?.amount || childPayment;
+        gameState.players.forEach((player, playerIndex) => {
+          if (playerIndex === winnerIndex) return;
+          const baseAmount = playerIndex === gameState.dealerIndex ? parentPayment : childPayment;
+          const amount = baseAmount + honbaPoints;
+          pointDeltas[playerIndex] -= amount;
+          pointDeltas[winnerIndex] += amount;
+        });
+      } else {
+        const baseAmount = best.points.payments[0]?.amount || 0;
+        const amount = baseAmount + honbaPoints;
+        if (Number.isInteger(discarderIndex)) {
+          pointDeltas[discarderIndex] -= amount;
+          pointDeltas[winnerIndex] += amount;
+        }
+      }
+    }
+
+    if (kyotakuPoints > 0) {
+      pointDeltas[winnerIndex] += kyotakuPoints;
+      gameState.kyotaku = 0;
+    }
+
+    const chipAmount = Math.max(0, Number(best?.chips?.totalPoints) || 0);
+    if (chipAmount > 0) {
+      if (winType === "tsumo") {
+        gameState.players.forEach((player, playerIndex) => {
+          if (playerIndex === winnerIndex) return;
+          chipDeltas[playerIndex] -= chipAmount;
+          chipDeltas[winnerIndex] += chipAmount;
+        });
+      } else if (Number.isInteger(discarderIndex)) {
+        chipDeltas[discarderIndex] -= chipAmount;
+        chipDeltas[winnerIndex] += chipAmount;
+      }
+    }
+
+    pointDeltas.forEach((delta, index) => {
+      gameState.players[index].points += delta;
+    });
+    chipDeltas.forEach((delta, index) => {
+      gameState.players[index].chips += delta;
+    });
+
+    return {
+      pointDeltas,
+      chipDeltas,
+      kyotakuBefore,
+      kyotakuAfter: gameState.kyotaku,
+    };
+  }
+
   function resolveWin(gameState, { winType, winnerIndex, discarderIndex = null } = {}) {
     const next = cloneGameState(gameState);
+    const winningTile =
+      winType === "tsumo"
+        ? drawnTileForPlayer(next, winnerIndex)
+        : cloneTile(next.lastAction?.tile);
+    const evaluation = evaluateWin(next, { winType, winnerIndex, winningTile });
+    const settlement = applyWinSettlement(next, { winType, winnerIndex, discarderIndex, evaluation });
     next.phase = "result";
     next.pendingAction = null;
     next.pendingRiichi = null;
@@ -891,6 +983,12 @@
       winType,
       winnerIndex,
       discarderIndex,
+      winningTile: cloneTile(winningTile),
+      evaluation,
+      pointDeltas: settlement.pointDeltas,
+      chipDeltas: settlement.chipDeltas,
+      kyotakuBefore: settlement.kyotakuBefore,
+      kyotakuAfter: settlement.kyotakuAfter,
       effect: winType === "tsumo" ? "ツモ" : "ロン",
     };
     next.lastEffect = next.lastAction.effect;
