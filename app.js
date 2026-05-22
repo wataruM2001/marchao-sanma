@@ -109,9 +109,14 @@
   init();
 
   function init() {
+    removeKanSkipButtonIfPresent();
     renderTileGroups();
     bindEvents();
     render();
+  }
+
+  function removeKanSkipButtonIfPresent() {
+    document.getElementById("kanSkipButton")?.remove();
   }
 
   function bindEvents() {
