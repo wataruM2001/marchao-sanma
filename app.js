@@ -555,12 +555,29 @@
   function renderSelfHand(player, playerIndex, canDiscard) {
     const display = splitHandForDisplay(player, playerIndex);
     const normalTiles = display.concealed
-      .map((tile) => renderBattleTile(tile, canDiscard ? "discardable" : "", canDiscard))
+      .map((tile) => {
+        const canDiscardTile = canDiscard && canSelectBattleDiscard(tile, playerIndex);
+        return renderBattleTile(tile, canDiscardTile ? "discardable" : "discard-disabled", canDiscardTile);
+      })
       .join("");
     const drawnTile = display.drawnTile
-      ? renderBattleTile(display.drawnTile, canDiscard ? "discardable drawn" : "drawn", canDiscard)
+      ? renderBattleTile(
+          display.drawnTile,
+          canDiscard && canSelectBattleDiscard(display.drawnTile, playerIndex)
+            ? "discardable drawn"
+            : "drawn discard-disabled",
+          canDiscard && canSelectBattleDiscard(display.drawnTile, playerIndex)
+        )
       : "";
     return normalTiles + drawnTile;
+  }
+
+  function canSelectBattleDiscard(tile, playerIndex) {
+    if (!battleState?.riichiDeclaration) return true;
+    return (
+      battleState.riichiDeclaration.playerIndex === playerIndex &&
+      battleState.riichiDeclaration.options?.some((option) => option.tileId === tile.id)
+    );
   }
 
   function discardTileOf(discard) {
