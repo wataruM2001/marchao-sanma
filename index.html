@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオ三麻スコア卓</title>
-    <link rel="stylesheet" href="./styles.css?v=center-text-size" />
+    <link rel="stylesheet" href="./styles.css?v=remove-kan-skip" />
   </head>
   <body>
     <main class="app-shell">
@@ -84,7 +84,6 @@
           <div class="self-hand-area">
             <div class="auto-control-row">
               <button class="primary-button toggle-action-button is-on" id="autoWinButton" type="button" aria-pressed="true">自動和了</button>
-              <button class="primary-button toggle-action-button is-off" id="kanSkipButton" type="button" aria-pressed="false">カン拒否</button>
             </div>
             <div class="battle-control-row">
               <button class="primary-button battle-start-button" id="battleStartButton" type="button">対局開始</button>
@@ -354,6 +353,6 @@
     <script src="./game.js?v=random-start-seat"></script>
     <script src="./rules.js"></script>
     <script src="./hand-evaluation.js?v=north-yakuhai"></script>
-    <script src="./app.js?v=settlement-breakdown-toggle"></script>
+    <script src="./app.js?v=remove-kan-skip"></script>
   </body>
 </html>
