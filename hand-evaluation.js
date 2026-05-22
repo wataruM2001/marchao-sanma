@@ -174,10 +174,10 @@
     counts.set(baseId, (counts.get(baseId) || 0) + amount);
   }
 
-  function enumerateStandardMelds(counts, samples = [], current = []) {
+  function enumerateStandardMelds(counts, samples = [], current = [], requiredMeldCount = MAX_STANDARD_MELDS) {
     const first = firstRemainingBaseId(counts, samples);
-    if (!first) return current.length === MAX_STANDARD_MELDS ? [cloneMelds(current)] : [];
-    if (current.length >= MAX_STANDARD_MELDS) return [];
+    if (!first) return current.length === requiredMeldCount ? [cloneMelds(current)] : [];
+    if (current.length >= requiredMeldCount) return [];
 
     const results = [];
     if ((counts.get(first) || 0) >= 3) {
@@ -186,7 +186,9 @@
         ...enumerateStandardMelds(counts, samples, [
           ...current,
           tileGroup("triplet", [first, first, first], samples),
-        ])
+        ],
+          requiredMeldCount
+        )
       );
       addCount(counts, first, 3);
     }
@@ -198,7 +200,9 @@
         ...enumerateStandardMelds(counts, samples, [
           ...current,
           tileGroup("sequence", sequence, samples),
-        ])
+        ],
+          requiredMeldCount
+        )
       );
       sequence.forEach((baseId) => addCount(counts, baseId, 1));
     }
@@ -221,6 +225,7 @@
     const positions = [];
 
     (baseCandidate.melds || []).forEach((meld, meldIndex) => {
+      if (meld.fixed) return;
       if (!(meld.baseIds || []).includes(winningBaseId)) return;
       if (meld.type === "sequence") {
         positions.push({
@@ -264,6 +269,66 @@
         const candidate = {
           type: "standard",
           melds,
+          pair: tileGroup("pair", [pairBaseId, pairBaseId], samples),
+          winningTile: cloneTile(winningTile),
+          winningTilePosition: { usage: "standard", waitType: "unknown" },
+        };
+        results.push(...candidatePositionVariants(candidate, winningTile));
+      });
+      addCount(counts, pairBaseId, 2);
+    });
+
+    return results;
+  }
+
+  function isSequenceBaseIds(baseIds, samples = []) {
+    if (baseIds.length !== 3) return false;
+    const sorted = sortedBaseIds(baseIds, samples);
+    const suit = baseSuit(sorted[0], samples);
+    if (!NUMBERED_SUIT_PREFIX[suit] || suit === "man") return false;
+    const numbers = sorted.map((baseId) => baseNumber(baseId, samples));
+    return numbers.every(Number.isInteger) && numbers[1] === numbers[0] + 1 && numbers[2] === numbers[1] + 1;
+  }
+
+  function fixedMeldGroup(meld, samples = []) {
+    const tiles = shapeTiles(meld?.tiles || []);
+    const baseIds = tiles.map(tileBaseId).filter(Boolean);
+    if (baseIds.length < 3) return null;
+    const isSequence = meld?.type === "chi" || meld?.type === "sequence" || isSequenceBaseIds(baseIds, samples);
+    const type = isSequence ? "sequence" : baseIds.length >= 4 ? "quad" : "triplet";
+    const orderedBaseIds = isSequence ? sortedBaseIds(baseIds, samples) : baseIds;
+    return {
+      type,
+      baseIds: orderedBaseIds,
+      tiles: tiles.map(cloneTile),
+      baseId: orderedBaseIds[0],
+      fixed: true,
+      sourceType: meld?.type,
+    };
+  }
+
+  function normalizeFixedMelds(melds, samples = []) {
+    return (Array.isArray(melds) ? melds : []).map((meld) => fixedMeldGroup(meld, samples)).filter(Boolean);
+  }
+
+  function getStandardWinningCandidatesWithMelds(tiles, fixedMelds, winningTile) {
+    const normalTiles = shapeTiles(tiles);
+    const fixedGroups = normalizeFixedMelds(fixedMelds, normalTiles);
+    const requiredMeldCount = MAX_STANDARD_MELDS - fixedGroups.length;
+    if (requiredMeldCount < 0) return [];
+    if (normalTiles.length !== requiredMeldCount * 3 + 2) return [];
+
+    const samples = [...normalTiles, ...fixedGroups.flatMap((meld) => meld.tiles || [])];
+    const counts = countByBaseId(normalTiles);
+    const results = [];
+
+    sortedBaseIds([...counts.keys()], samples).forEach((pairBaseId) => {
+      if ((counts.get(pairBaseId) || 0) < 2) return;
+      addCount(counts, pairBaseId, -2);
+      enumerateStandardMelds(counts, samples, [], requiredMeldCount).forEach((melds) => {
+        const candidate = {
+          type: "standard",
+          melds: [...fixedGroups.map(cloneGroup), ...melds],
           pair: tileGroup("pair", [pairBaseId, pairBaseId], samples),
           winningTile: cloneTile(winningTile),
           winningTilePosition: { usage: "standard", waitType: "unknown" },
@@ -339,9 +404,13 @@
     ];
   }
 
-  function getWinningCandidates(tiles, winningTile) {
+  function getWinningCandidates(tiles, winningTile, context = {}) {
     const tile = winningTile || shapeTiles(tiles).at(-1) || null;
     if (!tile) return [];
+    const fixedMelds = context.fixedMelds || context.melds || context.openMelds || [];
+    if (fixedMelds.length > 0) {
+      return getStandardWinningCandidatesWithMelds(tiles, fixedMelds, tile);
+    }
     return [
       ...getStandardWinningCandidates(tiles, tile),
       ...getChiitoitsuCandidates(tiles, tile),
@@ -473,6 +542,34 @@
         } else if (pairSequenceCount === 1) {
           yaku.push({ id: "iipeikou", name: "iipeikou", han: 1 });
         }
+      }
+    }
+
+    if (candidate.type === "standard") {
+      const sequences = (candidate.melds || []).filter((meld) => meld.type === "sequence");
+      ["pin", "sou"].forEach((suit) => {
+        const prefix = NUMBERED_SUIT_PREFIX[suit];
+        const hasIttsu = ["1", "4", "7"].every((start) =>
+          sequences.some((meld) => sequenceSignature(meld) === `${prefix}${start}-${prefix}${Number(start) + 1}-${prefix}${Number(start) + 2}`)
+        );
+        if (hasIttsu) yaku.push({ id: "ittsuu", name: "ittsuu", han: features.isMenzen ? 2 : 1 });
+      });
+
+      const groups = [...(candidate.melds || []), candidate.pair].filter(Boolean);
+      const everyGroupHasTerminalOrHonor = groups.every((group) =>
+        (group.baseIds || []).some((baseId) => isTerminalOrHonorBase(baseId, context.allWinTiles || []))
+      );
+      const everyGroupHasTerminal = groups.every((group) =>
+        (group.baseIds || []).some((baseId) => {
+          const suit = baseSuit(baseId, context.allWinTiles || []);
+          const number = baseNumber(baseId, context.allWinTiles || []);
+          return ["man", "pin", "sou"].includes(suit) && (number === 1 || number === 9);
+        })
+      );
+      if (everyGroupHasTerminal && features.sequenceCount > 0) {
+        yaku.push({ id: "junchan", name: "junchan", han: features.isMenzen ? 3 : 2 });
+      } else if (everyGroupHasTerminalOrHonor && features.sequenceCount > 0) {
+        yaku.push({ id: "chanta", name: "chanta", han: features.isMenzen ? 2 : 1 });
       }
     }
 
@@ -712,7 +809,7 @@
 
   function evaluateWinningHand(tiles, winningTile, context = {}) {
     const tile = winningTile || shapeTiles(tiles).at(-1) || null;
-    const candidates = getWinningCandidates(tiles, tile);
+    const candidates = getWinningCandidates(tiles, tile, context);
     const evaluations = candidates.map((candidate) =>
       evaluateWinningCandidate(candidate, {
         ...context,
@@ -730,6 +827,7 @@
   return {
     getWinningCandidates,
     getStandardWinningCandidates,
+    getStandardWinningCandidatesWithMelds,
     getChiitoitsuCandidates,
     getKokushiCandidates,
     analyzeHandFeatures,
