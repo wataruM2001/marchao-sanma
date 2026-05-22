@@ -490,6 +490,9 @@
     if (["white", "green", "red"].includes(baseId)) {
       yaku.push({ id: `yakuhai_${baseId}`, name: `yakuhai_${baseId}`, han: 1 });
     }
+    if (baseId === "north") {
+      yaku.push({ id: "yakuhai_north", name: "yakuhai_north", han: 1 });
+    }
     if (baseId === context.roundWind) {
       yaku.push({ id: "round_wind", name: "round_wind", han: 1 });
     }
