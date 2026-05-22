@@ -486,7 +486,7 @@ button {
 }
 
 .meld-area .table-tile-img.called-tile {
-  transform: rotate(calc(var(--meld-seat-rotation) + 90deg));
+  transform: rotate(calc(var(--meld-seat-rotation) + 90deg)) scale(0.71);
 }
 
 .called-tile-stack {
@@ -505,7 +505,7 @@ button {
   position: absolute;
   top: -8px;
   left: 50%;
-  transform: translateX(-50%) rotate(calc(var(--meld-seat-rotation) + 90deg));
+  transform: translateX(-50%) rotate(calc(var(--meld-seat-rotation) + 90deg)) scale(0.71);
 }
 
 .self-flower-lane {
@@ -661,7 +661,7 @@ button {
 }
 
 .discard-river .table-tile-img.riichi-discard {
-  transform: rotate(calc(var(--tile-rotation) + 90deg));
+  transform: rotate(calc(var(--tile-rotation) + 90deg)) scale(0.71);
   transform-origin: center;
 }
 
@@ -1375,7 +1375,7 @@ input[type="checkbox"] {
   --center-layout-scale: 1;
   --center-layout-top: clamp(118px, 22vh, 168px);
   --center-layout-upshift: calc(var(--center-river-tile-long) * 1.5);
-  --center-layout-downshift: 20px;
+  --center-layout-downshift: -10px;
   --dora-tile-scale: 0.9;
   --dora-tile-width: calc(var(--center-river-tile-width) * var(--dora-tile-scale));
   --dora-tile-height: calc(var(--center-river-tile-long) * var(--dora-tile-scale));
