@@ -679,6 +679,52 @@
       .map((player, index) => ({ ...player, rank: index + 1 }));
   }
 
+  function roundBattleScore(value, digits = 1) {
+    const scale = 10 ** digits;
+    return Math.round((Number(value) || 0) * scale) / scale;
+  }
+
+  function battleShimochaIndex(playerIndex) {
+    return (playerIndex + 1) % 3;
+  }
+
+  function battleTobiTargetIndexes(players = []) {
+    return players
+      .map((player, index) => ({ index, points: Number(player.points) || 0 }))
+      .filter((player) => player.points <= 0)
+      .map((player) => player.index);
+  }
+
+  function battleTobiAwardIndex(gameState, result, tobiTargetIndex) {
+    const action = result?.action || gameState?.lastAction || {};
+    const tenpaiPlayerIndexes = action.tenpaiPlayerIndexes || [];
+    if (result?.type === "doubleRon" || action.winType === "doubleRon") {
+      return battleShimochaIndex(tobiTargetIndex);
+    }
+    if (result?.type === "ryukyoku" || action.type === "ryukyoku") {
+      if (tenpaiPlayerIndexes.length === 1) return tenpaiPlayerIndexes[0];
+      if (tenpaiPlayerIndexes.length === 2) return battleShimochaIndex(tobiTargetIndex);
+      return null;
+    }
+    if (Number.isInteger(action.winnerIndex)) return action.winnerIndex;
+    if (Array.isArray(action.winnerIndexes) && action.winnerIndexes.length === 2) {
+      return battleShimochaIndex(tobiTargetIndex);
+    }
+    return null;
+  }
+
+  function calculateBattleTobiBonus(gameState, result) {
+    const bonuses = [0, 0, 0];
+    const isTobiEnd = result?.endReason === "tobi" || gameState?.players?.some((player) => Number(player.points) <= 0);
+    if (!isTobiEnd) return bonuses;
+    battleTobiTargetIndexes(gameState.players).forEach((targetIndex) => {
+      const awardIndex = battleTobiAwardIndex(gameState, result, targetIndex);
+      if (Number.isInteger(awardIndex)) bonuses[awardIndex] += 10;
+      bonuses[targetIndex] -= 10;
+    });
+    return bonuses;
+  }
+
   function isBattleSingleTop(players, playerIndex) {
     const score = Number(players[playerIndex]?.points);
     return Number.isFinite(score) && players.every((player, index) => index === playerIndex || score > Number(player.points));
@@ -806,17 +852,29 @@
       settlementPlayers[topBeforeKyotaku.index].points += kyotaku * 1000;
     }
     const ranked = rankBattlePlayers(settlementPlayers, initialOrder);
+    const tobiBonuses = calculateBattleTobiBonus(gameState, lastHandResult);
     return ranked.map((player) => {
       const uma = player.rank === 1 ? 20 : player.rank === 3 ? -20 : 0;
-      const rankPoint = Math.round(((Number(player.points) || 0) - 40000) / 100) / 10;
-      const tobi = 0;
+      const basePointScore = roundBattleScore(((Number(player.points) || 0) - 40000) / 1000);
+      const oka = player.rank === 1 ? 15 : 0;
+      const specialAdjustment = player.rank === 1 ? -7 : -5;
+      const tobi = tobiBonuses[player.index] || 0;
+      const chipScore = roundBattleScore((Number(player.chips) || 0) / 500);
+      const internalFinalPoint = roundBattleScore(basePointScore + uma + oka + specialAdjustment + tobi + chipScore);
+      const displayFinalPoint = Math.round(internalFinalPoint * 100);
       return {
         ...player,
-        rankPoint,
+        rankPoint: basePointScore,
+        basePointScore,
         uma,
+        oka,
+        specialAdjustment,
         tobi,
+        chipScore,
+        internalFinalPoint,
+        displayFinalPoint,
         kyotakuRecovery: topBeforeKyotaku?.index === player.index ? kyotaku * 1000 : 0,
-        finalScore: Math.round((rankPoint + uma + tobi) * 10) / 10,
+        finalScore: displayFinalPoint,
       };
     });
   }
@@ -960,6 +1018,17 @@
     return `0${suffix}`;
   }
 
+  function formatBattlePointDelta(value) {
+    const number = roundBattleScore(value);
+    const text = number.toLocaleString("ja-JP", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
+    if (number > 0) return `+${text}`;
+    if (number < 0) return text;
+    return "0.0";
+  }
+
   function battleResultTypeText(result) {
     if (!result) return "";
     if (result.type === "tsumo") return "ツモアガリ";
@@ -1048,12 +1117,15 @@
           <article class="battle-settlement-card">
             <strong>${item.rank}位：${escapeHtml(item.name)}</strong>
             <span>最終持ち点：${Number(item.points).toLocaleString("ja-JP")}</span>
-            <span>素点：${formatBattleDelta(item.rankPoint)}</span>
+            <span>素点：${formatBattlePointDelta(item.basePointScore)}</span>
             <span>ウマ：${formatBattleDelta(item.uma)}</span>
-            <span>祝儀：${formatBattleDelta(item.chips, "pt")}</span>
+            <span>オカ：${formatBattleDelta(item.oka)}</span>
+            <span>特別調整：${formatBattleDelta(item.specialAdjustment)}</span>
             <span>トビ賞：${formatBattleDelta(item.tobi)}</span>
+            <span>祝儀：${formatBattleDelta(item.chipScore)}</span>
+            <span>内部最終ポイント：${formatBattlePointDelta(item.internalFinalPoint)}</span>
             <span>供託回収：${formatBattleDelta(item.kyotakuRecovery, "点")}</span>
-            <b>最終スコア：${formatBattleDelta(item.finalScore)}</b>
+            <b>最終ポイント：${formatBattleDelta(item.displayFinalPoint)}</b>
           </article>
         `
       )
