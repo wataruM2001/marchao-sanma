@@ -681,20 +681,23 @@
   function startRiichiDeclaration(gameState, playerIndex) {
     const next = cloneGameState(gameState);
     const player = next.players[playerIndex];
-    if (!canRiichi(player, next)) {
+    const riichiCheckState = { ...next, phase: "discard" };
+    if (!canRiichi(player, riichiCheckState)) {
       throw new Error("Riichi is not available.");
     }
     next.pendingAction = null;
     next.riichiDeclaration = {
       playerIndex,
-      options: riichiDiscardOptions(player, next),
+      options: riichiDiscardOptions(player, riichiCheckState),
     };
     next.phase = "discard";
     next.lastAction = {
       ...(next.lastAction || {}),
       type: "riichiDeclaration",
       playerIndex,
+      effect: "リーチ",
     };
+    next.lastEffect = "リーチ";
     return syncDrawWallState(next);
   }
 
@@ -712,9 +715,31 @@
         type: "riichi",
         playerIndex: pending.playerIndex,
         tileId: pending.discardTileId,
+        effect: "リーチ",
       };
+      next.lastEffect = "リーチ";
     }
     next.pendingRiichi = null;
+    return syncDrawWallState(next);
+  }
+
+  function declareRiichiAndDiscard(gameState, playerIndex) {
+    let next = startRiichiDeclaration(gameState, playerIndex);
+    const player = next.players[playerIndex];
+    const options = next.riichiDeclaration?.options || riichiDiscardOptions(player, next);
+    const drawnTile = drawnTileForPlayer(next, playerIndex);
+    const discardTileId =
+      options.find((option) => option.tileId === drawnTile?.id)?.tileId ||
+      options[0]?.tileId;
+    if (!discardTileId) {
+      throw new Error("Riichi discard is not available.");
+    }
+    next = discardTile(next, playerIndex, discardTileId);
+    next.lastEffect = "リーチ";
+    next.lastAction = {
+      ...(next.lastAction || {}),
+      effect: "リーチ",
+    };
     return syncDrawWallState(next);
   }
 
@@ -772,6 +797,7 @@
       tileId: discardTile.id,
       effect: "ポン",
     };
+    next.lastEffect = "ポン";
     return syncDrawWallState(next);
   }
 
@@ -844,6 +870,7 @@
       baseId: kan.baseId,
       effect: "カン",
     };
+    next.lastEffect = "カン";
     next = drawAfterKan(next, playerIndex);
     return syncDrawWallState(next);
   }
@@ -860,6 +887,7 @@
       discarderIndex,
       effect: winType === "tsumo" ? "ツモ" : "ロン",
     };
+    next.lastEffect = next.lastAction.effect;
     return syncDrawWallState(next);
   }
 
