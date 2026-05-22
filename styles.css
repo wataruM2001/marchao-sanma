@@ -483,6 +483,11 @@ button {
   filter: drop-shadow(0 12px 9px rgba(0, 0, 0, 0.35));
 }
 
+.table-tile-img.discard-disabled {
+  opacity: 0.72;
+  filter: saturate(0.78) brightness(0.86) drop-shadow(0 5px 5px rgba(0, 0, 0, 0.2));
+}
+
 .ghost-button,
 .primary-button {
   border: 1px solid transparent;
