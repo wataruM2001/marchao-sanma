@@ -59,6 +59,7 @@
       tile: cloneTile(tile),
       isRiichiDeclaration: Boolean(discard?.isRiichiDeclaration),
       isTsumogiri: Boolean(discard?.isTsumogiri),
+      wasCalledByOpponent: Boolean(discard?.wasCalledByOpponent),
     };
   }
 
@@ -259,6 +260,14 @@
 
   function tileKindId(tile) {
     return Tiles?.tileKindId ? Tiles.tileKindId(tile) : String(tile?.id || "").replace(/_\d+$/, "");
+  }
+
+  function isTanyaoTile(tile) {
+    const baseId = tileBaseId(tile);
+    const definition = Tiles?.getTileDefinition?.(tile) || Tiles?.getTileDefinition?.(baseId);
+    const suit = definition?.suit || tile?.suit || (/^p/.test(baseId) ? "pin" : /^s/.test(baseId) ? "sou" : /^m/.test(baseId) ? "man" : "");
+    const number = Number.isInteger(definition?.number) ? definition.number : tile?.number;
+    return (suit === "pin" || suit === "sou") && Number(number) >= 2 && Number(number) <= 8;
   }
 
   function sameBaseTiles(tiles, baseId) {
@@ -504,6 +513,18 @@
     return Boolean(player?.isRiichi) && !canTsumo(player, gameState) && !canRiichiAnkan(player, gameState);
   }
 
+  function isNagashiYakuman(player, gameState) {
+    const discards = player?.discards || [];
+    if (!player || player.isRiichi || (player.melds || []).length > 0) return false;
+    if ((Number(player.calledDiscardCount) || 0) > 0) return false;
+    if (discards.some((discard) => discard?.wasCalledByOpponent)) return false;
+    return discards.length > 0 && discards.every((discard) => !isTanyaoTile(tileFromDiscard(discard)));
+  }
+
+  function nagashiYakumanWinnerIndex(gameState) {
+    return (gameState?.players || []).findIndex((player) => isNagashiYakuman(player, gameState));
+  }
+
   function drawnTileForPlayer(gameState, playerIndex) {
     if (
       gameState?.lastAction?.type === "draw" &&
@@ -526,6 +547,7 @@
       chips: 0,
       hand: [],
       discards: [],
+      calledDiscardCount: 0,
       flowers: [],
       melds: [],
       isDealer: index === dealerIndex,
@@ -817,6 +839,11 @@
     return { removed: null, discards };
   }
 
+  function applyCalledDiscardRecord(discarder, removedDiscard) {
+    if (!discarder || !removedDiscard?.removed) return;
+    discarder.calledDiscardCount = (Number(discarder.calledDiscardCount) || 0) + 1;
+  }
+
   function callPon(gameState, playerIndex, discardTile = gameState.pendingAction?.discardTile) {
     const next = cloneGameState(gameState);
     const player = next.players[playerIndex];
@@ -828,7 +855,10 @@
     const calledTile = cloneTile(discardTile);
     const calledFromSeat = calledFromSeatFor(playerIndex, calledFromIndex);
     const removedDiscard = discarder ? removeLastDiscard(discarder, discardTile.id) : { removed: null, discards: [] };
-    if (discarder) discarder.discards = removedDiscard.discards;
+    if (discarder) {
+      discarder.discards = removedDiscard.discards;
+      applyCalledDiscardRecord(discarder, removedDiscard);
+    }
     player.hand = removeTilesById(player.hand, handTiles);
     player.melds.push({
       id: `pon_${baseId}_${player.melds.length + 1}`,
@@ -898,7 +928,9 @@
       const calledTile = cloneTile(kan.claimedTile);
       const calledFromSeat = calledFromSeatFor(playerIndex, calledFromIndex);
       if (discarder && kan.claimedTile) {
-        discarder.discards = removeLastDiscard(discarder, kan.claimedTile.id).discards;
+        const removedDiscard = removeLastDiscard(discarder, kan.claimedTile.id);
+        discarder.discards = removedDiscard.discards;
+        applyCalledDiscardRecord(discarder, removedDiscard);
       }
       player.hand = removeTilesById(player.hand, kan.tiles);
       player.melds.push({
@@ -960,6 +992,39 @@
       doraIndicators: gameState.doraIndicators,
       uraDoraIndicators: gameState.uraDoraIndicators,
     });
+  }
+
+  function nagashiYakumanEvaluation(gameState, winnerIndex) {
+    const evaluator = HandEval();
+    const yaku = [{ id: "nagashi_yakuman", name: "流し役満", han: 13, yakuman: true, isYakuman: true, yakumanCount: 1 }];
+    const points = evaluator?.calculateMarchaoSanmaPoints?.({
+      han: 13,
+      fu: 30,
+      isDealer: winnerIndex === gameState.dealerIndex,
+      isTsumo: true,
+      yakumanCount: 1,
+    }) || null;
+    const chips = evaluator?.calculateChipPoints?.([], {
+      isTsumo: true,
+      winType: "tsumo",
+      yakuResults: yaku,
+      skipRegularChips: true,
+    }) || { totalPoints: 2000, totalChips: 4, yakumanChips: 4 };
+    return {
+      candidates: [],
+      evaluations: [],
+      best: {
+        valid: true,
+        candidate: { type: "nagashi_yakuman", melds: [], pair: null },
+        features: {},
+        yaku,
+        dora: { indicatorHan: 0, uraHan: 0, bonusHan: 0, totalHan: 0, doraBaseIds: [], uraDoraBaseIds: [] },
+        chips,
+        han: 13,
+        fu: 30,
+        points,
+      },
+    };
   }
 
   function applyWinSettlement(gameState, { winType, winnerIndex, discarderIndex, evaluation } = {}) {
@@ -1048,6 +1113,31 @@
       kyotakuBefore: settlement.kyotakuBefore,
       kyotakuAfter: settlement.kyotakuAfter,
       effect: winType === "tsumo" ? "ツモ" : "ロン",
+    };
+    next.lastEffect = next.lastAction.effect;
+    return syncDrawWallState(next);
+  }
+
+  function resolveNagashiYakuman(gameState, winnerIndex) {
+    const next = cloneGameState(gameState);
+    const evaluation = nagashiYakumanEvaluation(next, winnerIndex);
+    const settlement = applyWinSettlement(next, { winType: "tsumo", winnerIndex, evaluation });
+    next.phase = "result";
+    next.pendingAction = null;
+    next.pendingRiichi = null;
+    next.lastAction = {
+      type: "win",
+      winType: "tsumo",
+      winnerIndex,
+      discarderIndex: null,
+      winningTile: null,
+      nagashiYakuman: true,
+      evaluation,
+      pointDeltas: settlement.pointDeltas,
+      chipDeltas: settlement.chipDeltas,
+      kyotakuBefore: settlement.kyotakuBefore,
+      kyotakuAfter: settlement.kyotakuAfter,
+      effect: "流し役満",
     };
     next.lastEffect = next.lastAction.effect;
     return syncDrawWallState(next);
@@ -1239,6 +1329,10 @@
 
   function endHandAsRyukyoku(gameState) {
     const next = syncDrawWallState(cloneGameState(gameState));
+    const nagashiWinnerIndex = nagashiYakumanWinnerIndex(next);
+    if (nagashiWinnerIndex >= 0) {
+      return resolveNagashiYakuman(next, nagashiWinnerIndex);
+    }
     next.phase = "ryukyoku";
     next.lastAction = {
       type: "ryukyoku",
@@ -1296,6 +1390,7 @@
     canKan,
     canRiichi,
     canRiichiAnkan,
+    isNagashiYakuman,
     getWinningTiles,
     getAvailableActions,
     shouldAutoTsumogiriAfterRiichi,
