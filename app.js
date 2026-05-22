@@ -12,6 +12,7 @@
   let battleSettlement = null;
   let cpuTurnTimer = 0;
   let autoWinEnabled = true;
+  let noCallEnabled = false;
   let kanSkipEnabled = false;
   let settlementBreakdownVisible = false;
 
@@ -56,6 +57,7 @@
     battleKyotakuLabel: document.getElementById("battleKyotakuLabel"),
     battleStartButton: document.getElementById("battleStartButton"),
     autoWinButton: document.getElementById("autoWinButton"),
+    noCallButton: document.getElementById("noCallButton"),
     kanSkipButton: document.getElementById("kanSkipButton"),
     battleStatus: document.getElementById("battleStatus"),
     handForm: document.getElementById("handForm"),
@@ -138,6 +140,13 @@
     });
     els.autoWinButton?.addEventListener("click", () => {
       autoWinEnabled = !autoWinEnabled;
+      settleBattleAutomation();
+      enterResultIfHandEnded();
+      renderBattleTable();
+      scheduleCpuTurn();
+    });
+    els.noCallButton?.addEventListener("click", () => {
+      noCallEnabled = !noCallEnabled;
       settleBattleAutomation();
       enterResultIfHandEnded();
       renderBattleTable();
@@ -377,6 +386,7 @@
     battleSettlement = null;
     settlementBreakdownVisible = false;
     autoWinEnabled = true;
+    noCallEnabled = false;
     kanSkipEnabled = false;
     const initialDealerIndex = randomBattleDealerIndex();
     battleState = createBattleHand({
@@ -506,6 +516,57 @@
     return true;
   }
 
+  function removeNoCallFromPendingAction() {
+    const pending = battleState?.pendingAction;
+    const actions = pending?.availableActions || {};
+    if (!noCallEnabled || !isSelfPendingAction()) return false;
+
+    const nextActions = { ...actions };
+    let changed = false;
+    let candidates = pending.candidates || [];
+
+    if (nextActions.canPon) {
+      nextActions.canPon = false;
+      changed = true;
+    }
+    if (nextActions.canChi) {
+      nextActions.canChi = false;
+      changed = true;
+    }
+    if (nextActions.canKan) {
+      const ankanCandidates = candidates.filter((candidate) => candidate?.type === "ankan");
+      candidates = ankanCandidates;
+      if (ankanCandidates.length === 0) {
+        nextActions.canKan = false;
+        changed = true;
+      } else if (ankanCandidates.length !== (pending.candidates || []).length) {
+        changed = true;
+      }
+    }
+
+    if (!changed) return false;
+
+    const hasRemainingChoice = Boolean(
+      nextActions.canRon ||
+      nextActions.canTsumo ||
+      nextActions.canKan ||
+      nextActions.canRiichi
+    );
+    if (!hasRemainingChoice) {
+      battleState = Game.performPendingAction(battleState, "skip");
+      return true;
+    }
+    battleState = {
+      ...battleState,
+      pendingAction: {
+        ...pending,
+        availableActions: nextActions,
+        candidates,
+      },
+    };
+    return true;
+  }
+
   function settleBattleAutomation() {
     if (!battleState || appScreen !== "playing") return false;
     let changed = false;
@@ -517,6 +578,10 @@
         continue;
       }
       if (removeKanFromPendingAction()) {
+        changed = true;
+        continue;
+      }
+      if (removeNoCallFromPendingAction()) {
         changed = true;
         continue;
       }
@@ -1011,6 +1076,12 @@
       els.autoWinButton.classList.toggle("is-off", !autoWinEnabled);
       els.autoWinButton.setAttribute("aria-pressed", String(autoWinEnabled));
       els.autoWinButton.textContent = "自動和了";
+    }
+    if (els.noCallButton) {
+      els.noCallButton.classList.toggle("is-on", noCallEnabled);
+      els.noCallButton.classList.toggle("is-off", !noCallEnabled);
+      els.noCallButton.setAttribute("aria-pressed", String(noCallEnabled));
+      els.noCallButton.textContent = "鳴き無し";
     }
     if (els.kanSkipButton) {
       els.kanSkipButton.classList.toggle("is-on", kanSkipEnabled);
