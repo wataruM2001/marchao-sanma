@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオ三麻スコア卓</title>
-    <link rel="stylesheet" href="./styles.css?v=result-screen" />
+    <link rel="stylesheet" href="./styles.css?v=meld-display" />
   </head>
   <body>
     <main class="app-shell">
@@ -41,12 +41,14 @@
           <div class="opponent-hand opponent-left" aria-label="上家の手牌">
             <div class="opponent-name" id="battleLeftName">上家</div>
             <div class="side-hand" id="battleLeftHand"></div>
+            <div class="side-meld-lane meld-area kamicha" id="battleLeftMelds"></div>
             <div class="side-flower-lane" id="battleLeftFlowers"></div>
           </div>
 
           <div class="opponent-hand opponent-right" aria-label="下家の手牌">
             <div class="opponent-name" id="battleRightName">下家</div>
             <div class="side-hand" id="battleRightHand"></div>
+            <div class="side-meld-lane meld-area shimocha" id="battleRightMelds"></div>
             <div class="side-flower-lane" id="battleRightFlowers"></div>
           </div>
 
@@ -84,7 +86,10 @@
               <div class="battle-action-buttons" id="battleActionButtons" aria-label="対局アクション"></div>
             </div>
             <div class="self-name" id="battleSelfName">自分</div>
-            <div class="self-hand" id="battleSelfHand" aria-label="自分の手牌"></div>
+            <div class="self-hand-line">
+              <div class="self-hand" id="battleSelfHand" aria-label="自分の手牌"></div>
+              <div class="self-meld-lane meld-area self" id="battleSelfMelds"></div>
+            </div>
           </div>
         </div>
       </section>
