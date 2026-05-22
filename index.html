@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオ三麻スコア卓</title>
-    <link rel="stylesheet" href="./styles.css?v=action-buttons" />
+    <link rel="stylesheet" href="./styles.css?v=action-effects" />
   </head>
   <body>
     <main class="app-shell">
@@ -22,6 +22,7 @@
       <section class="battle-table tool-panel" id="battleTable" aria-label="麻雀対局画面">
         <div class="battle-surface">
           <div class="table-vignette" aria-hidden="true"></div>
+          <div class="battle-effect" id="battleEffect" aria-live="polite"></div>
 
           <div class="opponent-hand opponent-left" aria-label="上家の手牌">
             <div class="opponent-name" id="battleLeftName">上家</div>
