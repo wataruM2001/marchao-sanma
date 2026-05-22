@@ -12,7 +12,6 @@
   let battleSettlement = null;
   let cpuTurnTimer = 0;
   let autoWinEnabled = true;
-  let kanSkipEnabled = false;
   let settlementBreakdownVisible = false;
 
   const els = {
@@ -56,7 +55,6 @@
     battleKyotakuLabel: document.getElementById("battleKyotakuLabel"),
     battleStartButton: document.getElementById("battleStartButton"),
     autoWinButton: document.getElementById("autoWinButton"),
-    kanSkipButton: document.getElementById("kanSkipButton"),
     battleStatus: document.getElementById("battleStatus"),
     handForm: document.getElementById("handForm"),
     dealerSelect: document.getElementById("dealerSelect"),
@@ -143,14 +141,6 @@
       renderBattleTable();
       scheduleCpuTurn();
     });
-    els.kanSkipButton?.addEventListener("click", () => {
-      kanSkipEnabled = !kanSkipEnabled;
-      settleBattleAutomation();
-      enterResultIfHandEnded();
-      renderBattleTable();
-      scheduleCpuTurn();
-    });
-
     els.battleSelfHand?.addEventListener("click", (event) => {
       const tileImage = event.target.closest("[data-discard-tile-id]");
       if (!tileImage) return;
@@ -377,7 +367,6 @@
     battleSettlement = null;
     settlementBreakdownVisible = false;
     autoWinEnabled = true;
-    kanSkipEnabled = false;
     const initialDealerIndex = randomBattleDealerIndex();
     battleState = createBattleHand({
       dealerIndex: initialDealerIndex,
@@ -480,32 +469,6 @@
     return Boolean(actions.canRon || actions.canTsumo);
   }
 
-  function removeKanFromPendingAction() {
-    const pending = battleState?.pendingAction;
-    const actions = pending?.availableActions || {};
-    if (!kanSkipEnabled || !isSelfPendingAction() || !actions.canKan) return false;
-    const nextActions = { ...actions, canKan: false };
-    const hasRemainingChoice = Boolean(
-      nextActions.canRon ||
-      nextActions.canTsumo ||
-      nextActions.canPon ||
-      nextActions.canRiichi
-    );
-    if (!hasRemainingChoice) {
-      battleState = Game.performPendingAction(battleState, "skip");
-      return true;
-    }
-    battleState = {
-      ...battleState,
-      pendingAction: {
-        ...pending,
-        availableActions: nextActions,
-        candidates: [],
-      },
-    };
-    return true;
-  }
-
   function settleBattleAutomation() {
     if (!battleState || appScreen !== "playing") return false;
     let changed = false;
@@ -513,10 +476,6 @@
       if (isSelfAutoWinPending()) {
         const actions = battleState.pendingAction?.availableActions || {};
         battleState = Game.performPendingAction(battleState, actions.canTsumo ? "tsumo" : "ron");
-        changed = true;
-        continue;
-      }
-      if (removeKanFromPendingAction()) {
         changed = true;
         continue;
       }
@@ -1011,12 +970,6 @@
       els.autoWinButton.classList.toggle("is-off", !autoWinEnabled);
       els.autoWinButton.setAttribute("aria-pressed", String(autoWinEnabled));
       els.autoWinButton.textContent = "自動和了";
-    }
-    if (els.kanSkipButton) {
-      els.kanSkipButton.classList.toggle("is-on", kanSkipEnabled);
-      els.kanSkipButton.classList.toggle("is-off", !kanSkipEnabled);
-      els.kanSkipButton.setAttribute("aria-pressed", String(kanSkipEnabled));
-      els.kanSkipButton.textContent = "カン拒否";
     }
   }
 
