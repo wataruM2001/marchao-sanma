@@ -1647,9 +1647,9 @@ input[type="checkbox"] {
   grid-column: 1;
   grid-row: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-start;
-  gap: 30px;
+  gap: 25px;
   width: 100%;
   padding-left: 10px;
   min-height: 34px;
@@ -1671,6 +1671,7 @@ input[type="checkbox"] {
   align-items: center;
   gap: var(--battle-action-gap);
   min-height: 34px;
+  transform: translateX(80px);
 }
 
 .battle-action-button {
