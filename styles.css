@@ -140,6 +140,23 @@ button {
   pointer-events: none;
 }
 
+.battle-effect.marchao {
+  font-size: 45px;
+  -webkit-text-stroke: 2px #fff;
+  text-shadow:
+    0 0 1px #fff,
+    0 3px 0 rgba(0, 0, 0, 0.35),
+    0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+.battle-effect.flower-red {
+  color: #d72d2d;
+}
+
+.battle-effect.flower-blue {
+  color: #1976d2;
+}
+
 .battle-result-panel,
 .battle-settlement-panel {
   position: absolute;
@@ -1359,7 +1376,7 @@ input[type="checkbox"] {
   --center-layout-top: clamp(118px, 22vh, 168px);
   --center-layout-upshift: calc(var(--center-river-tile-long) * 1.5);
   --center-layout-downshift: 20px;
-  --dora-tile-scale: 1;
+  --dora-tile-scale: 0.9;
   --dora-tile-width: calc(var(--center-river-tile-width) * var(--dora-tile-scale));
   --dora-tile-height: calc(var(--center-river-tile-long) * var(--dora-tile-scale));
   --dora-panel-gap: 4px;
@@ -1411,7 +1428,15 @@ input[type="checkbox"] {
   display: flex;
   justify-content: center;
   gap: 0;
-  transform: translateY(calc(-1 * (var(--dora-tile-height) + var(--dora-panel-gap))));
+  z-index: 4;
+  height: var(--dora-tile-height);
+  align-items: flex-start;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.52),
+    0 6px 12px rgba(0, 0, 0, 0.28);
+  transform: translateY(2px);
 }
 
 .dora-indicator-tile {
@@ -1424,6 +1449,7 @@ input[type="checkbox"] {
 .center-table-layout .center-tableau {
   grid-column: 2;
   grid-row: 1;
+  z-index: 1;
   width: var(--center-panel-width);
   min-width: 0;
   height: var(--center-panel-height);
@@ -1481,6 +1507,10 @@ input[type="checkbox"] {
   letter-spacing: 0;
   white-space: pre;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.42);
+}
+
+.score-display.is-dealer {
+  color: #ffd84d;
 }
 
 .kamicha-score {
@@ -1671,6 +1701,7 @@ input[type="checkbox"] {
   align-items: center;
   gap: var(--battle-action-gap);
   min-height: 34px;
+  transform: translateX(60px);
 }
 
 .battle-action-button {
