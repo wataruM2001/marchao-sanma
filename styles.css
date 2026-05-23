@@ -121,10 +121,70 @@ button {
   background-repeat: no-repeat;
 }
 
+.battle-surface.is-start-screen::before {
+  content: "マーチャオサンマ";
+  position: absolute;
+  left: clamp(20px, 8vw, 120px);
+  top: clamp(42px, 13vh, 130px);
+  z-index: 2;
+  color: #fffdf7;
+  font-size: clamp(2.4rem, 7vw, 6rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  text-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.48),
+    0 18px 42px rgba(0, 0, 0, 0.62);
+  pointer-events: none;
+}
+
 .battle-surface.is-start-screen .table-vignette {
   background:
     linear-gradient(90deg, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.1) 48%, rgba(0, 0, 0, 0.12)),
     linear-gradient(0deg, rgba(0, 0, 0, 0.32), transparent 34%, rgba(0, 0, 0, 0.18));
+}
+
+.battle-surface.is-start-screen > :not(.table-vignette):not(.self-hand-area) {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.battle-surface.is-start-screen .center-table-layout,
+.battle-surface.is-start-screen .opponent-hand,
+.battle-surface.is-start-screen .self-flower-lane,
+.battle-surface.is-start-screen .battle-effect,
+.battle-surface.is-start-screen .auto-control-row,
+.battle-surface.is-start-screen .self-name,
+.battle-surface.is-start-screen .self-hand-line,
+.battle-surface.is-start-screen .battle-action-buttons {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.battle-surface.is-start-screen .self-hand-area {
+  left: clamp(20px, 8vw, 120px);
+  right: auto;
+  bottom: clamp(56px, 12vh, 150px);
+  z-index: 3;
+  width: auto;
+  max-width: calc(100vw - 40px);
+  transform: none;
+  justify-items: start;
+  pointer-events: none;
+}
+
+.battle-surface.is-start-screen .battle-control-row {
+  justify-content: flex-start;
+  width: auto;
+  pointer-events: none;
+}
+
+.battle-surface.is-start-screen .battle-start-button {
+  min-width: clamp(150px, 22vw, 240px);
+  min-height: clamp(44px, 6vw, 64px);
+  padding: 0 clamp(18px, 3vw, 30px);
+  font-size: clamp(1rem, 2.4vw, 1.35rem);
+  pointer-events: auto;
 }
 
 .table-vignette {
