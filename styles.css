@@ -122,20 +122,7 @@ button {
 }
 
 .battle-surface.is-start-screen::before {
-  content: "マーチャオサンマ";
-  position: absolute;
-  left: clamp(20px, 8vw, 120px);
-  top: clamp(42px, 13vh, 130px);
-  z-index: 2;
-  color: #fffdf7;
-  font-size: clamp(2.4rem, 7vw, 6rem);
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: 0;
-  text-shadow:
-    0 3px 0 rgba(0, 0, 0, 0.48),
-    0 18px 42px rgba(0, 0, 0, 0.62);
-  pointer-events: none;
+  content: none;
 }
 
 .battle-surface.is-start-screen .table-vignette {
@@ -162,13 +149,14 @@ button {
 }
 
 .battle-surface.is-start-screen .self-hand-area {
-  left: clamp(20px, 8vw, 120px);
+  left: clamp(28px, 28vw, 420px);
   right: auto;
-  bottom: clamp(56px, 12vh, 150px);
+  top: 56%;
+  bottom: auto;
   z-index: 3;
   width: auto;
   max-width: calc(100vw - 40px);
-  transform: none;
+  transform: translate(-50%, -50%);
   justify-items: start;
   pointer-events: none;
 }
@@ -180,11 +168,73 @@ button {
 }
 
 .battle-surface.is-start-screen .battle-start-button {
-  min-width: clamp(150px, 22vw, 240px);
-  min-height: clamp(44px, 6vw, 64px);
-  padding: 0 clamp(18px, 3vw, 30px);
-  font-size: clamp(1rem, 2.4vw, 1.35rem);
+  min-width: clamp(230px, 24vw, 320px);
+  min-height: clamp(62px, 7vw, 82px);
+  padding: 0 clamp(28px, 3.2vw, 44px);
+  border: 2px solid rgba(255, 217, 118, 0.96);
+  border-radius: 999px;
+  color: #fff0a8;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.42), transparent 42%),
+    linear-gradient(180deg, #ef3f2f 0%, #9f1010 54%, #4f0505 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -5px 12px rgba(0, 0, 0, 0.28),
+    0 0 18px rgba(255, 62, 30, 0.68),
+    0 8px 0 rgba(54, 0, 0, 0.92),
+    0 20px 42px rgba(0, 0, 0, 0.5);
+  font-size: clamp(1.3rem, 2.5vw, 2rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.82),
+    0 0 12px rgba(255, 210, 80, 0.88),
+    0 0 24px rgba(255, 42, 24, 0.5);
   pointer-events: auto;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    filter 140ms ease;
+}
+
+.battle-surface.is-start-screen .battle-start-button:hover {
+  transform: translateY(-2px) scale(1.03);
+  filter: saturate(1.08) brightness(1.05);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.38),
+    inset 0 -5px 14px rgba(0, 0, 0, 0.26),
+    0 0 30px rgba(255, 79, 36, 0.92),
+    0 10px 0 rgba(54, 0, 0, 0.92),
+    0 24px 50px rgba(0, 0, 0, 0.58);
+}
+
+.battle-surface.is-start-screen .battle-start-button:active {
+  transform: translateY(5px) scale(0.98);
+  box-shadow:
+    inset 0 2px 8px rgba(0, 0, 0, 0.34),
+    0 0 15px rgba(255, 60, 30, 0.68),
+    0 3px 0 rgba(54, 0, 0, 0.95),
+    0 12px 28px rgba(0, 0, 0, 0.48);
+}
+
+@media (max-width: 700px) {
+  .battle-surface.is-start-screen .self-hand-area {
+    left: 50%;
+    top: auto;
+    bottom: clamp(34px, 8vh, 84px);
+    transform: translateX(-50%);
+    justify-items: center;
+  }
+
+  .battle-surface.is-start-screen .battle-control-row {
+    justify-content: center;
+  }
+
+  .battle-surface.is-start-screen .battle-start-button {
+    min-width: min(78vw, 230px);
+    min-height: 58px;
+    font-size: clamp(1.15rem, 5vw, 1.45rem);
+  }
 }
 
 .table-vignette {
