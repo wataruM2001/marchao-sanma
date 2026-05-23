@@ -831,6 +831,19 @@
     return "アガリ";
   }
 
+  function buildResultOpponentHands(gameState, winnerIndex) {
+    return (gameState.players || [])
+      .map((player, playerIndex) => ({
+        playerIndex,
+        seat: player.seat,
+        label: playerPositionLabel(player.seat),
+        handTiles: sortedBattleTiles(player.hand || []),
+        melds: player.melds || [],
+        flowerTiles: player.flowers || [],
+      }))
+      .filter((entry) => entry.playerIndex !== winnerIndex);
+  }
+
   function buildWinDisplayInfo(gameState, winnerIndex, action) {
     const winner = gameState.players[winnerIndex];
     if (!winner || !action?.evaluation) return null;
@@ -853,6 +866,7 @@
       doraIndicators: gameState.doraIndicators || [],
       uraDoraIndicators: winner.isRiichi ? gameState.uraDoraIndicators || [] : [],
       isNagashiYakuman: Boolean(action.nagashiYakuman),
+      opponentHands: buildResultOpponentHands(gameState, winnerIndex),
     };
   }
 
@@ -1275,6 +1289,25 @@
     return renderResultTileRow("華牌", win.flowerTiles);
   }
 
+  function renderResultOpponentHands(win) {
+    const opponents = win.opponentHands || [];
+    if (!opponents.length || win.isNagashiYakuman) return "";
+    return `
+      <div class="result-opponent-hands">
+        ${opponents
+          .map(
+            (opponent) => `
+              <div class="result-detail-row result-hand-row">
+                <span>${escapeHtml(opponent.label)}手牌：</span>
+                <div class="result-tile-row">${(opponent.handTiles || []).map((tile) => renderResultTile(tile)).join("")}</div>
+              </div>
+            `
+          )
+          .join("")}
+      </div>
+    `;
+  }
+
   function renderWinDetailIfNeeded(result) {
     const wins = result.wins || [];
     if (result.type === "ryukyoku" || wins.length === 0) return "";
@@ -1292,6 +1325,7 @@
                 ${renderResultHandTiles(win)}
                 ${renderResultMelds(win)}
                 ${renderResultFlowers(win)}
+                ${renderResultOpponentHands(win)}
               </article>
             `
           )
