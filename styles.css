@@ -202,7 +202,78 @@ button {
 
 .result-simple {
   display: grid;
+  gap: 10px;
+}
+
+.result-win-details {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.result-win-detail {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.result-win-detail strong {
+  color: #f3d88e;
+}
+
+.result-detail-row {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+
+.result-detail-row > span,
+.result-detail-text {
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.result-tile-row,
+.result-meld-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.result-tile-img {
+  width: clamp(28px, 7vw, 36px);
+  aspect-ratio: 128 / 180;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.24));
+}
+
+.result-tile-img.winning-tile {
+  margin-left: 10px;
+  outline: 2px solid rgba(243, 216, 142, 0.86);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+.result-meld-row {
+  --meld-seat-rotation: 0deg;
+}
+
+.result-meld-row .table-tile-img {
+  width: clamp(28px, 7vw, 36px);
+}
+
+.result-meld-row .table-tile-img.called-tile {
+  transform: rotate(90deg) scale(0.71);
+}
+
+.result-meld-row .called-tile-stack .added-kan-tile {
+  transform: translateX(-50%) rotate(90deg) scale(0.71);
 }
 
 .result-player-row {
