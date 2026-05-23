@@ -6,7 +6,7 @@
   const Game = window.MahjongGame;
   const STORAGE_KEY = "marchao-sanma-score-table-v1";
   const RESULT_TRANSITION_DELAY_MS = 1000;
-  const CPU_DISCARD_DELAY_MS = 1500;
+  const CPU_DISCARD_DELAY_MS = 3000;
   const RESULT_YAKU_NAME_MAP = {
     riichi: "立直",
     double_riichi: "ダブル立直",
