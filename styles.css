@@ -246,6 +246,11 @@ button {
   min-width: 0;
 }
 
+.result-opponent-hands {
+  display: grid;
+  gap: 5px;
+}
+
 .result-tile-img {
   width: clamp(21px, 5.25vw, 27px);
   height: auto;
