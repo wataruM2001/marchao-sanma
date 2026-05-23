@@ -943,12 +943,12 @@
   }
 
   function canPon(player, discardTile) {
-    if (!player || player.isRiichi || !discardTile) return false;
+    if (!player || player.isCpu || player.isRiichi || !discardTile) return false;
     return sameBaseTiles(player.hand, tileBaseId(discardTile)).length >= 2;
   }
 
   function getAnkanCandidates(player, gameState) {
-    if (!player || Number(gameState?.remainingDraws) <= 1) return [];
+    if (!player || player.isCpu || Number(gameState?.remainingDraws) <= 1) return [];
     const counts = new Map();
     cloneTiles(player.hand).forEach((tile) => {
       const baseId = tileBaseId(tile);
@@ -965,7 +965,7 @@
 
   function getMinkanCandidates(player, gameState) {
     const discardTile = gameState?.pendingAction?.discardTile || gameState?.lastAction?.tile;
-    if (!player || player.isRiichi || Number(gameState?.remainingDraws) <= 1 || !discardTile) return [];
+    if (!player || player.isCpu || player.isRiichi || Number(gameState?.remainingDraws) <= 1 || !discardTile) return [];
     const baseId = tileBaseId(discardTile);
     const tiles = sameBaseTiles(player.hand, baseId).slice(0, 3);
     return tiles.length >= 3
@@ -974,7 +974,7 @@
   }
 
   function getKakanCandidates(player, gameState) {
-    if (!player || player.isRiichi || Number(gameState?.remainingDraws) <= 1) return [];
+    if (!player || player.isCpu || player.isRiichi || Number(gameState?.remainingDraws) <= 1) return [];
     return (player.melds || [])
       .filter((meld) => meld.type === "pon")
       .map((meld) => {
@@ -986,7 +986,7 @@
   }
 
   function getKanCandidates(player, gameState) {
-    if (!player || Number(gameState?.remainingDraws) <= 1) return [];
+    if (!player || player.isCpu || Number(gameState?.remainingDraws) <= 1) return [];
     if (player.isRiichi) return getRiichiAnkanCandidates(player, gameState);
     if (gameState?.pendingAction?.source === "afterDiscard") return getMinkanCandidates(player, gameState);
     return [...getAnkanCandidates(player, gameState), ...getKakanCandidates(player, gameState)];
@@ -1025,7 +1025,7 @@
   }
 
   function getRiichiAnkanCandidates(player, gameState) {
-    if (!player?.isRiichi || Number(gameState?.remainingDraws) <= 1) return [];
+    if (!player?.isRiichi || player.isCpu || Number(gameState?.remainingDraws) <= 1) return [];
     const riichiWaits = player.riichiWinningTiles || [];
     return getAnkanCandidates({ ...player, isRiichi: false }, gameState).filter((candidate) => {
       const afterKanHand = cloneTiles(player.hand).filter(
