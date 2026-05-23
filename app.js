@@ -5,12 +5,14 @@
   const Tiles = window.MahjongTiles;
   const Game = window.MahjongGame;
   const STORAGE_KEY = "marchao-sanma-score-table-v1";
+  const RESULT_TRANSITION_DELAY_MS = 1000;
   let state = loadState();
   let battleState = null;
   let appScreen = "start";
   let lastHandResult = null;
   let battleSettlement = null;
   let cpuTurnTimer = 0;
+  let resultTransitionTimer = 0;
   let battleEffectTimer = 0;
   let activeBattleEffect = null;
   let battleEffectQueue = [];
@@ -129,6 +131,11 @@
     battleEffectQueue = [];
     lastBattleEffectSignature = "";
     renderActiveBattleEffect();
+  }
+
+  function clearResultTransitionTimer() {
+    window.clearTimeout(resultTransitionTimer);
+    resultTransitionTimer = 0;
   }
 
   function bindEvents() {
@@ -351,6 +358,7 @@
       return;
     }
     window.clearTimeout(cpuTurnTimer);
+    clearResultTransitionTimer();
     resetBattleEffectState();
     syncPlayersFromInputs();
     const initialDealerIndex = randomBattleDealerIndex();
@@ -379,6 +387,7 @@
       return;
     }
     window.clearTimeout(cpuTurnTimer);
+    clearResultTransitionTimer();
     resetBattleEffectState();
     syncPlayersFromInputs();
     appScreen = "playing";
@@ -546,13 +555,22 @@
   function enterResultIfHandEnded() {
     if (!battleState || !["result", "ryukyoku"].includes(battleState.phase)) return false;
     window.clearTimeout(cpuTurnTimer);
-    if (appScreen !== "result") {
-      if (battleState.phase === "ryukyoku") {
-        battleState = applyBattleRyukyokuSettlement(battleState);
-      }
+    if (appScreen === "result") return true;
+    if (battleState.phase === "ryukyoku") {
+      clearResultTransitionTimer();
+      battleState = applyBattleRyukyokuSettlement(battleState);
       lastHandResult = buildBattleHandResult(battleState);
       appScreen = "result";
+      return true;
     }
+    if (resultTransitionTimer) return true;
+    resultTransitionTimer = window.setTimeout(() => {
+      resultTransitionTimer = 0;
+      if (!battleState || battleState.phase !== "result" || appScreen !== "playing") return;
+      lastHandResult = buildBattleHandResult(battleState);
+      appScreen = "result";
+      renderBattleTable();
+    }, RESULT_TRANSITION_DELAY_MS);
     return true;
   }
 
@@ -715,6 +733,80 @@
     return Number.isFinite(score) && players.every((player, index) => index === playerIndex || score > Number(player.points));
   }
 
+  function removeOneTileById(tiles = [], tileId = "") {
+    const next = [...tiles];
+    const index = next.findIndex((tile) => tile.id === tileId);
+    if (index >= 0) next.splice(index, 1);
+    return next;
+  }
+
+  function formatWinPointText(evaluation, winType) {
+    const points = evaluation?.best?.points;
+    if (!points) return "点数：-";
+    if (points.isTsumo || winType === "tsumo") {
+      const parentPayment = points.payments?.find((payment) => payment.payer === "parent")?.amount;
+      const childPayment = points.payments?.find((payment) => payment.payer === "child")?.amount;
+      if (points.isDealer) return `点数：${Number(childPayment || 0).toLocaleString("ja-JP")}点オール`;
+      return `点数：親 ${Number(parentPayment || 0).toLocaleString("ja-JP")}点 / 子 ${Number(childPayment || 0).toLocaleString("ja-JP")}点`;
+    }
+    const amount = points.payments?.[0]?.amount || points.total || 0;
+    return `点数：${Number(amount).toLocaleString("ja-JP")}点`;
+  }
+
+  function formatWinYakuText(evaluation) {
+    const best = evaluation?.best;
+    const yakuNames = (best?.yaku || []).map((yaku) => yaku.name).filter(Boolean);
+    const doraHan = Number(best?.dora?.totalHan) || 0;
+    if (doraHan > 0) yakuNames.push(`ドラ${doraHan}`);
+    return `役：${yakuNames.length ? yakuNames.join(" / ") : "なし"}`;
+  }
+
+  function winDisplayTitle(player) {
+    if (player?.seat === "self") return "自分のアガリ";
+    if (player?.seat === "shimocha") return "下家のアガリ";
+    if (player?.seat === "kamicha") return "上家のアガリ";
+    return "アガリ";
+  }
+
+  function buildWinDisplayInfo(gameState, winnerIndex, action) {
+    const winner = gameState.players[winnerIndex];
+    if (!winner || !action?.evaluation) return null;
+    const winningTile = action.winningTile || null;
+    const isRon = action.winType === "ron";
+    const handTiles = isRon
+      ? [...(winner.hand || [])]
+      : removeOneTileById(winner.hand || [], winningTile?.id);
+    return {
+      winnerId: winner.id,
+      title: winDisplayTitle(winner),
+      winType: action.winType,
+      isRiichi: Boolean(winner.isRiichi),
+      yakuText: action.nagashiYakuman ? "役：流し役満" : formatWinYakuText(action.evaluation),
+      pointText: action.nagashiYakuman ? "点数：役満" : formatWinPointText(action.evaluation, action.winType),
+      handTiles,
+      winningTile,
+      melds: winner.melds || [],
+      flowerTiles: winner.flowers || [],
+      doraIndicators: gameState.doraIndicators || [],
+      uraDoraIndicators: winner.isRiichi ? gameState.uraDoraIndicators || [] : [],
+      isNagashiYakuman: Boolean(action.nagashiYakuman),
+    };
+  }
+
+  function buildBattleWinDisplayInfos(gameState, action) {
+    if (!action || action.type !== "win") return [];
+    if (Array.isArray(action.winnerIndexes)) {
+      return action.winnerIndexes
+        .map((winnerIndex) => buildWinDisplayInfo(gameState, winnerIndex, action))
+        .filter(Boolean);
+    }
+    if (Number.isInteger(action.winnerIndex)) {
+      const info = buildWinDisplayInfo(gameState, action.winnerIndex, action);
+      return info ? [info] : [];
+    }
+    return [];
+  }
+
   function buildBattleHandResult(gameState) {
     const action = gameState.lastAction || {};
     const isRyukyoku = gameState.phase === "ryukyoku" || action.type === "ryukyoku";
@@ -753,6 +845,9 @@
       chipChanges: pointRecordFromDeltas(chipDeltas),
       kyotakuBefore: Number(action.kyotakuBefore ?? gameState.kyotaku) || 0,
       kyotakuAfter: Number(action.kyotakuAfter ?? gameState.kyotaku) || 0,
+      doraIndicators: gameState.doraIndicators || [],
+      uraDoraIndicators: gameState.uraDoraIndicators || [],
+      wins: isRyukyoku ? [] : buildBattleWinDisplayInfos(gameState, action),
       nextRoundLabel: `${nextRound.roundWind === "south" ? "南" : "東"}${nextRound.handNumber}局${nextRound.honba}本場`,
       nextRound,
       isDealerContinue: dealerContinue,
@@ -803,6 +898,7 @@
   }
 
   function startNextBattleHand(nextRound) {
+    clearResultTransitionTimer();
     resetBattleEffectState();
     const previousPlayers = battleState.players.map((player) => ({
       name: player.name,
@@ -1072,12 +1168,82 @@
       .join("");
   }
 
+  function renderResultTile(tile, modifier = "") {
+    if (!tile) return "";
+    const label = tile.name || tile.baseId || tile.id;
+    return `<img class="result-tile-img ${modifier}" src="${escapeHtml(tile.image)}" alt="${escapeHtml(label)}" loading="lazy" />`;
+  }
+
+  function renderResultTileRow(label, tiles = []) {
+    if (!tiles.length) return "";
+    return `
+      <div class="result-detail-row">
+        <span>${escapeHtml(label)}：</span>
+        <div class="result-tile-row">${tiles.map((tile) => renderResultTile(tile)).join("")}</div>
+      </div>
+    `;
+  }
+
+  function renderResultHandTiles(win) {
+    if (win.isNagashiYakuman) return "";
+    return `
+      <div class="result-detail-row result-hand-row">
+        <span>手牌：</span>
+        <div class="result-tile-row">
+          ${(win.handTiles || []).map((tile) => renderResultTile(tile)).join("")}
+          ${win.winningTile ? renderResultTile(win.winningTile, "winning-tile") : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderResultMelds(win) {
+    if (!win.melds?.length || win.isNagashiYakuman) return "";
+    return `
+      <div class="result-detail-row">
+        <span>副露：</span>
+        <div class="result-meld-row">${win.melds.map(renderMeld).join("")}</div>
+      </div>
+    `;
+  }
+
+  function renderResultFlowers(win) {
+    if (!win.flowerTiles?.length || win.isNagashiYakuman) return "";
+    return renderResultTileRow("華牌", win.flowerTiles);
+  }
+
+  function renderWinDetailIfNeeded(result) {
+    const wins = result.wins || [];
+    if (result.type === "ryukyoku" || wins.length === 0) return "";
+    return `
+      <div class="result-win-details">
+        ${wins
+          .map(
+            (win) => `
+              <article class="result-win-detail">
+                ${wins.length > 1 ? `<strong>${escapeHtml(win.title)}</strong>` : ""}
+                ${win.isNagashiYakuman ? "" : renderResultTileRow("ドラ表示牌", win.doraIndicators || result.doraIndicators || [])}
+                ${win.isRiichi ? renderResultTileRow("裏ドラ表示牌", win.uraDoraIndicators || result.uraDoraIndicators || []) : ""}
+                <div class="result-detail-text">${escapeHtml(win.yakuText)}</div>
+                <div class="result-detail-text">${escapeHtml(win.pointText)}</div>
+                ${renderResultHandTiles(win)}
+                ${renderResultMelds(win)}
+                ${renderResultFlowers(win)}
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+    `;
+  }
+
   function renderBattleResultPanel() {
     if (!els.battleResultPanel || !lastHandResult) return;
     const result = lastHandResult;
     els.battleResultTitle.textContent = `${result.roundLabel}${result.honbaBefore}本場 供託${result.kyotakuBefore}`;
     els.battleResultBody.innerHTML = `
       <div class="result-simple">
+        ${renderWinDetailIfNeeded(result)}
         ${renderSimpleBattleResultRows(result)}
       </div>
     `;
