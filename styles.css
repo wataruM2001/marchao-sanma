@@ -200,6 +200,17 @@ button {
   gap: 12px;
 }
 
+.result-simple {
+  display: grid;
+  gap: 8px;
+}
+
+.result-player-row {
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .battle-result-body p,
 .battle-result-body ul {
   margin: 5px 0 0;
