@@ -114,6 +114,19 @@ button {
     auto;
 }
 
+.battle-surface.is-start-screen {
+  background-image: url("./assets/start-background.png");
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.battle-surface.is-start-screen .table-vignette {
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.1) 48%, rgba(0, 0, 0, 0.12)),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.32), transparent 34%, rgba(0, 0, 0, 0.18));
+}
+
 .table-vignette {
   position: absolute;
   inset: 0;
