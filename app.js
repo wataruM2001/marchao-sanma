@@ -6,6 +6,7 @@
   const Game = window.MahjongGame;
   const STORAGE_KEY = "marchao-sanma-score-table-v1";
   const RESULT_TRANSITION_DELAY_MS = 1000;
+  const CPU_DISCARD_DELAY_MS = 1500;
   const RESULT_YAKU_NAME_MAP = {
     riichi: "立直",
     double_riichi: "ダブル立直",
@@ -580,7 +581,7 @@
     if (!battleState || appScreen !== "playing" || battleState.phase !== "discard") return;
     const currentPlayer = battleState.players[battleState.currentPlayerIndex];
     if (!currentPlayer?.isCpu) return;
-    cpuTurnTimer = window.setTimeout(runCpuTurn, 520);
+    cpuTurnTimer = window.setTimeout(runCpuTurn, CPU_DISCARD_DELAY_MS);
   }
 
   function runCpuTurn() {
