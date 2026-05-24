@@ -11,6 +11,7 @@
   --gold: #be8b2c;
   --shadow: 0 18px 46px rgba(8, 33, 30, 0.18);
   --battle-action-gap: calc(var(--hand-tile-width, 48px) * 1.5);
+  --open-tile-width: calc((var(--hand-tile-width, clamp(23px, 5.2vw, 70px)) + var(--center-river-tile-width, clamp(28px, 3vw, 42px))) / 2);
 }
 
 * {
@@ -939,16 +940,34 @@ button {
 
 .battle-surface:not(.is-start-screen) .self-flower-lane,
 .battle-surface:not(.is-start-screen) .side-flower-lane {
-  --river-tile-width: var(--hand-tile-width, clamp(23px, 5.2vw, 70px));
+  --river-tile-width: var(--open-tile-width);
   --river-tile-long: calc(var(--river-tile-width) * 1.40625);
 }
 
 .battle-surface:not(.is-start-screen) .self-flower-lane .table-tile-img,
 .battle-surface:not(.is-start-screen) .side-flower-lane .table-tile-img {
-  width: var(--hand-tile-width, clamp(23px, 5.2vw, 70px));
+  width: var(--open-tile-width);
   height: auto;
   aspect-ratio: 128 / 180;
   object-fit: contain;
+}
+
+.battle-surface:not(.is-start-screen) .meld-area .table-tile-img,
+.battle-surface:not(.is-start-screen) .called-tile-stack .table-tile-img {
+  width: var(--open-tile-width);
+  height: auto;
+  aspect-ratio: 128 / 180;
+  object-fit: contain;
+}
+
+.battle-surface:not(.is-start-screen) .meld-area .table-tile-img.called-tile,
+.battle-surface:not(.is-start-screen) .called-tile-stack .table-tile-img.called-tile {
+  width: calc(var(--open-tile-width) * 0.7);
+}
+
+.battle-surface:not(.is-start-screen) .called-tile-stack {
+  width: calc(var(--open-tile-width) * 1.40625);
+  min-height: var(--open-tile-width);
 }
 
 .battle-surface:not(.is-start-screen) .self-hand,
