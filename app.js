@@ -1527,8 +1527,7 @@
 
     hand.forEach((tile, index) => {
       const isTrackedDraw = drawnTileId && tile.id === drawnTileId;
-      const isFallbackDraw = !drawnTileId && hand.length % 3 === 2 && index === hand.length - 1;
-      if (!drawnTile && (isTrackedDraw || isFallbackDraw)) {
+      if (!drawnTile && isTrackedDraw) {
         drawnTile = tile;
       } else {
         concealed.push(tile);
