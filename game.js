@@ -356,6 +356,13 @@
     return gameState.paoState;
   }
 
+  function clearIppatsuChances(gameState) {
+    (gameState?.players || []).forEach((player) => {
+      player.isIppatsuChance = false;
+    });
+    return gameState;
+  }
+
   function seatWindForIndex(gameState, playerIndex) {
     const winds = ["east", "south", "west"];
     return winds[(playerIndex - gameState.dealerIndex + 3) % 3] || "west";
@@ -951,6 +958,7 @@
       isTsumo: false,
       isMenzen: isMenzen(player),
       isRiichi: Boolean(player.isRiichi),
+      isIppatsu: Boolean(player.isRiichi && player.isIppatsuChance),
       roundWind: gameState.roundWind,
       seatWind: seatWindForIndex(gameState, playerIndex),
       doraIndicators: gameState.doraIndicators,
@@ -971,6 +979,7 @@
       isTsumo: true,
       isMenzen: isMenzen(player),
       isRiichi: Boolean(player.isRiichi),
+      isIppatsu: Boolean(player.isRiichi && player.isIppatsuChance),
       roundWind: gameState.roundWind,
       seatWind: seatWindForIndex(gameState, playerIndex),
       doraIndicators: gameState.doraIndicators,
@@ -1334,6 +1343,9 @@
       isRiichiDeclaration,
       isTsumogiri,
     });
+    if (player.isRiichi && !isRiichiDeclaration) {
+      player.isIppatsuChance = false;
+    }
     next.phase = "draw";
     next.pendingAction = null;
     next.riichiDeclaration = null;
@@ -1399,6 +1411,7 @@
     const player = next.players[pending.playerIndex];
     if (player && !player.isRiichi) {
       player.isRiichi = true;
+      player.isIppatsuChance = true;
       player.riichiWinningTiles = [...(pending.riichiWinningTiles || [])];
       player.points -= 1000;
       next.kyotaku = Math.max(0, Math.floor(Number(next.kyotaku) || 0)) + 1;
@@ -1492,6 +1505,7 @@
       fromPlayerIndex: calledFromIndex,
     });
     checkDaisangenPaoAfterCall(player, calledTile, discarder?.id, next);
+    clearIppatsuChances(next);
     next.currentPlayerIndex = playerIndex;
     next.pendingAction = null;
     next.pendingRiichi = null;
@@ -1579,6 +1593,7 @@
 
     next.pendingAction = null;
     next.pendingRiichi = null;
+    clearIppatsuChances(next);
     next.lastAction = {
       type: "kan",
       playerIndex,
@@ -1609,6 +1624,7 @@
       isTsumo: winType === "tsumo",
       isMenzen: isMenzen(winner),
       isRiichi: Boolean(winner.isRiichi),
+      isIppatsu: Boolean(winner.isRiichi && winner.isIppatsuChance),
       isDealer: winnerIndex === gameState.dealerIndex,
       roundWind: gameState.roundWind,
       seatWind: seatWindForIndex(gameState, winnerIndex),
