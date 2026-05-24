@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオサンマ</title>
-    <link rel="stylesheet" href="./styles.css?v=tablet-score-flicker-fix" />
+    <link rel="stylesheet" href="./styles.css?v=rules-screen" />
   </head>
   <body>
     <main class="app-shell">
@@ -38,6 +38,65 @@
             <div class="battle-settlement-body" id="battleSettlementBody"></div>
             <button class="primary-button battle-result-button" id="battleSettlementDetailButton" type="button">精算内訳</button>
             <button class="primary-button battle-result-button" id="battleRestartButton" type="button">もう一度対局</button>
+          </section>
+          <section class="rules-screen" id="rulesScreen" hidden>
+            <button class="rules-back-button" id="rulesBackButton" type="button" aria-label="スタート画面へ戻る">←</button>
+            <article class="rules-text-panel">
+              <p class="rules-lead">マーチャオサンマを、お家で手軽に！</p>
+              <p>全赤・華あり・ツモ損なし。</p>
+              <p>テンポよく高打点が飛び交う、刺激的な三人麻雀を楽しめます。</p>
+              <p>さらに、祝儀・トビ賞をはじめとするフリー麻雀ならではの収支戦の醍醐味を思う存分味わえます。</p>
+              <p>萬混・大車輪・流し役満などの特殊役はもちろん、細部の要素まで完全再現しました。</p>
+              <p>攻めて、アガって、勝ち取る。マーチャオサンマの爽快感をぜひご堪能ください！</p>
+
+              <h2>ルール詳細</h2>
+              <ul>
+                <li>東南戦、35000点持ち40000点返し</li>
+                <li>順位点は0-20、トビ賞は10</li>
+                <li>点数は30符固定、1000点未満切り上げ</li>
+                <li>1本場につき、ロンアガリは1000点増し、ツモアガリは1000点オール増し</li>
+                <li>親はテンパイ連荘</li>
+                <li>喰いタン、後付けあり</li>
+                <li>5筒、5索、華牌は赤3枚・青1枚で、すべてドラ扱い</li>
+                <li>鳴き祝儀の1枚5000円相当で対象は一発、青牌、裏ドラ</li>
+                <li>役満祝儀は場に8枚で、数え役満は対象外</li>
+                <li>ツモピンフあり</li>
+                <li>北は常に役牌扱い</li>
+                <li>4枚使い七対子あり</li>
+                <li>フリテンリーチ禁止</li>
+                <li>リーチ後の見逃し禁止</li>
+                <li>リーチ後の暗槓は、待ちが変わらなければ任意</li>
+                <li>リーチ後の送りカン、国士無双の暗槓ロン不可</li>
+                <li>カンは残りツモ回数が0、1の場合不可</li>
+                <li>パオは全額払い</li>
+                <li>流し役満はアガリ扱いで、鳴かず、鳴かれず、リーチせずで流局時成立</li>
+                <li>ダブロンありで供託、本場、トビ賞はすべて上家取り</li>
+                <li>同点時は起家に近い方から上位</li>
+                <li>オーラスの連荘はトップ強制終了、2着止め、3着止めあり</li>
+                <li>小車輪、三風、オープンリーチなし</li>
+              </ul>
+
+              <h2>採用役満</h2>
+              <ul>
+                <li>天和</li>
+                <li>地和</li>
+                <li>人和</li>
+                <li>国士無双</li>
+                <li>四暗刻</li>
+                <li>大三元</li>
+                <li>字一色</li>
+                <li>小四喜</li>
+                <li>大四喜</li>
+                <li>四槓子</li>
+                <li>清老頭</li>
+                <li>九蓮宝燈</li>
+                <li>緑一色</li>
+                <li>萬混</li>
+                <li>大車輪(清一色七対子)</li>
+                <li>流し役満</li>
+              </ul>
+            </article>
+            <img class="rules-score-table" src="./assets/rules-score-table.png" alt="点数早見表" />
           </section>
 
           <div class="opponent-hand opponent-left" aria-label="上家の手牌">
@@ -85,7 +144,7 @@
           <div class="self-hand-area">
             <div class="battle-control-row">
               <button class="primary-button battle-start-button start-menu-button" id="battleStartButton" type="button">対局開始</button>
-              <button class="primary-button start-menu-button start-menu-secondary" id="startRulesButton" type="button" disabled>ルール</button>
+              <button class="primary-button start-menu-button start-menu-secondary" id="startRulesButton" type="button">ルール</button>
               <button class="primary-button start-menu-button start-menu-secondary" id="startStatsButton" type="button" disabled>成績</button>
               <div class="battle-action-buttons" id="battleActionButtons" aria-label="対局アクション"></div>
             </div>
@@ -353,6 +412,6 @@
     <script src="./game.js?v=display-player-names"></script>
     <script src="./rules.js?v=display-player-names"></script>
     <script src="./hand-evaluation.js?v=dora-indicator-manchu-flower"></script>
-    <script src="./app.js?v=tablet-score-flicker-fix"></script>
+    <script src="./app.js?v=rules-screen"></script>
   </body>
 </html>
