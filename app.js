@@ -799,22 +799,41 @@
   }
 
   function formatResultPointNumber(value) {
-    return String(Number(value) || 0);
+    return (Number(value) || 0).toLocaleString("ja-JP");
+  }
+
+  function hasExplicitYakuman(best) {
+    return (best?.yaku || []).some((yaku) => (yaku?.yakuman || yaku?.isYakuman) && !yaku?.isKazoeYakuman);
+  }
+
+  function getLimitName(evaluation) {
+    const best = evaluation?.best || evaluation;
+    if (!best) return "";
+    if (hasExplicitYakuman(best)) return "役満";
+    const han = Number(best.han) || Number(best.points?.han) || 0;
+    if (han >= 14) return "数え役満";
+    if (han >= 11) return "三倍満";
+    if (han >= 8) return "倍満";
+    if (han >= 6) return "跳満";
+    if (han >= 4) return "満貫";
+    return "";
   }
 
   function formatWinPointText(evaluation, winType) {
     const points = evaluation?.best?.points;
     if (!points) return "点数：-";
+    const limitName = getLimitName(evaluation);
+    const prefix = limitName ? `${limitName} ` : "";
     if (points.isTsumo || winType === "tsumo") {
       const parentPayment = points.payments?.find((payment) => payment.payer === "parent")?.amount;
       const childPayment = points.payments?.find((payment) => payment.payer === "child")?.amount;
       if (points.isDealer || Number(parentPayment) === Number(childPayment)) {
-        return `点数：${formatResultPointNumber(childPayment || parentPayment)}∀`;
+        return `点数：${prefix}${formatResultPointNumber(childPayment || parentPayment)}ALL`;
       }
-      return `点数：${formatResultPointNumber(childPayment)}/${formatResultPointNumber(parentPayment)}`;
+      return `点数：${prefix}${formatResultPointNumber(childPayment)}/${formatResultPointNumber(parentPayment)}`;
     }
     const amount = points.payments?.[0]?.amount || points.total || 0;
-    return `点数：${formatResultPointNumber(amount)}`;
+    return `点数：${prefix}${formatResultPointNumber(amount)}`;
   }
 
   function formatResultYakuName(yaku) {
@@ -866,7 +885,7 @@
       winType: action.winType,
       isRiichi: Boolean(winner.isRiichi),
       yakuText: action.nagashiYakuman ? "役：流し役満" : formatWinYakuText(action.evaluation),
-      pointText: action.nagashiYakuman ? "点数：役満" : formatWinPointText(action.evaluation, action.winType),
+      pointText: formatWinPointText(action.evaluation, action.winType),
       handTiles,
       winningTile,
       melds: winner.melds || [],
