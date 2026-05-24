@@ -951,6 +951,19 @@ button {
   object-fit: contain;
 }
 
+.battle-surface:not(.is-start-screen) .self-hand,
+.battle-surface:not(.is-start-screen) .discard-river,
+.battle-surface:not(.is-start-screen) .self-flower-lane,
+.battle-surface:not(.is-start-screen) .side-flower-lane,
+.battle-surface:not(.is-start-screen) .side-meld-lane,
+.battle-surface:not(.is-start-screen) .self-meld-lane,
+.battle-surface:not(.is-start-screen) .opponent-name,
+.battle-surface:not(.is-start-screen) .self-name {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
 .discard-river .table-tile-img.tsumogiri {
   opacity: 0.72;
   filter: saturate(0.78) brightness(0.86) drop-shadow(0 4px 4px rgba(0, 0, 0, 0.2));
