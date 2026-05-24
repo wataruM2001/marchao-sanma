@@ -18,9 +18,9 @@
   ];
   const DEALER_TURNS_PER_HALF = ROUND_SEQUENCE.length;
   const DEFAULT_PLAYERS = [
-    { name: "Player 1", score: 35000, bonus: 0, tobi: 0 },
-    { name: "Player 2", score: 35000, bonus: 0, tobi: 0 },
-    { name: "Player 3", score: 35000, bonus: 0, tobi: 0 },
+    { name: "自分", score: 35000, bonus: 0, tobi: 0 },
+    { name: "下家", score: 35000, bonus: 0, tobi: 0 },
+    { name: "上家", score: 35000, bonus: 0, tobi: 0 },
   ];
 
   const POINT_TABLES = {
