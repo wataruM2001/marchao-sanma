@@ -88,6 +88,9 @@
     battleSettlementBody: document.getElementById("battleSettlementBody"),
     battleSettlementDetailButton: document.getElementById("battleSettlementDetailButton"),
     battleRestartButton: document.getElementById("battleRestartButton"),
+    rulesScreen: document.getElementById("rulesScreen"),
+    rulesBackButton: document.getElementById("rulesBackButton"),
+    startRulesButton: document.getElementById("startRulesButton"),
     battleSelfHand: document.getElementById("battleSelfHand"),
     battleLeftHand: document.getElementById("battleLeftHand"),
     battleRightHand: document.getElementById("battleRightHand"),
@@ -188,6 +191,14 @@
   function bindEvents() {
     els.battleStartButton?.addEventListener("click", () => {
       startBattleHanchan();
+    });
+    els.startRulesButton?.addEventListener("click", () => {
+      appScreen = "rules";
+      renderBattleTable();
+    });
+    els.rulesBackButton?.addEventListener("click", () => {
+      appScreen = "start";
+      renderBattleTable();
     });
     els.battleConfirmButton?.addEventListener("click", () => {
       handleBattleResultConfirm();
@@ -1382,9 +1393,12 @@
   function renderBattleScreenPanels() {
     const isResult = appScreen === "result";
     const isSettlement = appScreen === "settlement";
+    const isRules = appScreen === "rules";
     toggleClassIfChanged(els.battleSurface, "is-start-screen", appScreen === "start");
+    toggleClassIfChanged(els.battleSurface, "is-rules-screen", isRules);
     setHiddenIfChanged(els.battleResultPanel, !isResult);
     setHiddenIfChanged(els.battleSettlementPanel, !isSettlement);
+    setHiddenIfChanged(els.rulesScreen, !isRules);
     setHiddenIfChanged(els.battleStartButton, appScreen !== "start");
     setHiddenIfChanged(els.battleActionButtons, appScreen !== "playing");
     toggleClassIfChanged(els.battleResultPanel, "result-transparent", isResult && resultTransparent);
