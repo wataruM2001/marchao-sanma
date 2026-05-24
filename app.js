@@ -563,9 +563,17 @@
   }
 
   function runCpuTurn() {
+    cpuTurnTimer = 0;
     if (!battleState || appScreen !== "playing" || battleState.phase !== "discard") return;
     const currentPlayer = battleState.players[battleState.currentPlayerIndex];
     if (!currentPlayer?.isCpu) return;
+    if (currentPlayer.isRiichi) {
+      battleState = Game.handleRiichiDraw(currentPlayer, battleState);
+      enterResultIfHandEnded();
+      renderBattleTable();
+      scheduleCpuTurn();
+      return;
+    }
     const discard = Game.decideCpuDiscard(currentPlayer, battleState);
     if (!discard) {
       battleState = Game.endHandAsRyukyoku(battleState);
