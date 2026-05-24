@@ -68,7 +68,6 @@
   let activeBattleEffect = null;
   let battleEffectQueue = [];
   let lastBattleEffectSignature = "";
-  let autoWinEnabled = true;
   let settlementBreakdownVisible = false;
   let resultTransparent = false;
 
@@ -114,7 +113,6 @@
     battleDealerLabel: document.getElementById("battleDealerLabel"),
     battleKyotakuLabel: document.getElementById("battleKyotakuLabel"),
     battleStartButton: document.getElementById("battleStartButton"),
-    autoWinButton: document.getElementById("autoWinButton"),
     battleStatus: document.getElementById("battleStatus"),
     handForm: document.getElementById("handForm"),
     dealerSelect: document.getElementById("dealerSelect"),
@@ -169,14 +167,9 @@
   init();
 
   function init() {
-    removeKanSkipButtonIfPresent();
     renderTileGroups();
     bindEvents();
     render();
-  }
-
-  function removeKanSkipButtonIfPresent() {
-    document.getElementById("kanSkipButton")?.remove();
   }
 
   function resetBattleEffectState() {
@@ -215,13 +208,6 @@
     els.battleSettlementDetailButton?.addEventListener("click", () => {
       settlementBreakdownVisible = !settlementBreakdownVisible;
       renderBattleSettlementPanel();
-    });
-    els.autoWinButton?.addEventListener("click", () => {
-      autoWinEnabled = !autoWinEnabled;
-      settleBattleAutomation();
-      enterResultIfHandEnded();
-      renderBattleTable();
-      scheduleCpuTurn();
     });
     els.battleSelfHand?.addEventListener("click", (event) => {
       const tileImage = event.target.closest("[data-discard-tile-id]");
@@ -434,7 +420,6 @@
       kyotaku: Math.floor((Number(state.kyotaku) || 0) / 1000),
     });
     battleState = Game.afterPlayerDraw(battleState);
-    settleBattleAutomation();
     renderBattleTable();
     scheduleCpuTurn();
   }
@@ -452,7 +437,6 @@
     lastHandResult = null;
     battleSettlement = null;
     settlementBreakdownVisible = false;
-    autoWinEnabled = true;
     const initialDealerIndex = randomBattleDealerIndex();
     battleState = createBattleHand({
       dealerIndex: initialDealerIndex,
@@ -462,7 +446,6 @@
       honba: 0,
       kyotaku: 0,
     });
-    settleBattleAutomation();
     enterResultIfHandEnded();
     renderBattleTable();
     scheduleCpuTurn();
@@ -505,7 +488,6 @@
     try {
       battleState = Game.discardTile(battleState, battleState.currentPlayerIndex, tileId);
       battleState = Game.afterPlayerDiscard(battleState);
-      settleBattleAutomation();
       enterResultIfHandEnded();
       renderBattleTable();
       scheduleCpuTurn();
@@ -549,32 +531,10 @@
     return Boolean(actions.canPon || actions.canKan);
   }
 
-  function isSelfAutoWinPending() {
-    if (!autoWinEnabled || !isSelfPendingAction()) return false;
-    const actions = battleState.pendingAction?.availableActions || {};
-    return Boolean(actions.canRon || actions.canTsumo);
-  }
-
-  function settleBattleAutomation() {
-    if (!battleState || appScreen !== "playing") return false;
-    let changed = false;
-    for (let guard = 0; guard < 6; guard += 1) {
-      if (isSelfAutoWinPending()) {
-        const actions = battleState.pendingAction?.availableActions || {};
-        battleState = Game.performPendingAction(battleState, actions.canTsumo ? "tsumo" : "ron");
-        changed = true;
-        continue;
-      }
-      break;
-    }
-    return changed;
-  }
-
   function handleBattleAction(action) {
     if (!battleState || appScreen !== "playing" || battleState.phase !== "actionPending") return;
     try {
       battleState = Game.performPendingAction(battleState, action);
-      settleBattleAutomation();
       enterResultIfHandEnded();
       renderBattleTable();
       scheduleCpuTurn();
@@ -604,7 +564,6 @@
     }
     battleState = Game.discardTile(battleState, battleState.currentPlayerIndex, discard.id);
     battleState = Game.afterPlayerDiscard(battleState);
-    settleBattleAutomation();
     enterResultIfHandEnded();
     renderBattleTable();
     scheduleCpuTurn();
@@ -1008,7 +967,6 @@
       },
       previousPlayers
     );
-    settleBattleAutomation();
     enterResultIfHandEnded();
     renderBattleTable();
     scheduleCpuTurn();
@@ -1168,15 +1126,6 @@
           `<button class="primary-button battle-action-button" type="button" data-battle-action="${action}">${label}</button>`
       )
       .join("");
-  }
-
-  function renderAutoControlButtons() {
-    if (els.autoWinButton) {
-      els.autoWinButton.classList.toggle("is-on", autoWinEnabled);
-      els.autoWinButton.classList.toggle("is-off", !autoWinEnabled);
-      els.autoWinButton.setAttribute("aria-pressed", String(autoWinEnabled));
-      els.autoWinButton.textContent = "自動和了";
-    }
   }
 
   function formatBattleDelta(value, suffix = "") {
@@ -1760,7 +1709,6 @@
     els.battleLeftName.textContent = `上家 ${leftPlayer?.name || "CPU 上家"}`;
     renderCentralInfoPanel(battleState);
     renderBattleEffect(battleState);
-    renderAutoControlButtons();
     if (els.battleActionButtons) {
       els.battleActionButtons.innerHTML = renderBattleActionButtons(battleState);
     }
@@ -1816,7 +1764,6 @@
     els.battleRightFlowers.innerHTML = "";
     els.battleDoraIndicators.innerHTML = "";
     renderBattleEffect(null);
-    renderAutoControlButtons();
     if (els.battleActionButtons) els.battleActionButtons.innerHTML = "";
     if (els.battlePlayerScores) els.battlePlayerScores.innerHTML = renderCenterScoreDisplay(state.players, dealer);
     els.battleFlowerTiles.innerHTML = "";
