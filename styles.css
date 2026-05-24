@@ -1973,7 +1973,7 @@ input[type="checkbox"] {
 
 #battleRoundLabel {
   width: 100%;
-  font-size: calc(var(--center-river-tile-width) + 5px);
+  font-size: calc(var(--center-text-size-base, var(--center-river-tile-width)) + 5px);
   line-height: 0.95;
   color: #f3d88e;
   font-weight: 900;
@@ -1983,7 +1983,7 @@ input[type="checkbox"] {
 #battleHonbaKyotakuLabel {
   width: 100%;
   margin-top: 4px;
-  font-size: calc(var(--center-river-tile-width) * 0.32 + 3px);
+  font-size: calc(var(--center-text-size-base, var(--center-river-tile-width)) * 0.32 + 3px);
   line-height: 1;
   color: rgba(255, 255, 255, 0.86);
   font-weight: 900;
@@ -2105,6 +2105,25 @@ body {
 .result-tile-row,
 .result-meld-row {
   max-width: 100%;
+}
+
+@media (min-width: 768px) and (max-width: 1180px) and (min-height: 600px) {
+  :root {
+    --tablet-ui-scale: 1.2;
+    --tablet-center-river-base: clamp(28px, 3vw, 42px);
+    --tablet-hand-tile-base: clamp(23px, 5.2vw, 70px);
+    --center-text-size-base: var(--tablet-center-river-base);
+    --center-river-tile-width: calc(var(--tablet-center-river-base) * var(--tablet-ui-scale));
+    --center-river-tile-long: calc(var(--center-river-tile-width) * 1.40625);
+    --side-river-width: calc(4 * var(--center-river-tile-long));
+    --center-panel-width: calc(6 * var(--center-river-tile-width));
+    --center-panel-height: calc(6 * var(--center-river-tile-width));
+    --self-river-height: calc(3 * var(--center-river-tile-long));
+    --dora-tile-width: calc(var(--center-river-tile-width) * var(--dora-tile-scale));
+    --dora-tile-height: calc(var(--center-river-tile-long) * var(--dora-tile-scale));
+    --hand-tile-width: calc(var(--tablet-hand-tile-base) * var(--tablet-ui-scale));
+    --draw-tile-gap: calc(var(--hand-tile-width) * var(--draw-tile-gap-ratio));
+  }
 }
 
 @media (max-width: 680px) {
