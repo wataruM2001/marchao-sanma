@@ -6,7 +6,7 @@
   const Game = window.MahjongGame;
   const STORAGE_KEY = "marchao-sanma-score-table-v1";
   const RESULT_TRANSITION_DELAY_MS = 1000;
-  const CPU_DISCARD_DELAY_MS = 2000;
+  const CPU_DISCARD_DELAY_MS = 1700;
   const RESULT_YAKU_NAME_MAP = {
     riichi: "立直",
     double_riichi: "ダブル立直",
@@ -186,6 +186,11 @@
   function clearResultTransitionTimer() {
     window.clearTimeout(resultTransitionTimer);
     resultTransitionTimer = 0;
+  }
+
+  function clearCpuTurnTimer() {
+    window.clearTimeout(cpuTurnTimer);
+    cpuTurnTimer = 0;
   }
 
   function bindEvents() {
@@ -412,7 +417,7 @@
       els.battleStatus.textContent = "対局ロジックを読み込めませんでした";
       return;
     }
-    window.clearTimeout(cpuTurnTimer);
+    clearCpuTurnTimer();
     clearResultTransitionTimer();
     resetBattleEffectState();
     syncPlayersFromInputs();
@@ -440,7 +445,7 @@
       els.battleStatus.textContent = "対局ロジックを読み込めませんでした";
       return;
     }
-    window.clearTimeout(cpuTurnTimer);
+    clearCpuTurnTimer();
     clearResultTransitionTimer();
     resetBattleEffectState();
     syncPlayersFromInputs();
@@ -555,7 +560,7 @@
   }
 
   function scheduleCpuTurn() {
-    window.clearTimeout(cpuTurnTimer);
+    clearCpuTurnTimer();
     if (!battleState || appScreen !== "playing" || battleState.phase !== "discard") return;
     const currentPlayer = battleState.players[battleState.currentPlayerIndex];
     if (!currentPlayer?.isCpu) return;
@@ -590,7 +595,7 @@
 
   function enterResultIfHandEnded() {
     if (!battleState || !["result", "ryukyoku"].includes(battleState.phase)) return false;
-    window.clearTimeout(cpuTurnTimer);
+    clearCpuTurnTimer();
     if (appScreen === "result") return true;
     if (battleState.phase === "ryukyoku") {
       clearResultTransitionTimer();
