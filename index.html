@@ -70,7 +70,7 @@
               <div class="mini-tile-row" id="battleFlowerTiles"></div>
             </div>
             <div class="center-row table-meta">
-              <span id="battleDealerLabel">親 Player 1</span>
+              <span id="battleDealerLabel">親 自分</span>
               <span id="battleKyotakuLabel">供託0</span>
             </div>
             <span id="battleStatus">待機中</span>
@@ -103,7 +103,7 @@
           <div class="seat-chip">東</div>
           <label>
             <span>プレイヤー</span>
-            <input id="playerName0" type="text" value="Player 1" />
+            <input id="playerName0" type="text" value="自分" />
           </label>
           <label>
             <span>持ち点</span>
@@ -129,7 +129,7 @@
           <div class="seat-chip">南</div>
           <label>
             <span>プレイヤー</span>
-            <input id="playerName1" type="text" value="Player 2" />
+            <input id="playerName1" type="text" value="下家" />
           </label>
           <label>
             <span>持ち点</span>
@@ -155,7 +155,7 @@
           <div class="seat-chip">西</div>
           <label>
             <span>プレイヤー</span>
-            <input id="playerName2" type="text" value="Player 3" />
+            <input id="playerName2" type="text" value="上家" />
           </label>
           <label>
             <span>持ち点</span>
@@ -230,9 +230,9 @@
           </div>
 
           <div class="toggle-row" id="tenpaiRow" aria-label="流局時の聴牌者" hidden>
-            <label><input data-tenpai-input="0" type="checkbox" /> <span id="tenpaiLabel0">Player 1 聴牌</span></label>
-            <label><input data-tenpai-input="1" type="checkbox" /> <span id="tenpaiLabel1">Player 2 聴牌</span></label>
-            <label><input data-tenpai-input="2" type="checkbox" /> <span id="tenpaiLabel2">Player 3 聴牌</span></label>
+            <label><input data-tenpai-input="0" type="checkbox" /> <span id="tenpaiLabel0">自分 聴牌</span></label>
+            <label><input data-tenpai-input="1" type="checkbox" /> <span id="tenpaiLabel1">下家 聴牌</span></label>
+            <label><input data-tenpai-input="2" type="checkbox" /> <span id="tenpaiLabel2">上家 聴牌</span></label>
           </div>
 
           <div class="double-ron-grid" id="doubleRonPanel" hidden>
@@ -350,9 +350,9 @@
     </main>
 
     <script src="./tiles.js"></script>
-    <script src="./game.js?v=cpu-no-pon-kan"></script>
-    <script src="./rules.js"></script>
+    <script src="./game.js?v=display-player-names"></script>
+    <script src="./rules.js?v=display-player-names"></script>
     <script src="./hand-evaluation.js?v=dora-indicator-manchu-flower"></script>
-    <script src="./app.js?v=pon-hand-no-drawn-gap"></script>
+    <script src="./app.js?v=display-player-names"></script>
   </body>
 </html>
