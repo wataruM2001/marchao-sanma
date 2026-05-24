@@ -798,8 +798,12 @@
     return next;
   }
 
+  function formatPlainNumber(value) {
+    return String(Number(value) || 0);
+  }
+
   function formatResultPointNumber(value) {
-    return (Number(value) || 0).toLocaleString("ja-JP");
+    return formatPlainNumber(value);
   }
 
   function hasExplicitYakuman(best) {
@@ -1205,17 +1209,14 @@
 
   function formatBattleDelta(value, suffix = "") {
     const number = Number(value) || 0;
-    if (number > 0) return `+${number.toLocaleString("ja-JP")}${suffix}`;
-    if (number < 0) return `${number.toLocaleString("ja-JP")}${suffix}`;
+    if (number > 0) return `+${formatPlainNumber(number)}${suffix}`;
+    if (number < 0) return `${formatPlainNumber(number)}${suffix}`;
     return `0${suffix}`;
   }
 
   function formatBattlePointDelta(value) {
     const number = roundBattleScore(value);
-    const text = number.toLocaleString("ja-JP", {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    });
+    const text = number.toFixed(1);
     if (number > 0) return `+${text}`;
     if (number < 0) return text;
     return "0.0";
@@ -1251,8 +1252,8 @@
 
   function formatResultPointDelta(value) {
     const number = Number(value) || 0;
-    if (number > 0) return `+${number.toLocaleString("ja-JP")}点`;
-    if (number < 0) return `${number.toLocaleString("ja-JP")}点`;
+    if (number > 0) return `+${formatPlainNumber(number)}点`;
+    if (number < 0) return `${formatPlainNumber(number)}点`;
     return "0点";
   }
 
@@ -1412,7 +1413,7 @@
           return `
           <article class="battle-settlement-card">
             <strong>${item.rank}位：${escapeHtml(displayPlayerNameForValue(item.name, item.index))}</strong>
-            <span>最終持ち点：${Number(item.points).toLocaleString("ja-JP")}</span>
+            <span>最終持ち点：${formatPlainNumber(item.points)}</span>
             ${detailRows}
             <b>最終ポイント：${formatBattleDelta(item.displayFinalPoint)}</b>
           </article>
@@ -2047,9 +2048,9 @@
             ? "南3局終了"
             : `${displayPlayerNameByIndex(south)} が次の東家`;
         const paymentText = drawPayment.payerDetails.length
-          ? drawPayment.payerDetails.map((item) => `${displayPlayerNameByIndex(item.player)}→${displayPlayerNameByIndex(item.winner)} ${item.amount.toLocaleString("ja-JP")}`).join(" / ")
+          ? drawPayment.payerDetails.map((item) => `${displayPlayerNameByIndex(item.player)}→${displayPlayerNameByIndex(item.winner)} ${formatPlainNumber(item.amount)}`).join(" / ")
           : "点棒移動なし";
-        els.paymentPreview.textContent = `${paymentText} / ${parentText} / ${nextText} / 本場 +1 / 供託 ${(Number(state.kyotaku) || 0).toLocaleString("ja-JP")}点持ち越し`;
+        els.paymentPreview.textContent = `${paymentText} / ${parentText} / ${nextText} / 本場 +1 / 供託 ${formatPlainNumber(Number(state.kyotaku) || 0)}点持ち越し`;
         return;
       }
       if (hand.winType === "ron" && hand.discarder === hand.winner) {
@@ -2062,13 +2063,13 @@
       const payerText = payment.payerDetails
         .map((item) => {
           const winnerText = item.winner !== undefined ? `→${displayPlayerNameByIndex(item.winner)}` : "";
-          return `${displayPlayerNameByIndex(item.player)}${winnerText} ${item.amount.toLocaleString("ja-JP")}`;
+          return `${displayPlayerNameByIndex(item.player)}${winnerText} ${formatPlainNumber(item.amount)}`;
         })
         .join(" / ");
       const kyotakuWinner = Rules.kyotakuWinnerFor(hand, state);
       const kyotakuText =
         (Number(state.kyotaku) || 0) > 0 && kyotakuWinner !== null
-          ? ` / 供託 ${(Number(state.kyotaku) || 0).toLocaleString("ja-JP")}点→${displayPlayerNameByIndex(kyotakuWinner)}`
+          ? ` / 供託 ${formatPlainNumber(Number(state.kyotaku) || 0)}点→${displayPlayerNameByIndex(kyotakuWinner)}`
           : "";
       const nextText =
         Rules.isParentContinuationWin(hand, state)
@@ -2077,7 +2078,7 @@
             ? "南3局終了"
             : `${displayPlayerNameByIndex(Rules.playerAtSeat(state, 1))} が次の東家・本場 0`;
       const bonusText = bonusSettlement.details.length
-        ? bonusSettlement.details.map((item) => `${displayPlayerNameByIndex(item.payer)}→${displayPlayerNameByIndex(item.winner)} ${item.amount.toLocaleString("ja-JP")}pt`).join(" / ")
+        ? bonusSettlement.details.map((item) => `${displayPlayerNameByIndex(item.payer)}→${displayPlayerNameByIndex(item.winner)} ${formatPlainNumber(item.amount)}pt`).join(" / ")
         : "祝儀 0";
       els.paymentPreview.textContent = `${payerText}${kyotakuText} / ${bonusText} / ${nextText}`;
     } catch (error) {
@@ -2173,7 +2174,7 @@
         (item) => `
           <article class="settlement-card">
             <div>
-              <span>${item.rank}位 / ${item.score.toLocaleString("ja-JP")}点</span>
+              <span>${item.rank}位 / ${formatPlainNumber(item.score)}点</span>
               <strong class="rank-name">${escapeHtml(displayPlayerNameForValue(item.name, item.index))}</strong>
               <span>順位 ${formatSigned(item.rankPoint)} / 祝儀 ${formatSigned(item.bonus)} / トビ賞 ${formatSigned(item.tobi)} / 供託回収 ${formatSigned(item.kyotakuRecovery)}</span>
             </div>
@@ -2195,16 +2196,16 @@
       .reverse()
       .map((hand, reverseIndex) => {
         const number = state.history.length - reverseIndex;
-        const scoreText = hand.scores.map((score, index) => `${displayPlayerNameByIndex(index)}: ${score.toLocaleString("ja-JP")}`).join(" / ");
+        const scoreText = hand.scores.map((score, index) => `${displayPlayerNameByIndex(index)}: ${formatPlainNumber(score)}`).join(" / ");
         if (hand.winType === "draw") {
           const dealerName = displayPlayerNameByIndex(hand.dealer);
           const nextText = hand.dealerTenpai ? "親継続" : "南家へ親移動";
           const paymentText = hand.payment?.payerDetails?.length
-            ? hand.payment.payerDetails.map((item) => `${displayPlayerNameByIndex(item.player)}→${displayPlayerNameByIndex(item.winner)} ${item.amount.toLocaleString("ja-JP")}点`).join(" / ")
+            ? hand.payment.payerDetails.map((item) => `${displayPlayerNameByIndex(item.player)}→${displayPlayerNameByIndex(item.winner)} ${formatPlainNumber(item.amount)}点`).join(" / ")
             : "点棒移動なし";
           return `
           <li>
-            ${number}. ${escapeHtml(hand.roundLabel || "")}${Number.isFinite(Number(hand.honba)) ? `${hand.honba}本場 ` : ""}流局 ${escapeHtml(paymentText)} / 親 ${escapeHtml(dealerName)} ${hand.dealerTenpai ? "聴牌" : "ノーテン"} ${nextText} / 供託 ${(Number(hand.kyotakuAfter) || 0).toLocaleString("ja-JP")}点持ち越し
+            ${number}. ${escapeHtml(hand.roundLabel || "")}${Number.isFinite(Number(hand.honba)) ? `${hand.honba}本場 ` : ""}流局 ${escapeHtml(paymentText)} / 親 ${escapeHtml(dealerName)} ${hand.dealerTenpai ? "聴牌" : "ノーテン"} ${nextText} / 供託 ${formatPlainNumber(Number(hand.kyotakuAfter) || 0)}点持ち越し
             <small>${escapeHtml(scoreText)}</small>
           </li>
         `;
@@ -2229,11 +2230,11 @@
             : `${hand.han}ハン`;
         const kyotakuText =
           Number(hand.kyotakuBefore) > 0 && hand.kyotakuWinner !== null
-            ? ` / 供託 ${Number(hand.kyotakuBefore).toLocaleString("ja-JP")}点→${displayPlayerNameByIndex(hand.kyotakuWinner)}`
+            ? ` / 供託 ${formatPlainNumber(Number(hand.kyotakuBefore) || 0)}点→${displayPlayerNameByIndex(hand.kyotakuWinner)}`
             : "";
         const bonusText =
           hand.bonusSettlement?.details?.length
-            ? ` / 祝儀 ${hand.bonusSettlement.details.map((item) => `${displayPlayerNameByIndex(item.payer)}→${displayPlayerNameByIndex(item.winner)} ${item.amount.toLocaleString("ja-JP")}pt`).join(" / ")}`
+            ? ` / 祝儀 ${hand.bonusSettlement.details.map((item) => `${displayPlayerNameByIndex(item.payer)}→${displayPlayerNameByIndex(item.winner)} ${formatPlainNumber(item.amount)}pt`).join(" / ")}`
             : "";
         return `
           <li>
@@ -2313,7 +2314,7 @@
 
   function formatSigned(value) {
     const rounded = Math.round((Number(value) || 0) * 10) / 10;
-    const body = rounded.toLocaleString("ja-JP", { maximumFractionDigits: 1 });
+    const body = String(rounded);
     return rounded > 0 ? `+${body}` : body;
   }
 
