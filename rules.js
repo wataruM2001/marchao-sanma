@@ -116,6 +116,10 @@
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
+  function formatPlainNumber(value) {
+    return String(numberOrZero(value));
+  }
+
   function normalizeKyotaku(value) {
     return Math.max(0, Math.floor(numberOrZero(value) / 1000) * 1000);
   }
@@ -446,7 +450,7 @@
       return {
         deltas,
         payerDetails,
-        label: payerDetails.map((item) => `${item.amount.toLocaleString("ja-JP")}点`).join(" / "),
+        label: payerDetails.map((item) => `${formatPlainNumber(item.amount)}点`).join(" / "),
       };
     }
 
@@ -469,7 +473,7 @@
     return {
       deltas,
       payerDetails,
-      label: payerDetails.map((item) => `${item.amount.toLocaleString("ja-JP")}点`).join(" / "),
+      label: payerDetails.map((item) => `${formatPlainNumber(item.amount)}点`).join(" / "),
     };
   }
 
@@ -502,7 +506,7 @@
         amount: totalAmount,
         deltas,
         details,
-        label: details.length ? details.map((item) => `${item.amount.toLocaleString("ja-JP")}pt`).join(" / ") : "祝儀 0",
+        label: details.length ? details.map((item) => `${formatPlainNumber(item.amount)}pt`).join(" / ") : "祝儀 0",
       };
     }
     const amount = calculateBonus(hand);
@@ -528,7 +532,7 @@
       amount,
       deltas,
       details,
-      label: details.map((item) => `${item.amount.toLocaleString("ja-JP")}pt`).join(" / "),
+      label: details.map((item) => `${formatPlainNumber(item.amount)}pt`).join(" / "),
     };
   }
 
@@ -567,7 +571,7 @@
       payerDetails,
       tenpai: tenpaiFlags,
       label: payerDetails.length
-        ? payerDetails.map((item) => `${item.amount.toLocaleString("ja-JP")}点`).join(" / ")
+        ? payerDetails.map((item) => `${formatPlainNumber(item.amount)}点`).join(" / ")
         : "点棒移動なし",
     };
   }
