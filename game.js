@@ -20,6 +20,7 @@
   const PLAYER_SEATS = ["self", "shimocha", "kamicha"];
   const DEFAULT_PLAYER_NAMES = ["自分", "下家", "上家"];
   const ACTIONS = ["ron", "tsumo", "pon", "kan", "riichi", "skip"];
+  const DRAGON_BASE_IDS = ["white", "green", "red"];
 
   const INITIAL_HAND_SIZE = 13;
   const DEAL_TILE_COUNT = 39;
@@ -110,6 +111,7 @@
       pendingAction: clonePendingAction(gameState.pendingAction),
       riichiDeclaration: gameState.riichiDeclaration ? { ...gameState.riichiDeclaration } : null,
       pendingRiichi: gameState.pendingRiichi ? { ...gameState.pendingRiichi } : null,
+      paoState: gameState.paoState ? { ...gameState.paoState } : null,
     };
   }
 
@@ -317,6 +319,41 @@
 
   function meldTiles(player) {
     return cloneTiles((player?.melds || []).flatMap((meld) => meld.tiles || []));
+  }
+
+  function isDragonBaseId(baseId) {
+    return DRAGON_BASE_IDS.includes(baseId);
+  }
+
+  function dragonMeldBaseIds(melds = []) {
+    return [
+      ...new Set(
+        (melds || [])
+          .filter((meld) => ["pon", "minkan", "ankan", "kakan"].includes(meld?.type))
+          .map((meld) => meld.baseId || tileBaseId(meld.tiles?.[0]))
+          .filter(isDragonBaseId)
+      ),
+    ];
+  }
+
+  function checkDaisangenPaoAfterCall(caller, calledTile, discarderId, gameState) {
+    const calledBaseId = tileBaseId(calledTile);
+    if (!caller || !gameState || !isDragonBaseId(calledBaseId) || !discarderId) return null;
+    if (gameState.paoState?.yakumanType === "daisangen" && gameState.paoState.targetPlayerId === caller.id) {
+      return gameState.paoState;
+    }
+    const targetPlayerIndex = gameState.players.findIndex((player) => player.id === caller.id);
+    const responsiblePlayerIndex = gameState.players.findIndex((player) => player.id === discarderId);
+    if (targetPlayerIndex < 0 || responsiblePlayerIndex < 0 || targetPlayerIndex === responsiblePlayerIndex) return null;
+    if (dragonMeldBaseIds(caller.melds).length !== DRAGON_BASE_IDS.length) return null;
+    gameState.paoState = {
+      yakumanType: "daisangen",
+      targetPlayerId: caller.id,
+      targetPlayerIndex,
+      responsiblePlayerId: discarderId,
+      responsiblePlayerIndex,
+    };
+    return gameState.paoState;
   }
 
   function seatWindForIndex(gameState, playerIndex) {
@@ -1454,6 +1491,7 @@
       calledFromSeat,
       fromPlayerIndex: calledFromIndex,
     });
+    checkDaisangenPaoAfterCall(player, calledTile, discarder?.id, next);
     next.currentPlayerIndex = playerIndex;
     next.pendingAction = null;
     next.pendingRiichi = null;
@@ -1527,6 +1565,7 @@
         calledFromSeat,
         fromPlayerIndex: calledFromIndex,
       });
+      checkDaisangenPaoAfterCall(player, calledTile, discarder?.id, next);
     } else if (kan.type === "kakan") {
       const tile = kan.tiles[0];
       player.hand = removeTilesById(player.hand, [tile]);
@@ -1611,6 +1650,66 @@
     };
   }
 
+  function yakuResultsFromWinResult(winResult) {
+    return (
+      winResult?.evaluation?.best?.yaku ||
+      winResult?.best?.yaku ||
+      winResult?.yaku ||
+      []
+    );
+  }
+
+  function hasDaisangenYakuman(winResult) {
+    return yakuResultsFromWinResult(winResult).some((yaku) => {
+      const id = String(yaku?.id || "").toLowerCase();
+      const name = String(yaku?.name || yaku?.displayName || "");
+      return (yaku?.yakuman || yaku?.isYakuman) && (id === "daisangen" || name === "大三元");
+    });
+  }
+
+  function paoStateForWinResult(winResult, gameState) {
+    const paoState = gameState?.paoState;
+    if (!paoState || paoState.yakumanType !== "daisangen") return null;
+    const winnerIndex = Number.isInteger(winResult?.winnerIndex)
+      ? winResult.winnerIndex
+      : gameState.players.findIndex((player) => player.id === winResult?.winnerId);
+    const winnerId = gameState.players[winnerIndex]?.id || winResult?.winnerId;
+    if (winnerId !== paoState.targetPlayerId) return null;
+    const responsiblePlayerIndex = Number.isInteger(paoState.responsiblePlayerIndex)
+      ? paoState.responsiblePlayerIndex
+      : gameState.players.findIndex((player) => player.id === paoState.responsiblePlayerId);
+    if (winnerIndex < 0 || responsiblePlayerIndex < 0 || winnerIndex === responsiblePlayerIndex) return null;
+    return { ...paoState, winnerIndex, responsiblePlayerIndex };
+  }
+
+  function shouldApplyDaisangenPao(winResult, gameState) {
+    return Boolean(paoStateForWinResult(winResult, gameState) && hasDaisangenYakuman(winResult));
+  }
+
+  function applyDaisangenPaoPayment(winResult, gameState) {
+    const paoState = paoStateForWinResult(winResult, gameState);
+    if (!paoState || !hasDaisangenYakuman(winResult)) return null;
+    const pointDeltas = [...(winResult.pointDeltas || [0, 0, 0])];
+    const chipDeltas = [...(winResult.chipDeltas || [0, 0, 0])];
+    const winnerPointGain = Math.max(0, Number(pointDeltas[paoState.winnerIndex]) || 0);
+    const winnerChipGain = Math.max(0, Number(chipDeltas[paoState.winnerIndex]) || 0);
+    const adjustedPointDeltas = [0, 0, 0];
+    const adjustedChipDeltas = [0, 0, 0];
+    adjustedPointDeltas[paoState.winnerIndex] = winnerPointGain;
+    adjustedPointDeltas[paoState.responsiblePlayerIndex] = -winnerPointGain;
+    adjustedChipDeltas[paoState.winnerIndex] = winnerChipGain;
+    adjustedChipDeltas[paoState.responsiblePlayerIndex] = -winnerChipGain;
+    return {
+      type: "daisangen",
+      targetPlayerId: paoState.targetPlayerId,
+      targetPlayerIndex: paoState.winnerIndex,
+      responsiblePlayerId: paoState.responsiblePlayerId,
+      responsiblePlayerIndex: paoState.responsiblePlayerIndex,
+      pointDeltas: adjustedPointDeltas,
+      chipDeltas: adjustedChipDeltas,
+    };
+  }
+
   function applyWinSettlement(gameState, { winType, winnerIndex, discarderIndex, evaluation } = {}) {
     const pointDeltas = [0, 0, 0];
     const chipDeltas = [0, 0, 0];
@@ -1659,6 +1758,18 @@
       }
     }
 
+    const paoPayment = shouldApplyDaisangenPao({ evaluation, winnerIndex, pointDeltas, chipDeltas }, gameState)
+      ? applyDaisangenPaoPayment({ evaluation, winnerIndex, pointDeltas, chipDeltas }, gameState)
+      : null;
+    if (paoPayment) {
+      paoPayment.pointDeltas.forEach((delta, index) => {
+        pointDeltas[index] = delta;
+      });
+      paoPayment.chipDeltas.forEach((delta, index) => {
+        chipDeltas[index] = delta;
+      });
+    }
+
     pointDeltas.forEach((delta, index) => {
       gameState.players[index].points += delta;
     });
@@ -1671,6 +1782,7 @@
       chipDeltas,
       kyotakuBefore,
       kyotakuAfter: gameState.kyotaku,
+      paoPayment,
     };
   }
 
@@ -1696,6 +1808,8 @@
       chipDeltas: settlement.chipDeltas,
       kyotakuBefore: settlement.kyotakuBefore,
       kyotakuAfter: settlement.kyotakuAfter,
+      paoState: next.paoState ? { ...next.paoState } : null,
+      paoPayment: settlement.paoPayment,
       effect: winType === "tsumo" ? "ツモ" : "ロン",
     };
     next.lastEffect = next.lastAction.effect;
@@ -1953,6 +2067,7 @@
       remainingDraws: wallSections.drawWall.length,
       phase: "dealing",
       lastAction: null,
+      paoState: null,
     };
 
     return dealInitialHands(gameState);
@@ -1974,6 +2089,7 @@
     canRon,
     canTsumo,
     canPon,
+    checkDaisangenPaoAfterCall,
     getKanCandidates,
     getAnkanCandidates,
     getRiichiAnkanCandidates,
@@ -1999,6 +2115,9 @@
     shouldCpuRiichi,
     getAvailableActions,
     shouldAutoTsumogiriAfterRiichi,
+    hasDaisangenYakuman,
+    shouldApplyDaisangenPao,
+    applyDaisangenPaoPayment,
     handleRiichiDraw,
     afterPlayerDraw,
     afterPlayerDiscard,
