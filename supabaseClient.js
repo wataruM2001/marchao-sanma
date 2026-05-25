@@ -8,7 +8,7 @@
     publishableKey: "sb_publishable_4BIoZK2R5RvVzjgzHp-m4g_tZcuKaUZ",
     sharedPaifusTable: "shared_paifus",
     hanchanStatsTable: "hanchan_stats",
-    shareUrlBase: "https://watarum2001.github.io/-/",
+    shareUrlBase: "https://watarum2001.github.io/marchao-sanma/",
   });
 
   function readLocalSetting(key) {
