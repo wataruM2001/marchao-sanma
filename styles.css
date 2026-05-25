@@ -3383,13 +3383,12 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .dora-indicator-row {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    width: auto;
-    min-width: calc(var(--landscape-tile-width) * 5);
+    position: static;
+    inset: auto;
+    width: var(--center-panel-width);
+    min-width: 0;
     height: var(--dora-tile-height);
-    transform: translateX(-50%);
+    transform: none;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .dora-indicator-tile {
