@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオサンマ</title>
-    <link rel="stylesheet" href="./styles.css?v=paifu-replay-v1" />
+    <link rel="stylesheet" href="./styles.css?v=paifu-control-bar-v1" />
   </head>
   <body>
     <main class="app-shell">
@@ -40,25 +40,21 @@
             <button class="primary-button battle-result-button" id="battlePaifuButton" type="button">牌譜を見る</button>
             <button class="primary-button battle-result-button" id="battleRestartButton" type="button">もう一度対局</button>
           </section>
-          <section class="paifu-panel" id="paifuPanel" hidden>
-            <div class="paifu-panel-header">
-              <div>
-                <h2 id="paifuTitle">牌譜</h2>
-                <p id="paifuStepLabel">-</p>
-              </div>
-              <label class="paifu-hand-select-label">
-                <span>局選択</span>
-                <select id="paifuHandSelect"></select>
-              </label>
-            </div>
-            <div class="paifu-action-text" id="paifuActionText">-</div>
+          <section class="paifu-panel paifu-control-bar" id="paifuPanel" hidden>
+            <h2 class="paifu-screen-title" id="paifuTitle">牌譜</h2>
+            <p class="paifu-step-label" id="paifuStepLabel">-</p>
+            <div class="paifu-action-text" id="paifuActionText" hidden>-</div>
             <div class="paifu-controls">
               <button class="mini-button" id="paifuFirstButton" type="button">最初へ</button>
               <button class="mini-button" id="paifuPrevButton" type="button">前へ</button>
               <button class="mini-button" id="paifuNextButton" type="button">次へ</button>
-              <button class="mini-button" id="paifuLastButton" type="button">最後へ</button>
-              <button class="mini-button" id="paifuPlayButton" type="button">再生</button>
-              <button class="mini-button" id="paifuStopButton" type="button">停止</button>
+              <label class="paifu-hand-select-label">
+                <span>局選択</span>
+                <select id="paifuHandSelect"></select>
+              </label>
+              <button class="mini-button" id="paifuLastButton" type="button" hidden>最後へ</button>
+              <button class="mini-button" id="paifuPlayButton" type="button" hidden>再生</button>
+              <button class="mini-button" id="paifuStopButton" type="button" hidden>停止</button>
               <button class="mini-button" id="paifuBackButton" type="button">戻る</button>
             </div>
           </section>

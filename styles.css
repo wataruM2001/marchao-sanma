@@ -743,8 +743,7 @@ button {
 }
 
 .battle-result-panel,
-.battle-settlement-panel,
-.paifu-panel {
+.battle-settlement-panel {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -765,15 +764,13 @@ button {
 
 .battle-result-panel h2,
 .battle-settlement-panel h2,
-.paifu-panel h2,
 .battle-result-panel h3 {
   margin: 0;
   line-height: 1.15;
 }
 
 .battle-result-panel h2,
-.battle-settlement-panel h2,
-.paifu-panel h2 {
+.battle-settlement-panel h2 {
   color: #f3d88e;
   font-size: 1.35rem;
 }
@@ -789,61 +786,77 @@ button {
 }
 
 .paifu-panel {
-  top: clamp(12px, 3vh, 28px);
-  width: min(92vw, 760px);
-  max-height: none;
+  --paifu-control-bottom: calc(
+    clamp(10px, 2vw, 22px) + max(82px, calc(var(--hand-tile-width) * 1.40625 + 16px)) + 8px
+  );
+  position: absolute;
+  left: 50%;
+  bottom: var(--paifu-control-bottom);
+  z-index: 30;
+  width: auto;
+  max-width: calc(100vw - 16px);
+  min-height: 0;
   transform: translateX(-50%);
-  grid-template-columns: 1fr;
   pointer-events: auto;
 }
 
-.paifu-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.paifu-panel-header p {
-  margin: 4px 0 0;
-  color: rgba(255, 255, 255, 0.72);
-  font-weight: 800;
+.paifu-screen-title,
+.paifu-step-label,
+.paifu-action-text {
+  display: none !important;
 }
 
 .paifu-hand-select-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   color: var(--ui-gold);
   font-weight: 900;
+  font-size: 12px;
+  line-height: 1;
   white-space: nowrap;
 }
 
 .paifu-hand-select-label select {
-  min-height: 36px;
+  min-height: 28px;
+  max-width: min(34vw, 180px);
   border: 1px solid rgba(243, 216, 142, 0.55);
   border-radius: 999px;
-  padding: 4px 12px;
+  padding: 2px 26px 2px 9px;
   color: var(--ui-text);
   background: rgba(0, 0, 0, 0.72);
-}
-
-.paifu-action-text {
-  min-height: 24px;
-  color: var(--ui-text);
+  font-size: 12px;
   font-weight: 900;
-  letter-spacing: 0.03em;
 }
 
 .paifu-controls {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-height: 36px;
+  padding: 4px 9px;
+  border: 1px solid rgba(243, 216, 142, 0.45);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
 }
 
 .paifu-controls .mini-button {
-  min-width: 74px;
-  min-height: 36px;
+  min-width: auto;
+  min-height: 28px;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  line-height: 1;
+  box-shadow:
+    0 0 7px rgba(243, 216, 142, 0.18),
+    0 2px 0 rgba(0, 0, 0, 0.72),
+    0 7px 14px rgba(0, 0, 0, 0.22);
 }
 
 .battle-surface.is-paifu-screen .battle-action-buttons {
@@ -860,19 +873,38 @@ button {
 
 @media (max-width: 700px) {
   .paifu-panel {
-    top: 10px;
-    width: min(94vw, 560px);
-    padding: 12px;
-    gap: 10px;
+    --paifu-control-bottom: calc(
+      clamp(4px, 1.4vh, 12px) + max(76px, calc(var(--hand-tile-width) * 1.40625 + 12px)) + 6px
+    );
+    width: auto;
+    max-width: calc(100vw - 12px);
   }
 
-  .paifu-panel-header {
-    align-items: flex-start;
-    flex-direction: column;
+  .paifu-controls {
+    gap: 4px;
+    min-height: 32px;
+    padding: 3px 5px;
+    flex-wrap: wrap;
+    border-radius: 14px;
   }
 
   .paifu-controls .mini-button {
-    flex: 1 1 72px;
+    min-height: 26px;
+    height: 26px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .paifu-hand-select-label {
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .paifu-hand-select-label select {
+    min-height: 26px;
+    max-width: min(44vw, 160px);
+    padding: 1px 22px 1px 8px;
+    font-size: 11px;
   }
 }
 
