@@ -8,6 +8,8 @@
   const BATTLE_EFFECT_DURATION_MS = 1200;
   const YAKUMAN_EFFECT_DURATION_MS = 1500;
   const RESULT_TRANSITION_DELAY_MS = YAKUMAN_EFFECT_DURATION_MS;
+  const EFFECT_SCREEN_MARGIN = 16;
+  const EFFECT_PANEL_MARGIN = 16;
   const CPU_DISCARD_DELAY_MS = 1500;
   const RESULT_YAKU_NAME_MAP = {
     riichi: "立直",
@@ -1684,19 +1686,120 @@
     return els.battleSelfRiver;
   }
 
+  function clampNumber(value, min, max) {
+    if (min > max) return (min + max) / 2;
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function effectRectFromCenter(size, x, y) {
+    return {
+      left: x - size.width / 2,
+      right: x + size.width / 2,
+      top: y - size.height / 2,
+      bottom: y + size.height / 2,
+    };
+  }
+
+  function expandRect(rect, margin) {
+    return {
+      left: rect.left - margin,
+      right: rect.right + margin,
+      top: rect.top - margin,
+      bottom: rect.bottom + margin,
+    };
+  }
+
+  function rectsOverlap(first, second) {
+    return first.left < second.right && first.right > second.left && first.top < second.bottom && first.bottom > second.top;
+  }
+
+  function overlapArea(first, second) {
+    if (!rectsOverlap(first, second)) return 0;
+    return Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left)) *
+      Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
+  }
+
+  function clampEffectPoint(point, size, bounds, margin) {
+    return {
+      x: clampNumber(point.x, bounds.left + margin + size.width / 2, bounds.right - margin - size.width / 2),
+      y: clampNumber(point.y, bounds.top + margin + size.height / 2, bounds.bottom - margin - size.height / 2),
+    };
+  }
+
+  function isRectInsideBounds(rect, bounds, margin) {
+    return (
+      rect.left >= bounds.left + margin &&
+      rect.right <= bounds.right - margin &&
+      rect.top >= bounds.top + margin &&
+      rect.bottom <= bounds.bottom - margin
+    );
+  }
+
+  function battleEffectMeasuredSize(effectEl) {
+    const scale = effectEl.classList.contains("effect-yakuman") ? 1.28 : 1.18;
+    return {
+      width: Math.max(1, effectEl.offsetWidth) * scale + 32,
+      height: Math.max(1, effectEl.offsetHeight) * scale + 32,
+    };
+  }
+
+  function visibleCenterPanelRect() {
+    const panel = els.battleSurface?.querySelector(".center-tableau") || document.querySelector(".center-tableau");
+    if (!panel || panel.closest("[hidden]")) return null;
+    const rect = panel.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    return rect;
+  }
+
   function positionBattleEffect(gameState, playerIndex) {
     if (!els.battleEffect) return;
+    const effectEl = els.battleEffect;
     const target = riverElementForEffect(gameState, playerIndex);
-    const surface = els.battleTable?.querySelector(".battle-surface");
-    if (!target || !surface) {
-      els.battleEffect.style.left = "50%";
-      els.battleEffect.style.top = "50%";
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 1;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 1;
+    const bounds = { left: 0, top: 0, right: viewportWidth, bottom: viewportHeight };
+    const size = battleEffectMeasuredSize(effectEl);
+    const panelRect = visibleCenterPanelRect();
+    const protectedPanelRect = panelRect ? expandRect(panelRect, EFFECT_PANEL_MARGIN) : null;
+    if (!target) {
+      const point = clampEffectPoint({ x: viewportWidth / 2, y: viewportHeight * 0.5 }, size, bounds, EFFECT_SCREEN_MARGIN);
+      effectEl.style.left = `${point.x}px`;
+      effectEl.style.top = `${point.y}px`;
       return;
     }
     const targetRect = target.getBoundingClientRect();
-    const surfaceRect = surface.getBoundingClientRect();
-    els.battleEffect.style.left = `${targetRect.left - surfaceRect.left + targetRect.width / 2}px`;
-    els.battleEffect.style.top = `${targetRect.top - surfaceRect.top + targetRect.height / 2}px`;
+    const targetCenter = {
+      x: targetRect.left + targetRect.width / 2,
+      y: targetRect.top + targetRect.height / 2,
+    };
+    const candidates = [targetCenter];
+    if (panelRect) {
+      candidates.push(
+        { x: viewportWidth / 2, y: panelRect.bottom + size.height / 2 + EFFECT_PANEL_MARGIN },
+        { x: viewportWidth / 2, y: panelRect.top - size.height / 2 - EFFECT_PANEL_MARGIN },
+        { x: panelRect.left - size.width / 2 - EFFECT_PANEL_MARGIN, y: panelRect.top + panelRect.height / 2 },
+        { x: panelRect.right + size.width / 2 + EFFECT_PANEL_MARGIN, y: panelRect.top + panelRect.height / 2 }
+      );
+    }
+    candidates.push(
+      { x: viewportWidth / 2, y: viewportHeight * 0.25 },
+      { x: viewportWidth / 2, y: viewportHeight * 0.72 },
+      { x: viewportWidth / 2, y: viewportHeight * 0.5 }
+    );
+    const normalizedCandidates = candidates.map((candidate) => {
+      const point = clampEffectPoint(candidate, size, bounds, EFFECT_SCREEN_MARGIN);
+      return { point, rect: effectRectFromCenter(size, point.x, point.y) };
+    });
+    const valid = normalizedCandidates.find(({ rect }) => {
+      return isRectInsideBounds(rect, bounds, EFFECT_SCREEN_MARGIN) && (!protectedPanelRect || !rectsOverlap(rect, protectedPanelRect));
+    });
+    const fallback = normalizedCandidates.reduce((best, current) => {
+      if (!protectedPanelRect) return best;
+      return overlapArea(current.rect, protectedPanelRect) < overlapArea(best.rect, protectedPanelRect) ? current : best;
+    }, normalizedCandidates[0]);
+    const chosen = valid || fallback;
+    effectEl.style.left = `${chosen.point.x}px`;
+    effectEl.style.top = `${chosen.point.y}px`;
   }
 
   function renderActiveBattleEffect() {
@@ -1707,10 +1810,10 @@
       els.battleEffect.className = "battle-effect";
       return;
     }
-    positionBattleEffect(battleState, activeBattleEffect.playerIndex);
     els.battleEffect.textContent = activeBattleEffect.text;
     els.battleEffect.className = `battle-effect is-active ${activeBattleEffect.classes || ""}`.trim();
     els.battleEffect.hidden = false;
+    positionBattleEffect(battleState, activeBattleEffect.playerIndex);
   }
 
   function playNextBattleEffect() {
