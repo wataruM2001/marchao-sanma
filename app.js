@@ -1809,6 +1809,25 @@
     return gameState?.players?.[playerIndex]?.seat || "self";
   }
 
+  function fitSideBattleEffect(effectEl, seat, panelRect, viewportWidth) {
+    effectEl.style.removeProperty("font-size");
+    let size = battleEffectMeasuredSize(effectEl);
+    if (seat !== "shimocha" && seat !== "kamicha") return size;
+
+    const sideWidth = seat === "shimocha"
+      ? viewportWidth - panelRect.right - EFFECT_PANEL_MARGIN - EFFECT_SCREEN_MARGIN
+      : panelRect.left - EFFECT_PANEL_MARGIN - EFFECT_SCREEN_MARGIN;
+    if (sideWidth <= 0 || size.width <= sideWidth) return size;
+
+    const currentFontSize = parseFloat(window.getComputedStyle(effectEl).fontSize) || 64;
+    const nextFontSize = Math.max(44, currentFontSize * Math.min(1, sideWidth / size.width));
+    if (nextFontSize < currentFontSize) {
+      effectEl.style.fontSize = `${nextFontSize}px`;
+      size = battleEffectMeasuredSize(effectEl);
+    }
+    return size;
+  }
+
   function battleEffectPanelCandidates(seat, panelRect, size, viewportWidth, viewportHeight) {
     const panelCenter = {
       x: panelRect.left + panelRect.width / 2,
@@ -1861,16 +1880,17 @@
     const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 1;
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 1;
     const bounds = { left: 0, top: 0, right: viewportWidth, bottom: viewportHeight };
-    const size = battleEffectMeasuredSize(effectEl);
     const panelRect = visibleCenterPanelRect();
-    const protectedPanelRect = panelRect ? expandRect(panelRect, EFFECT_PANEL_MARGIN) : null;
     if (!panelRect) {
+      const size = battleEffectMeasuredSize(effectEl);
       const point = clampEffectPoint({ x: viewportWidth / 2, y: viewportHeight * 0.5 }, size, bounds, EFFECT_SCREEN_MARGIN);
       effectEl.style.left = `${point.x}px`;
       effectEl.style.top = `${point.y}px`;
       return;
     }
     const seat = battleEffectSeat(gameState, playerIndex);
+    const size = fitSideBattleEffect(effectEl, seat, panelRect, viewportWidth);
+    const protectedPanelRect = expandRect(panelRect, EFFECT_PANEL_MARGIN);
     const candidates = battleEffectPanelCandidates(seat, panelRect, size, viewportWidth, viewportHeight);
     const normalizedCandidates = candidates.map((candidate) => {
       const point = clampEffectPoint(candidate, size, bounds, EFFECT_SCREEN_MARGIN);
@@ -1894,6 +1914,7 @@
       els.battleEffect.textContent = "";
       els.battleEffect.hidden = true;
       els.battleEffect.className = "battle-effect";
+      els.battleEffect.style.removeProperty("font-size");
       return;
     }
     els.battleEffect.textContent = activeBattleEffect.text;
