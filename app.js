@@ -86,6 +86,7 @@
   let paifuHandIndex = 0;
   let paifuStepIndex = 0;
   let paifuReplayTimer = 0;
+  let showPaifuOpponentHands = false;
   let lastPaifuSnapshotSignature = "";
   let lastSavedStatsHanchanId = "";
   let isViewingSharedPaifu = false;
@@ -122,6 +123,7 @@
     paifuNextButton: document.getElementById("paifuNextButton"),
     paifuNextSelfDrawButton: document.getElementById("paifuNextSelfDrawButton"),
     paifuNextHandButton: document.getElementById("paifuNextHandButton"),
+    paifuToggleHandsButton: document.getElementById("paifuToggleHandsButton"),
     paifuBackButton: document.getElementById("paifuBackButton"),
     rulesScreen: document.getElementById("rulesScreen"),
     rulesBackButton: document.getElementById("rulesBackButton"),
@@ -337,6 +339,11 @@
     els.paifuNextHandButton?.addEventListener("click", () => {
       stopPaifuPlayback();
       movePaifuHand(1);
+    });
+    els.paifuToggleHandsButton?.addEventListener("click", () => {
+      stopPaifuPlayback();
+      showPaifuOpponentHands = !showPaifuOpponentHands;
+      renderBattleTable();
     });
     els.paifuBackButton?.addEventListener("click", () => {
       stopPaifuPlayback();
@@ -1602,6 +1609,7 @@
     lastHandResult = null;
     paifuHandIndex = 0;
     paifuStepIndex = 0;
+    showPaifuOpponentHands = false;
     appScreen = "paifu";
     renderBattleTable();
   }
@@ -1832,6 +1840,7 @@
     clearResultTransitionTimer();
     resetBattleEffectState();
     stopPaifuPlayback();
+    showPaifuOpponentHands = false;
     paifuHandIndex = clampNumber(paifuHandIndex, 0, paifuReplay.hands.length - 1);
     paifuStepIndex = clampNumber(paifuStepIndex, 0, Math.max(0, (currentPaifuHand()?.snapshots?.length || 1) - 1));
     appScreen = "paifu";
@@ -2886,6 +2895,9 @@
   }
 
   function renderPaifuSideHand(player) {
+    if (!showPaifuOpponentHands) {
+      return renderBackTiles(player?.hand?.length || 0, `side ${tileRotationClassForSeat(player?.seat)}`);
+    }
     const rotationClass = tileRotationClassForSeat(player?.seat);
     return renderPaifuOpenHand(player, `side ${rotationClass}`);
   }
@@ -2916,6 +2928,12 @@
     if (els.paifuNextButton) els.paifuNextButton.disabled = lastDisabled;
     if (els.paifuNextSelfDrawButton) els.paifuNextSelfDrawButton.disabled = findPaifuSelfDrawFlatIndex(1) < 0;
     if (els.paifuNextHandButton) els.paifuNextHandButton.disabled = paifuHandIndex >= paifuReplay.hands.length - 1;
+    if (els.paifuToggleHandsButton) {
+      els.paifuToggleHandsButton.disabled = false;
+      els.paifuToggleHandsButton.classList.toggle("is-active", showPaifuOpponentHands);
+      els.paifuToggleHandsButton.setAttribute("aria-pressed", String(showPaifuOpponentHands));
+      els.paifuToggleHandsButton.title = showPaifuOpponentHands ? "相手手牌を裏向きにする" : "相手手牌を表向きにする";
+    }
   }
 
   function paifuDisplayActionText(snapshot, hand) {
