@@ -920,6 +920,88 @@
     return [];
   }
 
+  function cloneResultTileSnapshot(tile) {
+    return tile ? { ...tile } : null;
+  }
+
+  function cloneResultTilesSnapshot(tiles = []) {
+    return (tiles || [])
+      .filter((tile) => tile && !tile.isFlower)
+      .map(cloneResultTileSnapshot);
+  }
+
+  function cloneResultMeldSnapshot(meld) {
+    if (!meld) return null;
+    return {
+      ...meld,
+      tiles: cloneResultTilesSnapshot(meld.tiles || []),
+      calledTile: cloneResultTileSnapshot(meld.calledTile),
+      addedTile: cloneResultTileSnapshot(meld.addedTile),
+    };
+  }
+
+  function cloneResultMeldsSnapshot(melds = []) {
+    return (melds || []).map(cloneResultMeldSnapshot).filter(Boolean);
+  }
+
+  function baseIdSortValueForDisplay(baseId) {
+    const text = String(baseId || "");
+    const honorOrder = { east: 1, south: 2, west: 3, north: 4, white: 5, green: 6, red: 7 };
+    if (text.startsWith("p")) return Number(text.slice(1)) || 99;
+    if (text.startsWith("s")) return 100 + (Number(text.slice(1)) || 99);
+    if (honorOrder[text]) return 200 + honorOrder[text];
+    if (text.startsWith("m")) return 300 + (Number(text.slice(1)) || 99);
+    return 999;
+  }
+
+  function baseIdDisplayName(baseId) {
+    const text = String(baseId || "");
+    const honorNames = {
+      east: "東",
+      south: "南",
+      west: "西",
+      north: "北",
+      white: "白",
+      green: "發",
+      red: "中",
+    };
+    if (honorNames[text]) return honorNames[text];
+    const number = Number(text.slice(1));
+    if (text.startsWith("p") && number) return `${number}筒`;
+    if (text.startsWith("s") && number) return `${number}索`;
+    if (text.startsWith("m") && number) return `${number}萬`;
+    return text;
+  }
+
+  function formatWinningTileNames(baseIds = []) {
+    return [...new Set(baseIds || [])]
+      .sort((left, right) => baseIdSortValueForDisplay(left) - baseIdSortValueForDisplay(right))
+      .map(baseIdDisplayName)
+      .join(" / ");
+  }
+
+  function buildRyukyokuHandsSnapshot(gameState) {
+    const playersBySeat = new Map((gameState.players || []).map((player, index) => [player.seat, { player, index }]));
+    return ["self", "shimocha", "kamicha"]
+      .map((seat) => {
+        const entry = playersBySeat.get(seat);
+        const player = entry?.player;
+        if (!player) return null;
+        const winningTiles = Game.getWinningTiles(player) || [];
+        return {
+          playerId: player.id,
+          playerIndex: entry.index,
+          seat,
+          displayName: playerPositionLabel(seat),
+          isTenpai: winningTiles.length > 0,
+          winningTiles: [...winningTiles],
+          handTiles: sortedBattleTiles(cloneResultTilesSnapshot(player.hand || [])),
+          melds: cloneResultMeldsSnapshot(player.melds || []),
+        };
+      })
+      .filter(Boolean);
+  }
+
   function buildBattleHandResult(gameState) {
     const action = gameState.lastAction || {};
     const isRyukyoku = gameState.phase === "ryukyoku" || action.type === "ryukyoku";
@@ -961,6 +1043,7 @@
       doraIndicators: gameState.doraIndicators || [],
       uraDoraIndicators: gameState.uraDoraIndicators || [],
       wins: isRyukyoku ? [] : buildBattleWinDisplayInfos(gameState, action),
+      ryukyokuHands: isRyukyoku ? buildRyukyokuHandsSnapshot(gameState) : [],
       nextRoundLabel: `${nextRound.roundWind === "south" ? "南" : "東"}${nextRound.handNumber}局${nextRound.honba}本場`,
       nextRound,
       isDealerContinue: dealerContinue,
@@ -1356,6 +1439,31 @@
     `;
   }
 
+  function renderRyukyokuHandsIfNeeded(result) {
+    const hands = result.ryukyokuHands || [];
+    if (!["draw", "ryukyoku"].includes(result.type) || hands.length === 0) return "";
+    return `
+      <div class="result-ryukyoku-hands">
+        ${hands
+          .map((entry) => {
+            const waitText = entry.isTenpai
+              ? `テンパイ：${formatWinningTileNames(entry.winningTiles) || "-"}`
+              : "ノーテン";
+            return `
+              <article class="result-ryukyoku-player">
+                <div class="result-ryukyoku-player-title">${escapeHtml(entry.displayName)}　${escapeHtml(waitText)}</div>
+                <div class="result-ryukyoku-tile-row">
+                  ${(entry.handTiles || []).map((tile) => renderResultTile(tile)).join("")}
+                  ${(entry.melds || []).map(renderMeld).join("")}
+                </div>
+              </article>
+            `;
+          })
+          .join("")}
+      </div>
+    `;
+  }
+
   function renderWinDetailIfNeeded(result) {
     const wins = result.wins || [];
     if (result.type === "ryukyoku" || wins.length === 0) return "";
@@ -1389,6 +1497,7 @@
     els.battleResultBody.innerHTML = `
       <div class="result-simple">
         ${renderWinDetailIfNeeded(result)}
+        ${renderRyukyokuHandsIfNeeded(result)}
         ${renderSimpleBattleResultRows(result)}
       </div>
     `;
