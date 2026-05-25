@@ -30,6 +30,8 @@
   --ui-shadow-strong: rgba(0, 0, 0, 0.48);
   --battle-action-gap: calc(var(--hand-tile-width, 48px) * 1.5);
   --open-tile-width: calc((var(--hand-tile-width, clamp(23px, 5.2vw, 70px)) + var(--center-river-tile-width, clamp(28px, 3vw, 42px))) / 2);
+  --battle-effect-font-size: clamp(64px, 10vw, 80px);
+  --battle-effect-marchao-font-size: clamp(56px, 8.5vw, 65px);
 }
 
 * {
@@ -499,7 +501,7 @@ button {
   z-index: 8;
   transform: translate(-50%, -50%);
   color: #f3d88e;
-  font-size: 60px;
+  font-size: var(--battle-effect-font-size);
   font-weight: 900;
   line-height: 1;
   letter-spacing: 0;
@@ -510,7 +512,7 @@ button {
 }
 
 .battle-effect.marchao {
-  font-size: 45px;
+  font-size: var(--battle-effect-marchao-font-size);
   -webkit-text-stroke: 2px #fff;
   text-shadow:
     0 0 1px #fff,
