@@ -826,6 +826,10 @@
     return base + score / 10;
   }
 
+  function settlementBonusScore(bonusPoints) {
+    return numberOrZero(bonusPoints) / 100;
+  }
+
   function settleHalf(state, finishType, representative) {
     const kyotaku = normalizeKyotaku(state.kyotaku);
     const settlementPlayers = clonePlayers(state.players);
@@ -848,14 +852,15 @@
     return ranked.map((player) => {
       const rankPoint = rankPointFor(player.rank, player.score);
       const tobi = player.tobi + liveTobi[player.index];
-      const total = rankPoint + player.bonus + tobi;
+      const bonus = settlementBonusScore(player.bonus);
+      const total = rankPoint + bonus + tobi;
       return {
         index: player.index,
         name: player.name,
         score: player.score,
         rank: player.rank,
         rankPoint,
-        bonus: player.bonus,
+        bonus,
         tobi,
         kyotakuRecovery: topBeforeKyotaku?.index === player.index ? kyotaku : 0,
         total,
