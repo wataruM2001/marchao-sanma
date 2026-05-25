@@ -32,6 +32,8 @@
   --open-tile-width: calc((var(--hand-tile-width, clamp(23px, 5.2vw, 70px)) + var(--center-river-tile-width, clamp(28px, 3vw, 42px))) / 2);
   --battle-effect-font-size: clamp(64px, 10vw, 80px);
   --battle-effect-marchao-font-size: clamp(56px, 8.5vw, 65px);
+  --battle-effect-duration: 1.2s;
+  --battle-yakuman-effect-duration: 1.5s;
   --self-flower-left-shift: calc(var(--hand-tile-width, 48px) * 3);
 }
 
@@ -495,38 +497,237 @@ button {
     linear-gradient(0deg, rgba(0, 0, 0, 0.22), transparent 22%, rgba(0, 0, 0, 0.18));
 }
 
-.battle-effect {
+.battle-effect,
+.action-effect {
   position: absolute;
   left: 50%;
   top: 50%;
   z-index: 8;
   transform: translate(-50%, -50%);
-  color: #f3d88e;
+  color: #fff2b0;
   font-size: var(--battle-effect-font-size);
-  font-weight: 900;
+  font-weight: 1000;
   line-height: 1;
-  letter-spacing: 0;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  -webkit-text-stroke: 3px rgba(70, 0, 0, 0.96);
   text-shadow:
-    0 3px 0 rgba(0, 0, 0, 0.35),
-    0 12px 28px rgba(0, 0, 0, 0.45);
+    0 4px 0 rgba(0, 0, 0, 0.88),
+    0 0 12px rgba(255, 220, 90, 0.95),
+    0 0 30px rgba(255, 70, 40, 0.88),
+    0 0 54px rgba(255, 0, 0, 0.46);
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.65));
   pointer-events: none;
+}
+
+.battle-effect.is-active,
+.action-effect.is-active {
+  animation: mahjongActionEffect var(--battle-effect-duration) ease-out forwards;
+}
+
+.battle-effect::before,
+.action-effect::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  width: clamp(160px, 24vw, 280px);
+  height: clamp(160px, 24vw, 280px);
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 220, 90, 0.38), rgba(255, 70, 30, 0.2), transparent 70%);
+  animation: effectBurst var(--battle-effect-duration) ease-out forwards;
+}
+
+.battle-effect.effect-ron {
+  color: #fff2b0;
+  -webkit-text-stroke-color: #6b0000;
+  text-shadow:
+    0 4px 0 #180000,
+    0 0 18px rgba(255, 220, 90, 0.96),
+    0 0 40px rgba(255, 40, 20, 0.96),
+    0 0 74px rgba(180, 0, 0, 0.68);
+}
+
+.battle-effect.effect-tsumo {
+  color: #fff9d8;
+  -webkit-text-stroke-color: #7a4a00;
+  text-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.86),
+    0 0 18px rgba(255, 230, 120, 0.96),
+    0 0 42px rgba(90, 210, 255, 0.74);
+}
+
+.battle-effect.effect-riichi {
+  color: #ffdf7a;
+  -webkit-text-stroke-color: #260000;
+  text-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.92),
+    0 0 18px rgba(255, 0, 0, 0.78),
+    0 0 34px rgba(255, 215, 90, 0.68);
+}
+
+.battle-effect.effect-pon {
+  color: #ffe69a;
+  -webkit-text-stroke-color: #5a2600;
+  text-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.82),
+    0 0 18px rgba(255, 150, 40, 0.86),
+    0 0 38px rgba(255, 210, 90, 0.5);
+}
+
+.battle-effect.effect-kan {
+  color: #f7e6ff;
+  -webkit-text-stroke-color: #240033;
+  text-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.92),
+    0 0 20px rgba(180, 80, 255, 0.86),
+    0 0 46px rgba(255, 220, 90, 0.72);
+}
+
+.battle-effect.effect-yakuman {
+  color: #fff5b8;
+  font-size: clamp(72px, 11vw, 104px);
+  -webkit-text-stroke: 4px #4b0000;
+  text-shadow:
+    0 5px 0 rgba(0, 0, 0, 0.96),
+    0 0 22px rgba(255, 240, 150, 1),
+    0 0 54px rgba(255, 70, 30, 0.96),
+    0 0 92px rgba(255, 0, 0, 0.76);
+  animation: yakumanEffect var(--battle-yakuman-effect-duration) ease-out forwards;
+}
+
+.battle-effect.effect-yakuman::before {
+  background:
+    radial-gradient(circle, rgba(255, 245, 180, 0.5), rgba(255, 50, 20, 0.28), transparent 72%);
+  animation-duration: var(--battle-yakuman-effect-duration);
+}
+
+.battle-effect.effect-ryukyoku {
+  color: #d8f2ff;
+  -webkit-text-stroke-color: #0b2430;
+  text-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.82),
+    0 0 18px rgba(80, 190, 255, 0.72),
+    0 0 34px rgba(255, 230, 150, 0.34);
 }
 
 .battle-effect.marchao {
   font-size: var(--battle-effect-marchao-font-size);
-  -webkit-text-stroke: 2px #fff;
+  -webkit-text-stroke: 3px #fff;
   text-shadow:
-    0 0 1px #fff,
-    0 3px 0 rgba(0, 0, 0, 0.35),
-    0 12px 28px rgba(0, 0, 0, 0.45);
+    0 0 2px #fff,
+    0 4px 0 rgba(0, 0, 0, 0.72),
+    0 0 18px rgba(255, 255, 255, 0.72),
+    0 0 42px rgba(255, 220, 90, 0.42);
 }
 
 .battle-effect.flower-red {
   color: #d72d2d;
+  -webkit-text-stroke-color: #fff;
 }
 
 .battle-effect.flower-blue {
   color: #1976d2;
+  -webkit-text-stroke-color: #fff;
+}
+
+@keyframes mahjongActionEffect {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.45) rotate(-4deg);
+    filter: blur(3px) drop-shadow(0 0 0 rgba(255, 0, 0, 0));
+  }
+
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.18) rotate(2deg);
+    filter:
+      blur(0)
+      drop-shadow(0 0 24px rgba(255, 220, 90, 0.9))
+      drop-shadow(0 0 42px rgba(255, 60, 30, 0.8));
+  }
+
+  35% {
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.28);
+    filter:
+      blur(2px)
+      drop-shadow(0 0 30px rgba(255, 220, 90, 0.35));
+  }
+}
+
+@keyframes yakumanEffect {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.35) rotate(-6deg);
+  }
+
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.28) rotate(3deg);
+  }
+
+  25% {
+    transform: translate(-50%, -50%) scale(1.04) rotate(0deg);
+  }
+
+  55% {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.45);
+  }
+}
+
+@keyframes effectBurst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.25);
+  }
+
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.8);
+  }
+}
+
+@media (max-width: 600px) {
+  .battle-effect,
+  .action-effect {
+    font-size: clamp(52px, 15vw, 88px);
+    -webkit-text-stroke-width: 2px;
+    letter-spacing: 0.03em;
+  }
+
+  .battle-effect.effect-yakuman {
+    font-size: clamp(58px, 16vw, 94px);
+    -webkit-text-stroke-width: 3px;
+  }
+
+  .battle-effect::before,
+  .action-effect::before {
+    width: clamp(130px, 38vw, 220px);
+    height: clamp(130px, 38vw, 220px);
+  }
 }
 
 .battle-result-panel,
