@@ -1830,12 +1830,28 @@
       x: panelRect.left - size.width / 2 - EFFECT_PANEL_MARGIN,
       y: panelCenter.y,
     };
+    const rightBelow = {
+      x: right.x,
+      y: panelRect.bottom + size.height / 2 + EFFECT_PANEL_MARGIN,
+    };
+    const rightAbove = {
+      x: right.x,
+      y: panelRect.top - size.height / 2 - EFFECT_PANEL_MARGIN,
+    };
+    const leftBelow = {
+      x: left.x,
+      y: panelRect.bottom + size.height / 2 + EFFECT_PANEL_MARGIN,
+    };
+    const leftAbove = {
+      x: left.x,
+      y: panelRect.top - size.height / 2 - EFFECT_PANEL_MARGIN,
+    };
     const lowerCenter = { x: viewportWidth / 2, y: viewportHeight * 0.72 };
     const upperCenter = { x: viewportWidth / 2, y: viewportHeight * 0.25 };
     const screenCenter = { x: viewportWidth / 2, y: viewportHeight * 0.5 };
 
-    if (seat === "shimocha") return [right, below, above, left, lowerCenter, upperCenter, screenCenter];
-    if (seat === "kamicha") return [left, below, above, right, lowerCenter, upperCenter, screenCenter];
+    if (seat === "shimocha") return [right, rightBelow, rightAbove, below, above, left, lowerCenter, upperCenter, screenCenter];
+    if (seat === "kamicha") return [left, leftBelow, leftAbove, below, above, right, lowerCenter, upperCenter, screenCenter];
     return [below, above, right, left, lowerCenter, upperCenter, screenCenter];
   }
 
