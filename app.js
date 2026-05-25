@@ -12,6 +12,8 @@
   const EFFECT_PANEL_MARGIN = 16;
   const CPU_DISCARD_DELAY_MS = 1500;
   const AFTER_DISCARD_REACTION_DELAY_MS = 50;
+  const PAIFU_REPLAY_INTERVAL_MS = 1000;
+  const PAIFU_STORAGE_KEY = "marchao-sanma-last-paifu-v1";
   const RESULT_YAKU_NAME_MAP = {
     riichi: "立直",
     double_riichi: "ダブル立直",
@@ -76,6 +78,11 @@
   let lastBattleEffectSignature = "";
   let settlementBreakdownVisible = false;
   let resultTransparent = false;
+  let paifuReplay = null;
+  let paifuHandIndex = 0;
+  let paifuStepIndex = 0;
+  let paifuReplayTimer = 0;
+  let lastPaifuSnapshotSignature = "";
 
   const els = {
     undoButton: document.getElementById("undoButton"),
@@ -93,7 +100,20 @@
     battleSettlementPanel: document.getElementById("battleSettlementPanel"),
     battleSettlementBody: document.getElementById("battleSettlementBody"),
     battleSettlementDetailButton: document.getElementById("battleSettlementDetailButton"),
+    battlePaifuButton: document.getElementById("battlePaifuButton"),
     battleRestartButton: document.getElementById("battleRestartButton"),
+    paifuPanel: document.getElementById("paifuPanel"),
+    paifuTitle: document.getElementById("paifuTitle"),
+    paifuStepLabel: document.getElementById("paifuStepLabel"),
+    paifuActionText: document.getElementById("paifuActionText"),
+    paifuHandSelect: document.getElementById("paifuHandSelect"),
+    paifuFirstButton: document.getElementById("paifuFirstButton"),
+    paifuPrevButton: document.getElementById("paifuPrevButton"),
+    paifuNextButton: document.getElementById("paifuNextButton"),
+    paifuLastButton: document.getElementById("paifuLastButton"),
+    paifuPlayButton: document.getElementById("paifuPlayButton"),
+    paifuStopButton: document.getElementById("paifuStopButton"),
+    paifuBackButton: document.getElementById("paifuBackButton"),
     rulesScreen: document.getElementById("rulesScreen"),
     rulesBackButton: document.getElementById("rulesBackButton"),
     startRulesButton: document.getElementById("startRulesButton"),
@@ -204,6 +224,11 @@
     afterDiscardTimer = 0;
   }
 
+  function clearPaifuReplayTimer() {
+    window.clearInterval(paifuReplayTimer);
+    paifuReplayTimer = 0;
+  }
+
   function updateResultPanelBounds() {
     if (!els.battleResultPanel || appScreen !== "result" || resultTransparent) return;
     const surface = els.battleSurface;
@@ -261,9 +286,43 @@
     els.battleRestartButton?.addEventListener("click", () => {
       startBattleHanchan();
     });
+    els.battlePaifuButton?.addEventListener("click", () => {
+      openPaifuScreen();
+    });
     els.battleSettlementDetailButton?.addEventListener("click", () => {
       settlementBreakdownVisible = !settlementBreakdownVisible;
       renderBattleSettlementPanel();
+    });
+    els.paifuFirstButton?.addEventListener("click", () => {
+      stopPaifuPlayback();
+      setPaifuPosition(0, 0);
+    });
+    els.paifuPrevButton?.addEventListener("click", () => {
+      stopPaifuPlayback();
+      movePaifuStep(-1);
+    });
+    els.paifuNextButton?.addEventListener("click", () => {
+      stopPaifuPlayback();
+      movePaifuStep(1);
+    });
+    els.paifuLastButton?.addEventListener("click", () => {
+      stopPaifuPlayback();
+      movePaifuToLast();
+    });
+    els.paifuPlayButton?.addEventListener("click", () => {
+      startPaifuPlayback();
+    });
+    els.paifuStopButton?.addEventListener("click", () => {
+      stopPaifuPlayback();
+    });
+    els.paifuBackButton?.addEventListener("click", () => {
+      stopPaifuPlayback();
+      appScreen = "settlement";
+      renderBattleTable();
+    });
+    els.paifuHandSelect?.addEventListener("change", () => {
+      stopPaifuPlayback();
+      setPaifuPosition(Number(els.paifuHandSelect.value) || 0, 0);
     });
     els.battleSelfHand?.addEventListener("click", (event) => {
       const tileImage = event.target.closest("[data-discard-tile-id]");
@@ -497,6 +556,10 @@
     appScreen = "playing";
     lastHandResult = null;
     battleSettlement = null;
+    paifuReplay = createPaifuReplay();
+    paifuHandIndex = 0;
+    paifuStepIndex = 0;
+    lastPaifuSnapshotSignature = "";
     settlementBreakdownVisible = false;
     const initialDealerIndex = randomBattleDealerIndex();
     battleState = createBattleHand({
@@ -507,6 +570,7 @@
       honba: 0,
       kyotaku: 0,
     });
+    recordPaifuSnapshot(battleState, "deal", `${battleRoundText(battleState)}${battleState.honba}本場 開始`);
     enterResultIfHandEnded();
     renderBattleTable();
     scheduleCpuTurn();
@@ -605,6 +669,7 @@
 
   function renderBattleStateAndScheduleNext() {
     const ended = enterResultIfHandEnded();
+    recordPaifuSnapshot(battleState);
     renderBattleTable();
     if (ended) return;
     if (isVisibleDiscardState(battleState)) {
@@ -647,6 +712,7 @@
     if (!discard) {
       battleState = Game.endHandAsRyukyoku(battleState);
       enterResultIfHandEnded();
+      recordPaifuSnapshot(battleState, "ryukyoku", "流局");
       renderBattleTable();
       return;
     }
@@ -663,6 +729,7 @@
       clearResultTransitionTimer();
       battleState = applyBattleRyukyokuSettlement(battleState);
       lastHandResult = buildBattleHandResult(battleState);
+      attachPaifuHandResult(lastHandResult);
       resultTransparent = false;
       appScreen = "result";
       return true;
@@ -672,6 +739,8 @@
       resultTransitionTimer = 0;
       if (!battleState || battleState.phase !== "result" || appScreen !== "playing") return;
       lastHandResult = buildBattleHandResult(battleState);
+      attachPaifuHandResult(lastHandResult);
+      recordPaifuSnapshot(battleState, "result", paifuActionTextForState(battleState, "result"));
       resultTransparent = false;
       appScreen = "result";
       renderBattleTable();
@@ -1151,6 +1220,7 @@
     if (!lastHandResult || lastHandResult.requiresOorasuDealerChoice) return;
     if (lastHandResult.isHanchanEnded) {
       battleSettlement = buildBattleSettlement(battleState);
+      finalizePaifuReplay();
       settlementBreakdownVisible = false;
       appScreen = "settlement";
       renderBattleTable();
@@ -1178,6 +1248,7 @@
       requiresOorasuDealerChoice: false,
     };
     battleSettlement = buildBattleSettlement(battleState);
+    finalizePaifuReplay();
     settlementBreakdownVisible = false;
     appScreen = "settlement";
     renderBattleTable();
@@ -1209,9 +1280,272 @@
       },
       previousPlayers
     );
+    recordPaifuSnapshot(battleState, "deal", `${battleRoundText(battleState)}${battleState.honba}本場 開始`);
     enterResultIfHandEnded();
     renderBattleTable();
     scheduleCpuTurn();
+  }
+
+  function createPaifuReplay() {
+    return {
+      id: `paifu_${Date.now()}`,
+      startedAt: new Date().toISOString(),
+      endedAt: "",
+      hands: [],
+    };
+  }
+
+  function clonePaifuData(value) {
+    if (typeof structuredClone === "function") {
+      return structuredClone(value);
+    }
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function paifuRoundKey(gameState) {
+    return [
+      gameState?.roundWind || "",
+      gameState?.handNumber ?? "",
+      gameState?.honba ?? "",
+      gameState?.dealerIndex ?? "",
+    ].join(":");
+  }
+
+  function ensurePaifuHand(gameState) {
+    if (!paifuReplay || !gameState) return null;
+    const key = paifuRoundKey(gameState);
+    let hand = paifuReplay.hands[paifuReplay.hands.length - 1];
+    if (!hand || hand.key !== key) {
+      hand = {
+        key,
+        roundLabel: battleRoundText(gameState),
+        honba: Number(gameState.honba) || 0,
+        kyotaku: Math.max(0, Math.floor(Number(gameState.kyotaku) || 0)),
+        snapshots: [],
+        result: null,
+      };
+      paifuReplay.hands.push(hand);
+    }
+    return hand;
+  }
+
+  function paifuTileLabel(tile) {
+    return tile?.name || tile?.baseId || tile?.id || "牌";
+  }
+
+  function paifuActionTypeForState(gameState) {
+    const action = gameState?.lastAction || {};
+    if (gameState?.phase === "ryukyoku" || action.type === "ryukyoku") return "ryukyoku";
+    if (gameState?.phase === "result" && action.type === "win") return action.winType === "tsumo" ? "tsumo" : "ron";
+    if (action.type === "win") return action.winType === "tsumo" ? "tsumo" : "ron";
+    if (action.type === "riichi" || action.type === "riichiDeclaration") return "riichi";
+    if (action.type === "flower") return "flower";
+    if (action.type === "pon") return "pon";
+    if (action.type === "kan" || action.type === "ankan" || action.type === "kakan") return "kan";
+    if (action.type === "discard") return "discard";
+    if (action.type === "draw") return "draw";
+    return action.type || "result";
+  }
+
+  function paifuActionTextForState(gameState, forcedType = "") {
+    const action = gameState?.lastAction || {};
+    const type = forcedType || paifuActionTypeForState(gameState);
+    const playerIndex = Number.isInteger(action.winnerIndex)
+      ? action.winnerIndex
+      : Number.isInteger(action.playerIndex)
+        ? action.playerIndex
+        : Number.isInteger(gameState?.currentPlayerIndex)
+          ? gameState.currentPlayerIndex
+          : null;
+    const playerName = Number.isInteger(playerIndex) ? battlePlayerName(gameState, playerIndex) : "";
+    const tileText = action.tile ? paifuTileLabel(action.tile) : action.tileId ? paifuTileLabel(Tiles.getTileDefinition?.(action.tileId)) : "";
+    if (type === "deal") return `${battleRoundText(gameState)}${gameState.honba}本場 開始`;
+    if (type === "draw") return `${playerName}がツモ`;
+    if (type === "discard") return `${playerName}が${tileText}を打牌`;
+    if (type === "flower") return `${playerName}が華牌を公開`;
+    if (type === "pon") return `${playerName}がポン`;
+    if (type === "kan") return `${playerName}がカン`;
+    if (type === "riichi") return `${playerName}がリーチ`;
+    if (type === "ron") return `${playerName}がロンアガリ`;
+    if (type === "tsumo") return `${playerName}がツモアガリ`;
+    if (type === "ryukyoku") return "流局";
+    if (type === "result") return "局結果確定";
+    return playerName ? `${playerName}の操作` : "牌譜";
+  }
+
+  function paifuPlayerSnapshot(player, index, gameState) {
+    return {
+      id: player.id,
+      index,
+      seat: playerDisplaySeat(player, index),
+      displayName: displayPlayerNameByIndex(index),
+      points: Number(player.points) || 0,
+      chips: Number(player.chips) || 0,
+      hand: sortedBattleTiles(clonePaifuData(player.hand || [])),
+      discards: clonePaifuData(player.discards || []),
+      flowers: clonePaifuData(player.flowers || []),
+      melds: clonePaifuData(player.melds || []),
+      isDealer: index === gameState.dealerIndex,
+      isRiichi: Boolean(player.isRiichi),
+    };
+  }
+
+  function createPaifuSnapshot(gameState, actionType, actionText, hand, stepIndex) {
+    return clonePaifuData({
+      snapshotId: `${Date.now()}_${hand.snapshots.length}_${Math.random().toString(36).slice(2, 8)}`,
+      handIndex: paifuReplay.hands.indexOf(hand),
+      stepIndex,
+      roundLabel: battleRoundText(gameState),
+      roundWind: gameState.roundWind,
+      handNumber: gameState.handNumber,
+      honba: Number(gameState.honba) || 0,
+      kyotaku: Math.max(0, Math.floor(Number(gameState.kyotaku) || 0)),
+      remainingDraws: Math.max(0, Number(gameState.remainingDraws) || 0),
+      currentPlayerIndex: Number.isInteger(gameState.currentPlayerIndex) ? gameState.currentPlayerIndex : null,
+      dealerIndex: Number.isInteger(gameState.dealerIndex) ? gameState.dealerIndex : 0,
+      actionType,
+      actionText,
+      players: gameState.players.map((player, index) => paifuPlayerSnapshot(player, index, gameState)),
+      doraIndicators: clonePaifuData(gameState.doraIndicators || []),
+      uraDoraIndicators: clonePaifuData(gameState.uraDoraIndicators || []),
+    });
+  }
+
+  function paifuSnapshotSignature(gameState, actionType, actionText) {
+    if (!gameState) return "";
+    const action = gameState.lastAction || {};
+    return JSON.stringify({
+      phase: gameState.phase,
+      round: paifuRoundKey(gameState),
+      currentPlayerIndex: gameState.currentPlayerIndex,
+      remainingDraws: gameState.remainingDraws,
+      actionType,
+      actionText,
+      action: {
+        type: action.type,
+        playerIndex: action.playerIndex,
+        winnerIndex: action.winnerIndex,
+        tileId: action.tileId,
+        effect: action.effect,
+      },
+      players: gameState.players.map((player) => ({
+        points: player.points,
+        chips: player.chips,
+        isRiichi: player.isRiichi,
+        hand: (player.hand || []).map((tile) => tile.id),
+        discards: (player.discards || []).map((discard) => discardTileOf(discard)?.id || ""),
+        flowers: (player.flowers || []).map((tile) => tile.id),
+        melds: (player.melds || []).map((meld) => `${meld.type}:${meld.id}:${(meld.tiles || []).map((tile) => tile.id).join(",")}`),
+      })),
+    });
+  }
+
+  function recordPaifuSnapshot(gameState, forcedType = "", forcedText = "") {
+    if (!paifuReplay || !gameState || appScreen === "paifu") return;
+    const hand = ensurePaifuHand(gameState);
+    if (!hand) return;
+    const actionType = forcedType || paifuActionTypeForState(gameState);
+    const actionText = forcedText || paifuActionTextForState(gameState, actionType);
+    const signature = paifuSnapshotSignature(gameState, actionType, actionText);
+    if (signature && signature === lastPaifuSnapshotSignature) return;
+    lastPaifuSnapshotSignature = signature;
+    hand.snapshots.push(createPaifuSnapshot(gameState, actionType, actionText, hand, hand.snapshots.length));
+  }
+
+  function attachPaifuHandResult(result) {
+    if (!paifuReplay || !result || !battleState) return;
+    const hand = ensurePaifuHand(battleState);
+    if (hand) hand.result = clonePaifuData(result);
+  }
+
+  function finalizePaifuReplay() {
+    if (!paifuReplay) return;
+    paifuReplay.endedAt = new Date().toISOString();
+    try {
+      localStorage.setItem(PAIFU_STORAGE_KEY, JSON.stringify(paifuReplay));
+    } catch (error) {
+      console.warn("牌譜を保存できませんでした", error);
+    }
+  }
+
+  function hasPaifuSnapshots() {
+    return Boolean(paifuReplay?.hands?.some((hand) => hand.snapshots?.length));
+  }
+
+  function currentPaifuHand() {
+    return paifuReplay?.hands?.[paifuHandIndex] || null;
+  }
+
+  function currentPaifuSnapshot() {
+    const hand = currentPaifuHand();
+    return hand?.snapshots?.[paifuStepIndex] || null;
+  }
+
+  function setPaifuPosition(handIndex, stepIndex) {
+    if (!hasPaifuSnapshots()) return;
+    paifuHandIndex = clampNumber(Math.floor(Number(handIndex) || 0), 0, paifuReplay.hands.length - 1);
+    const hand = currentPaifuHand();
+    paifuStepIndex = clampNumber(Math.floor(Number(stepIndex) || 0), 0, Math.max(0, (hand?.snapshots?.length || 1) - 1));
+    renderBattleTable();
+  }
+
+  function movePaifuStep(offset) {
+    if (!hasPaifuSnapshots()) return;
+    const hand = currentPaifuHand();
+    const nextStep = paifuStepIndex + offset;
+    if (nextStep >= 0 && nextStep < hand.snapshots.length) {
+      setPaifuPosition(paifuHandIndex, nextStep);
+      return;
+    }
+    if (offset > 0 && paifuHandIndex < paifuReplay.hands.length - 1) {
+      setPaifuPosition(paifuHandIndex + 1, 0);
+      return;
+    }
+    if (offset < 0 && paifuHandIndex > 0) {
+      const previousHand = paifuReplay.hands[paifuHandIndex - 1];
+      setPaifuPosition(paifuHandIndex - 1, Math.max(0, previousHand.snapshots.length - 1));
+    }
+  }
+
+  function movePaifuToLast() {
+    if (!hasPaifuSnapshots()) return;
+    const handIndex = Math.max(0, paifuReplay.hands.length - 1);
+    const hand = paifuReplay.hands[handIndex];
+    setPaifuPosition(handIndex, Math.max(0, (hand?.snapshots?.length || 1) - 1));
+  }
+
+  function isPaifuAtLast() {
+    const hand = currentPaifuHand();
+    return paifuHandIndex >= (paifuReplay?.hands?.length || 1) - 1 && paifuStepIndex >= (hand?.snapshots?.length || 1) - 1;
+  }
+
+  function startPaifuPlayback() {
+    if (!hasPaifuSnapshots()) return;
+    clearPaifuReplayTimer();
+    paifuReplayTimer = window.setInterval(() => {
+      if (isPaifuAtLast()) {
+        stopPaifuPlayback();
+        return;
+      }
+      movePaifuStep(1);
+    }, PAIFU_REPLAY_INTERVAL_MS);
+  }
+
+  function stopPaifuPlayback() {
+    clearPaifuReplayTimer();
+  }
+
+  function openPaifuScreen() {
+    if (!hasPaifuSnapshots()) return;
+    clearCpuTurnTimer();
+    clearAfterDiscardTimer();
+    clearResultTransitionTimer();
+    resetBattleEffectState();
+    stopPaifuPlayback();
+    paifuHandIndex = clampNumber(paifuHandIndex, 0, paifuReplay.hands.length - 1);
+    paifuStepIndex = clampNumber(paifuStepIndex, 0, Math.max(0, (currentPaifuHand()?.snapshots?.length || 1) - 1));
+    appScreen = "paifu";
+    renderBattleTable();
   }
 
   function buildBattleSettlement(gameState) {
@@ -1658,16 +1992,25 @@
       els.battleSettlementDetailButton.textContent = "精算内訳";
       els.battleSettlementDetailButton.setAttribute("aria-pressed", String(settlementBreakdownVisible));
     }
+    if (els.battlePaifuButton) {
+      const hasReplay = hasPaifuSnapshots();
+      els.battlePaifuButton.disabled = !hasReplay;
+      els.battlePaifuButton.title = hasReplay ? "" : "牌譜データがありません";
+      setHiddenIfChanged(els.battlePaifuButton, false);
+    }
   }
 
   function renderBattleScreenPanels() {
     const isResult = appScreen === "result";
     const isSettlement = appScreen === "settlement";
     const isRules = appScreen === "rules";
+    const isPaifu = appScreen === "paifu";
     toggleClassIfChanged(els.battleSurface, "is-start-screen", appScreen === "start");
     toggleClassIfChanged(els.battleSurface, "is-rules-screen", isRules);
+    toggleClassIfChanged(els.battleSurface, "is-paifu-screen", isPaifu);
     setHiddenIfChanged(els.battleResultPanel, !isResult);
     setHiddenIfChanged(els.battleSettlementPanel, !isSettlement);
+    setHiddenIfChanged(els.paifuPanel, !isPaifu);
     setHiddenIfChanged(els.rulesScreen, !isRules);
     setHiddenIfChanged(els.battleStartButton, appScreen !== "start");
     setHiddenIfChanged(els.battleActionButtons, appScreen !== "playing");
@@ -1675,6 +2018,7 @@
     if (isResult) renderBattleResultPanel();
     if (isResult) updateResultPanelBounds();
     if (isSettlement) renderBattleSettlementPanel();
+    if (isPaifu) renderPaifuPanel();
   }
 
   function battleEffectSignature(gameState) {
@@ -2195,11 +2539,13 @@
       .map((discard, index) => {
         const tile = discardTileOf(discard);
         if (!tile) return "";
+        const isRiichiMarker = Boolean(discard?.isRiichiDeclaration || discard?.isRiichiMarkerReplacement);
         const classes = [
           "river-tile",
           rotationClass,
           discard?.isTsumogiri ? "tsumogiri" : "",
-          discard?.isRiichiDeclaration ? "riichi-discard" : "",
+          isRiichiMarker ? "riichi-discard" : "",
+          discard?.isRiichiMarkerReplacement ? "riichi-marker-replacement" : "",
         ]
           .filter(Boolean)
           .join(" ");
@@ -2208,8 +2554,145 @@
       .join("");
   }
 
+  function paifuSnapshotToGameState(snapshot) {
+    if (!snapshot) return null;
+    return {
+      roundWind: snapshot.roundWind,
+      handNumber: snapshot.handNumber,
+      honba: Number(snapshot.honba) || 0,
+      kyotaku: Math.max(0, Math.floor(Number(snapshot.kyotaku) || 0)),
+      remainingDraws: Math.max(0, Number(snapshot.remainingDraws) || 0),
+      currentPlayerIndex: Number.isInteger(snapshot.currentPlayerIndex) ? snapshot.currentPlayerIndex : 0,
+      dealerIndex: Number.isInteger(snapshot.dealerIndex) ? snapshot.dealerIndex : 0,
+      players: clonePaifuData(snapshot.players || []).map((player, index) => ({
+        ...player,
+        name: displayPlayerNameByIndex(index),
+        seat: player.seat || playerDisplaySeat(player, index),
+        isDealer: index === snapshot.dealerIndex,
+        isCpu: index !== 0,
+      })),
+      doraIndicators: clonePaifuData(snapshot.doraIndicators || []),
+      uraDoraIndicators: clonePaifuData(snapshot.uraDoraIndicators || []),
+      phase: "paifu",
+      lastAction: null,
+    };
+  }
+
+  function renderPaifuOpenHand(player, modifier = "") {
+    return sortedBattleTiles(player?.hand || [])
+      .map((tile) => renderBattleTile(tile, ["paifu-tile", modifier].filter(Boolean).join(" ")))
+      .join("");
+  }
+
+  function renderPaifuSideHand(player) {
+    const rotationClass = tileRotationClassForSeat(player?.seat);
+    return renderPaifuOpenHand(player, `side ${rotationClass}`);
+  }
+
+  function renderPaifuPanel() {
+    if (!els.paifuPanel) return;
+    const snapshot = currentPaifuSnapshot();
+    const hand = currentPaifuHand();
+    if (!snapshot || !hand) {
+      setTextIfChanged(els.paifuTitle, "牌譜");
+      setTextIfChanged(els.paifuStepLabel, "牌譜がありません");
+      setTextIfChanged(els.paifuActionText, "-");
+      return;
+    }
+    setTextIfChanged(els.paifuTitle, `${snapshot.roundLabel}${snapshot.honba}本場`);
+    setTextIfChanged(
+      els.paifuStepLabel,
+      `${paifuHandIndex + 1}/${paifuReplay.hands.length}局  ${paifuStepIndex + 1}/${hand.snapshots.length}手`
+    );
+    setTextIfChanged(els.paifuActionText, paifuDisplayActionText(snapshot, hand));
+    if (els.paifuHandSelect) {
+      const options = paifuReplay.hands
+        .map((entry, index) => {
+          const selected = index === paifuHandIndex ? " selected" : "";
+          return `<option value="${index}"${selected}>${escapeHtml(entry.roundLabel)}${entry.honba}本場</option>`;
+        })
+        .join("");
+      setHtmlIfChanged(els.paifuHandSelect, options);
+    }
+    const firstDisabled = paifuHandIndex === 0 && paifuStepIndex === 0;
+    const lastDisabled = isPaifuAtLast();
+    if (els.paifuFirstButton) els.paifuFirstButton.disabled = firstDisabled;
+    if (els.paifuPrevButton) els.paifuPrevButton.disabled = firstDisabled;
+    if (els.paifuNextButton) els.paifuNextButton.disabled = lastDisabled;
+    if (els.paifuLastButton) els.paifuLastButton.disabled = lastDisabled;
+    if (els.paifuPlayButton) els.paifuPlayButton.disabled = Boolean(paifuReplayTimer) || lastDisabled;
+    if (els.paifuStopButton) els.paifuStopButton.disabled = !paifuReplayTimer;
+  }
+
+  function paifuDisplayActionText(snapshot, hand) {
+    const base = snapshot?.actionText || "-";
+    const isLastStep = hand?.snapshots?.length && snapshot?.stepIndex === hand.snapshots.length - 1;
+    if (!isLastStep || !hand?.result) return base;
+    const result = hand.result;
+    if (result.type === "ryukyoku" || result.type === "draw") return `${base} / 流局`;
+    const wins = result.wins || [];
+    if (!wins.length) return base;
+    const summary = wins
+      .map((win) => {
+        const score = win.pointText ? ` ${win.pointText}` : "";
+        const yaku = win.yakuText ? ` ${win.yakuText}` : "";
+        return `${win.label || ""}${score}${yaku}`.trim();
+      })
+      .filter(Boolean)
+      .join(" / ");
+    return summary ? `${base} / ${summary}` : base;
+  }
+
+  function renderPaifuTable() {
+    const snapshot = currentPaifuSnapshot();
+    if (!snapshot) {
+      renderEmptyBattleTable();
+      renderBattleScreenPanels();
+      return;
+    }
+    const paifuState = paifuSnapshotToGameState(snapshot);
+    const selfPlayer = paifuState.players.find((player) => player.seat === "self");
+    const rightPlayer = paifuState.players.find((player) => player.seat === "shimocha");
+    const leftPlayer = paifuState.players.find((player) => player.seat === "kamicha");
+    const openFlowers = paifuState.players.flatMap((player) => player.flowers || []);
+
+    setTextIfChanged(els.battleSelfName, displayPlayerNameByIndex(0));
+    setTextIfChanged(els.battleRightName, displayPlayerNameByIndex(1));
+    setTextIfChanged(els.battleLeftName, displayPlayerNameByIndex(2));
+    renderCentralInfoPanel(paifuState);
+    resetBattleEffectState();
+    if (els.battleActionButtons) setHtmlIfChanged(els.battleActionButtons, "");
+    setTextIfChanged(els.battleStatus, snapshot.actionText || "牌譜再生中");
+    setTextIfChanged(els.battleStartButton, "対局開始");
+
+    setHtmlIfChanged(els.battleSelfHand, renderPaifuOpenHand(selfPlayer, "discard-disabled"));
+    setHtmlIfChanged(els.battleSelfMelds, renderPlayerMelds(selfPlayer));
+    setHtmlIfChanged(els.battleLeftMelds, renderPlayerMelds(leftPlayer));
+    setHtmlIfChanged(els.battleRightMelds, renderPlayerMelds(rightPlayer));
+    setHtmlIfChanged(els.battleSelfFlowers, (selfPlayer?.flowers || [])
+      .map((tile) => renderBattleTile(tile, "flower-open self-flower-tile tile-no-rotate"))
+      .join(""));
+    setHtmlIfChanged(els.battleLeftFlowers, (leftPlayer?.flowers || [])
+      .map((tile) => renderBattleTile(tile, `flower-open side-flower ${tileRotationClassForSeat(leftPlayer?.seat)}`))
+      .join(""));
+    setHtmlIfChanged(els.battleRightFlowers, (rightPlayer?.flowers || [])
+      .map((tile) => renderBattleTile(tile, `flower-open side-flower ${tileRotationClassForSeat(rightPlayer?.seat)}`))
+      .join(""));
+    setHtmlIfChanged(els.battleFlowerTiles, openFlowers.map((tile) => renderBattleTile(tile, "mini")).join(""));
+    setHtmlIfChanged(els.battleSelfRiver, renderDiscardRiver(selfPlayer));
+    setHtmlIfChanged(els.battleLeftRiver, renderDiscardRiver(leftPlayer));
+    setHtmlIfChanged(els.battleRightRiver, renderDiscardRiver(rightPlayer));
+    setHtmlIfChanged(els.battleLeftHand, renderPaifuSideHand(leftPlayer));
+    setHtmlIfChanged(els.battleRightHand, renderPaifuSideHand(rightPlayer));
+    renderBattleScreenPanels();
+  }
+
   function renderBattleTable() {
     if (!els.battleTable || !Tiles?.createTiles) return;
+    if (appScreen === "paifu") {
+      renderPaifuTable();
+      return;
+    }
     if (!battleState) {
       renderEmptyBattleTable();
       return;

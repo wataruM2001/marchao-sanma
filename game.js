@@ -59,6 +59,7 @@
     return {
       tile: cloneTile(tile),
       isRiichiDeclaration: Boolean(discard?.isRiichiDeclaration),
+      isRiichiMarkerReplacement: Boolean(discard?.isRiichiMarkerReplacement),
       isTsumogiri: Boolean(discard?.isTsumogiri),
       wasCalledByOpponent: Boolean(discard?.wasCalledByOpponent),
     };
@@ -359,6 +360,13 @@
   function clearIppatsuChances(gameState) {
     (gameState?.players || []).forEach((player) => {
       player.isIppatsuChance = false;
+    });
+    return gameState;
+  }
+
+  function clearRiichiMarkerReplacementFlags(gameState) {
+    (gameState?.players || []).forEach((player) => {
+      player.needsRiichiMarkerOnNextDiscard = false;
     });
     return gameState;
   }
@@ -1183,6 +1191,7 @@
       isDealer: index === dealerIndex,
       isCpu: index !== 0,
       isRiichi: false,
+      needsRiichiMarkerOnNextDiscard: false,
       riichiWinningTiles: [],
     }));
   }
@@ -1334,15 +1343,21 @@
       next.riichiDeclaration?.playerIndex === playerIndex &&
       riichiDiscardOptions({ ...player, hand: [...player.hand, discarded] }, next).some((option) => option.tileId === tileId);
     const riichiWaits = isRiichiDeclaration ? getWinningTiles(player) : [];
+    const isRiichiMarkerReplacement = Boolean(player.needsRiichiMarkerOnNextDiscard && !isRiichiDeclaration);
     const isTsumogiri =
+      isRiichiMarkerReplacement ||
       next.lastAction?.type === "draw" &&
       next.lastAction.playerIndex === playerIndex &&
       next.lastAction.tileId === tileId;
     player.discards.push({
       tile: discarded,
       isRiichiDeclaration,
+      isRiichiMarkerReplacement,
       isTsumogiri,
     });
+    if (isRiichiMarkerReplacement) {
+      player.needsRiichiMarkerOnNextDiscard = false;
+    }
     if (player.isRiichi && !isRiichiDeclaration) {
       player.isIppatsuChance = false;
     }
@@ -1363,6 +1378,7 @@
       tile: cloneTile(discarded),
       isTsumogiri,
       isRiichiDeclaration,
+      isRiichiMarkerReplacement,
     };
     return syncDrawWallState(next);
   }
@@ -1478,6 +1494,20 @@
     discarder.calledDiscardCount = (Number(discarder.calledDiscardCount) || 0) + 1;
   }
 
+  function hasRiichiMarkerInRiver(player) {
+    return (player?.discards || []).some(
+      (discard) => discard?.isRiichiDeclaration || discard?.isRiichiMarkerReplacement
+    );
+  }
+
+  function markRiichiReplacementAfterCalledDeclaration(discarder, removedDiscard) {
+    const removed = removedDiscard?.removed;
+    const removedRiichiMarker = removed?.isRiichiDeclaration || removed?.isRiichiMarkerReplacement;
+    if (!discarder || !removedRiichiMarker || !discarder.isRiichi) return;
+    if (hasRiichiMarkerInRiver(discarder)) return;
+    discarder.needsRiichiMarkerOnNextDiscard = true;
+  }
+
   function commitRiichiBeforeCallIfNeeded(gameState) {
     const pending = gameState?.pendingRiichi;
     if (!pending || pending.playerIndex !== gameState?.lastAction?.playerIndex) {
@@ -1500,6 +1530,7 @@
     if (discarder) {
       discarder.discards = removedDiscard.discards;
       applyCalledDiscardRecord(discarder, removedDiscard);
+      markRiichiReplacementAfterCalledDeclaration(discarder, removedDiscard);
     }
     player.hand = removeTilesById(player.hand, handTiles);
     player.melds.push({
@@ -1575,6 +1606,7 @@
         const removedDiscard = removeLastDiscard(discarder, kan.claimedTile.id);
         discarder.discards = removedDiscard.discards;
         applyCalledDiscardRecord(discarder, removedDiscard);
+        markRiichiReplacementAfterCalledDeclaration(discarder, removedDiscard);
       }
       player.hand = removeTilesById(player.hand, kan.tiles);
       player.melds.push({
@@ -1821,6 +1853,7 @@
     next.phase = "result";
     next.pendingAction = null;
     next.pendingRiichi = null;
+    clearRiichiMarkerReplacementFlags(next);
     next.lastAction = {
       type: "win",
       winType,
@@ -1847,6 +1880,7 @@
     next.phase = "result";
     next.pendingAction = null;
     next.pendingRiichi = null;
+    clearRiichiMarkerReplacementFlags(next);
     next.lastAction = {
       type: "win",
       winType: "tsumo",
@@ -2066,6 +2100,7 @@
     if (nagashiWinnerIndex >= 0) {
       return resolveNagashiYakuman(next, nagashiWinnerIndex);
     }
+    clearRiichiMarkerReplacementFlags(next);
     next.phase = "ryukyoku";
     next.lastAction = {
       type: "ryukyoku",

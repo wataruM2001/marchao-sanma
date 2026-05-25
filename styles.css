@@ -743,7 +743,8 @@ button {
 }
 
 .battle-result-panel,
-.battle-settlement-panel {
+.battle-settlement-panel,
+.paifu-panel {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -764,13 +765,15 @@ button {
 
 .battle-result-panel h2,
 .battle-settlement-panel h2,
+.paifu-panel h2,
 .battle-result-panel h3 {
   margin: 0;
   line-height: 1.15;
 }
 
 .battle-result-panel h2,
-.battle-settlement-panel h2 {
+.battle-settlement-panel h2,
+.paifu-panel h2 {
   color: #f3d88e;
   font-size: 1.35rem;
 }
@@ -783,6 +786,94 @@ button {
 .battle-result-body {
   display: grid;
   gap: 12px;
+}
+
+.paifu-panel {
+  top: clamp(12px, 3vh, 28px);
+  width: min(92vw, 760px);
+  max-height: none;
+  transform: translateX(-50%);
+  grid-template-columns: 1fr;
+  pointer-events: auto;
+}
+
+.paifu-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.paifu-panel-header p {
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 800;
+}
+
+.paifu-hand-select-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ui-gold);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.paifu-hand-select-label select {
+  min-height: 36px;
+  border: 1px solid rgba(243, 216, 142, 0.55);
+  border-radius: 999px;
+  padding: 4px 12px;
+  color: var(--ui-text);
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.paifu-action-text {
+  min-height: 24px;
+  color: var(--ui-text);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+}
+
+.paifu-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.paifu-controls .mini-button {
+  min-width: 74px;
+  min-height: 36px;
+}
+
+.battle-surface.is-paifu-screen .battle-action-buttons {
+  display: none !important;
+}
+
+.battle-surface.is-paifu-screen .table-tile-img {
+  pointer-events: none;
+}
+
+.battle-surface.is-paifu-screen .paifu-panel {
+  pointer-events: auto;
+}
+
+@media (max-width: 700px) {
+  .paifu-panel {
+    top: 10px;
+    width: min(94vw, 560px);
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .paifu-panel-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .paifu-controls .mini-button {
+    flex: 1 1 72px;
+  }
 }
 
 .result-simple {
