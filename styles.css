@@ -30,9 +30,10 @@
   --ui-shadow-strong: rgba(0, 0, 0, 0.48);
   --battle-action-gap: calc(var(--hand-tile-width, 48px) * 1.5);
   --open-tile-width: calc((var(--hand-tile-width, clamp(23px, 5.2vw, 70px)) + var(--center-river-tile-width, clamp(28px, 3vw, 42px))) / 2);
-  --meld-tile-gap: 3px;
-  --meld-group-gap: 10px;
-  --meld-tile-slot-size: calc(var(--open-tile-width) * 1.40625);
+  --open-tile-height: calc(var(--open-tile-width) * 1.40625);
+  --meld-tile-gap: clamp(1px, 0.25vw, 3px);
+  --meld-group-gap: clamp(9px, 1.1vw, 14px);
+  --meld-kakan-offset: calc(var(--open-tile-width) * 0.48);
   --battle-effect-font-size: clamp(64px, 10vw, 80px);
   --battle-effect-marchao-font-size: clamp(56px, 8.5vw, 65px);
   --battle-effect-duration: 1.2s;
@@ -943,7 +944,7 @@ button {
 .result-ryukyoku-tile-row {
   --center-river-tile-width: clamp(21px, 5.25vw, 27px);
   --open-tile-width: clamp(21px, 5.25vw, 27px);
-  --meld-tile-slot-size: calc(var(--open-tile-width) * 1.40625);
+  --open-tile-height: calc(var(--open-tile-width) * 1.40625);
   --meld-seat-rotation: 0deg;
   display: flex;
   flex-wrap: wrap;
@@ -989,7 +990,7 @@ button {
 .result-meld-row {
   --meld-seat-rotation: 0deg;
   --open-tile-width: clamp(21px, 5.25vw, 27px);
-  --meld-tile-slot-size: calc(var(--open-tile-width) * 1.40625);
+  --open-tile-height: calc(var(--open-tile-width) * 1.40625);
 }
 
 .result-meld-row .table-tile-img {
@@ -1275,12 +1276,13 @@ button {
   align-items: flex-end;
   gap: clamp(6px, 1vw, 12px);
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .self-hand-line .self-hand {
   flex: 1 1 auto;
   min-width: 0;
+  max-width: 100%;
 }
 
 .meld-area {
@@ -1305,7 +1307,7 @@ button {
 
 .self-meld-lane {
   flex: 0 0 auto;
-  max-width: calc(100% - 148px);
+  max-width: calc(100% - clamp(116px, 16vw, 180px));
   overflow: visible;
   justify-content: flex-end;
 }
@@ -1339,13 +1341,22 @@ button {
 }
 
 .meld-tile-slot {
-  width: var(--meld-tile-slot-size);
-  height: var(--meld-tile-slot-size);
+  position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   overflow: visible;
   flex: 0 0 auto;
+}
+
+.meld-tile-slot.is-vertical {
+  width: var(--open-tile-width);
+  height: var(--open-tile-height);
+}
+
+.meld-tile-slot.is-horizontal {
+  width: var(--open-tile-height);
+  height: var(--open-tile-height);
 }
 
 .meld-area .table-tile-img {
@@ -1354,15 +1365,17 @@ button {
   filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.24));
 }
 
-.meld-area .table-tile-img.called-tile {
-  transform: rotate(calc(var(--meld-seat-rotation) + 90deg));
+.meld-tile-slot.is-horizontal .table-tile-img.called-tile {
+  position: absolute;
+  left: 50%;
+  bottom: calc((var(--open-tile-height) - var(--open-tile-width)) / 2);
+  transform: translateX(-50%) rotate(calc(var(--meld-seat-rotation) + 90deg));
+  transform-origin: center center;
 }
 
 .called-tile-stack {
   position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  display: block;
   width: 100%;
   height: 100%;
 }
@@ -1373,9 +1386,10 @@ button {
 
 .called-tile-stack .added-kan-tile {
   position: absolute;
-  bottom: calc(var(--open-tile-width) * 0.44);
+  bottom: calc((var(--open-tile-height) - var(--open-tile-width)) / 2 + var(--meld-kakan-offset));
   left: 50%;
   transform: translateX(-50%) rotate(calc(var(--meld-seat-rotation) + 90deg));
+  z-index: 2;
 }
 
 .self-flower-lane {
@@ -1549,12 +1563,17 @@ button {
 
 .battle-surface:not(.is-start-screen) .meld-area .table-tile-img.called-tile,
 .battle-surface:not(.is-start-screen) .called-tile-stack .table-tile-img.called-tile {
-  width: calc(var(--open-tile-width) * 0.7);
+  width: var(--open-tile-width);
 }
 
-.battle-surface:not(.is-start-screen) .meld-tile-slot {
-  width: var(--meld-tile-slot-size);
-  height: var(--meld-tile-slot-size);
+.battle-surface:not(.is-start-screen) .meld-tile-slot.is-vertical {
+  width: var(--open-tile-width);
+  height: var(--open-tile-height);
+}
+
+.battle-surface:not(.is-start-screen) .meld-tile-slot.is-horizontal {
+  width: var(--open-tile-height);
+  height: var(--open-tile-height);
 }
 
 .battle-surface:not(.is-start-screen) .called-tile-stack {
@@ -2664,6 +2683,10 @@ body {
 .self-hand,
 .battle-control-row {
   min-width: 0;
+}
+
+.self-hand-line {
+  overflow: visible !important;
 }
 
 .battle-control-row {
