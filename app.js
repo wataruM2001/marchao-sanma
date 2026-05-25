@@ -1850,6 +1850,7 @@
   function calledTileIndexForMeld(meld, tiles) {
     if (!meld || meld.type === "ankan") return null;
     if (meld.calledFromSeat === "kamicha") return 0;
+    if (meld.calledFromSeat === "toimen") return Math.floor(tiles.length / 2);
     if (meld.calledFromSeat === "shimocha") return Math.max(0, tiles.length - 1);
     return null;
   }
@@ -1868,6 +1869,10 @@
     const calledTile = meld.calledTile;
     const handTiles = tiles.filter((tile) => tile.id !== calledTile.id);
     if (meld.calledFromSeat === "kamicha") return [calledTile, ...handTiles];
+    if (meld.calledFromSeat === "toimen") {
+      const middleIndex = Math.min(1, handTiles.length);
+      return [...handTiles.slice(0, middleIndex), calledTile, ...handTiles.slice(middleIndex)];
+    }
     if (meld.calledFromSeat === "shimocha") return [...handTiles, calledTile];
     return tiles;
   }
@@ -1880,8 +1885,14 @@
   }
 
   function renderMeldTile(tile, classes = "", useBack = false) {
-    const slotClass = classes.includes("called-tile") ? " called-slot" : "";
-    return `<span class="meld-tile-slot${slotClass}">${renderMeldTileImage(tile, classes, useBack)}</span>`;
+    const slotClasses = [
+      "meld-tile-slot",
+      classes.includes("called-tile") ? "is-horizontal" : "is-vertical",
+      useBack ? "is-back" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    return `<span class="${slotClasses}">${renderMeldTileImage(tile, classes, useBack)}</span>`;
   }
 
   function renderMeld(meld) {
@@ -1905,7 +1916,7 @@
           .map((tile, index) => {
             if (meld.type === "kakan" && index === calledIndex && meld.addedTile) {
               return `
-                <span class="meld-tile-slot called-stack-slot">
+                <span class="meld-tile-slot is-horizontal is-kakan">
                   <span class="called-tile-stack">
                     ${renderMeldTileImage(tile, "called-tile")}
                     ${renderMeldTileImage(meld.addedTile, "called-tile added-kan-tile")}
