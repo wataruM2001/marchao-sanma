@@ -32,6 +32,7 @@
   --open-tile-width: calc((var(--hand-tile-width, clamp(23px, 5.2vw, 70px)) + var(--center-river-tile-width, clamp(28px, 3vw, 42px))) / 2);
   --battle-effect-font-size: clamp(64px, 10vw, 80px);
   --battle-effect-marchao-font-size: clamp(56px, 8.5vw, 65px);
+  --self-flower-left-shift: calc(var(--hand-tile-width, 48px) * 3);
 }
 
 * {
@@ -1061,7 +1062,7 @@ button {
 .self-flower-lane {
   --river-tile-width: clamp(22px, 2.7vw, 38px);
   position: absolute;
-  right: clamp(46px, 8vw, 140px);
+  right: calc(clamp(46px, 8vw, 140px) + var(--self-flower-left-shift));
   bottom: clamp(108px, 15vw, 156px);
   z-index: 4;
   display: flex;
@@ -1832,7 +1833,7 @@ input[type="checkbox"] {
 
   .self-flower-lane {
     left: auto;
-    right: 34px;
+    right: calc(34px + var(--self-flower-left-shift));
     bottom: 104px;
   }
 
@@ -2436,7 +2437,7 @@ body {
   }
 
   .self-flower-lane {
-    right: clamp(16px, 5vw, 34px);
+    right: calc(clamp(16px, 5vw, 34px) + var(--self-flower-left-shift));
     bottom: clamp(88px, 14vh, 112px);
   }
 
