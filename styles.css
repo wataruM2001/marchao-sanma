@@ -1352,6 +1352,8 @@ button {
   position: relative;
   display: flex;
   align-items: flex-end;
+  align-content: flex-end;
+  align-self: flex-end;
   justify-content: center;
   overflow: visible;
   flex: 0 0 auto;
@@ -1376,7 +1378,7 @@ button {
 .meld-tile-slot.is-horizontal .table-tile-img.called-tile {
   position: absolute;
   left: 50%;
-  bottom: calc((var(--open-tile-height) - var(--open-tile-width)) / 2);
+  bottom: calc((var(--open-tile-width) - var(--open-tile-height)) / 2);
   transform: translateX(-50%) rotate(calc(var(--meld-seat-rotation) + 90deg));
   transform-origin: center center;
 }
@@ -1386,6 +1388,7 @@ button {
   display: block;
   width: 100%;
   height: 100%;
+  align-self: flex-end;
 }
 
 .called-tile-stack .table-tile-img {
@@ -1394,7 +1397,7 @@ button {
 
 .called-tile-stack .added-kan-tile {
   position: absolute;
-  bottom: calc((var(--open-tile-height) - var(--open-tile-width)) / 2 + var(--meld-kakan-offset));
+  bottom: calc((var(--open-tile-width) - var(--open-tile-height)) / 2 + var(--meld-kakan-offset));
   left: 50%;
   transform: translateX(-50%) rotate(calc(var(--meld-seat-rotation) + 90deg));
   z-index: 2;
