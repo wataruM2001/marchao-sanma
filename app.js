@@ -812,6 +812,10 @@
     return Math.round((Number(value) || 0) * scale) / scale;
   }
 
+  function battleSettlementChipScore(chipPoints) {
+    return roundBattleScore((Number(chipPoints) || 0) / 100);
+  }
+
   function battleShimochaIndex(playerIndex) {
     return (playerIndex + 1) % 3;
   }
@@ -1226,7 +1230,7 @@
       const oka = player.rank === 1 ? 15 : 0;
       const specialAdjustment = player.rank === 1 ? -7 : -5;
       const tobi = tobiBonuses[player.index] || 0;
-      const chipScore = roundBattleScore((Number(player.chips) || 0) / 500);
+      const chipScore = battleSettlementChipScore(player.chips);
       const internalFinalPoint = roundBattleScore(basePointScore + uma + oka + specialAdjustment + tobi + chipScore);
       const displayFinalPoint = Math.round(internalFinalPoint * 100);
       return {
