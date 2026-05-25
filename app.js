@@ -197,6 +197,35 @@
     cpuTurnTimer = 0;
   }
 
+  function updateResultPanelBounds() {
+    if (!els.battleResultPanel || appScreen !== "result" || resultTransparent) return;
+    const surface = els.battleSurface;
+    const centerPanel = surface?.querySelector(".center-tableau");
+    const selfHand = els.battleSelfHand;
+    if (!surface || !centerPanel || !selfHand) {
+      els.battleResultPanel.style.removeProperty("--result-panel-top");
+      els.battleResultPanel.style.removeProperty("--result-panel-height");
+      return;
+    }
+    const surfaceRect = surface.getBoundingClientRect();
+    const centerRect = centerPanel.getBoundingClientRect();
+    const handRect = selfHand.getBoundingClientRect();
+    if (
+      surfaceRect.height <= 0 ||
+      centerRect.height <= 0 ||
+      handRect.height <= 0 ||
+      centerRect.bottom <= surfaceRect.top ||
+      handRect.top >= surfaceRect.bottom
+    ) {
+      return;
+    }
+    const margin = 8;
+    const top = clampNumber(centerRect.top - surfaceRect.top, margin, Math.max(margin, surfaceRect.height - margin * 2));
+    const bottom = clampNumber(handRect.bottom - surfaceRect.top, top + 160, surfaceRect.height - margin);
+    els.battleResultPanel.style.setProperty("--result-panel-top", `${Math.round(top)}px`);
+    els.battleResultPanel.style.setProperty("--result-panel-height", `${Math.round(bottom - top)}px`);
+  }
+
   function bindEvents() {
     els.battleStartButton?.addEventListener("click", () => {
       startBattleHanchan();
@@ -235,6 +264,9 @@
       handleHumanDiscard(tileImage.dataset.discardTileId);
     });
     document.addEventListener("contextmenu", handleContextMenuTsumogiri);
+    window.addEventListener("resize", () => {
+      if (appScreen === "result") updateResultPanelBounds();
+    });
 
     els.battleActionButtons?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-battle-action]");
@@ -1609,6 +1641,7 @@
     setHiddenIfChanged(els.battleActionButtons, appScreen !== "playing");
     toggleClassIfChanged(els.battleResultPanel, "result-transparent", isResult && resultTransparent);
     if (isResult) renderBattleResultPanel();
+    if (isResult) updateResultPanelBounds();
     if (isSettlement) renderBattleSettlementPanel();
   }
 
