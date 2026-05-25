@@ -568,6 +568,7 @@ button {
 
 .battle-effect.effect-riichi {
   color: #ffdf7a;
+  font-size: clamp(54px, 8.5vw, 68px);
   -webkit-text-stroke-color: #260000;
   text-shadow:
     0 4px 0 rgba(0, 0, 0, 0.92),
@@ -728,6 +729,10 @@ button {
   .battle-effect.effect-yakuman {
     font-size: clamp(58px, 16vw, 94px);
     -webkit-text-stroke-width: 3px;
+  }
+
+  .battle-effect.effect-riichi {
+    font-size: clamp(44px, 12vw, 62px);
   }
 
   .battle-effect::before,
