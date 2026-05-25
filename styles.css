@@ -30,6 +30,9 @@
   --ui-shadow-strong: rgba(0, 0, 0, 0.48);
   --battle-action-gap: calc(var(--hand-tile-width, 48px) * 1.5);
   --open-tile-width: calc((var(--hand-tile-width, clamp(23px, 5.2vw, 70px)) + var(--center-river-tile-width, clamp(28px, 3vw, 42px))) / 2);
+  --meld-tile-gap: 3px;
+  --meld-group-gap: 10px;
+  --meld-tile-slot-size: calc(var(--open-tile-width) * 1.40625);
   --battle-effect-font-size: clamp(64px, 10vw, 80px);
   --battle-effect-marchao-font-size: clamp(56px, 8.5vw, 65px);
   --battle-effect-duration: 1.2s;
@@ -939,6 +942,8 @@ button {
 
 .result-ryukyoku-tile-row {
   --center-river-tile-width: clamp(21px, 5.25vw, 27px);
+  --open-tile-width: clamp(21px, 5.25vw, 27px);
+  --meld-tile-slot-size: calc(var(--open-tile-width) * 1.40625);
   --meld-seat-rotation: 0deg;
   display: flex;
   flex-wrap: wrap;
@@ -983,6 +988,8 @@ button {
 
 .result-meld-row {
   --meld-seat-rotation: 0deg;
+  --open-tile-width: clamp(21px, 5.25vw, 27px);
+  --meld-tile-slot-size: calc(var(--open-tile-width) * 1.40625);
 }
 
 .result-meld-row .table-tile-img {
@@ -1255,6 +1262,8 @@ button {
   justify-content: flex-start;
   align-items: end;
   gap: clamp(2px, 0.5vw, 7px);
+  min-width: 0;
+  overflow: hidden;
   border-radius: 8px;
   padding: 8px 10px;
   background: rgba(15, 21, 19, 0.34);
@@ -1264,7 +1273,9 @@ button {
   width: 100%;
   display: flex;
   align-items: flex-end;
-  gap: 8px;
+  gap: clamp(6px, 1vw, 12px);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .self-hand-line .self-hand {
@@ -1275,8 +1286,9 @@ button {
 .meld-area {
   --meld-seat-rotation: 0deg;
   display: flex;
-  gap: 8px;
+  gap: var(--meld-group-gap);
   align-items: flex-end;
+  min-width: 0;
 }
 
 .meld-area:empty {
@@ -1293,8 +1305,9 @@ button {
 
 .self-meld-lane {
   flex: 0 0 auto;
-  max-width: min(34vw, 360px);
+  max-width: calc(100% - 148px);
   overflow: visible;
+  justify-content: flex-end;
 }
 
 .side-meld-lane {
@@ -1318,10 +1331,21 @@ button {
 
 .meld-group {
   display: flex;
-  align-items: center;
-  gap: 0;
+  align-items: flex-end;
+  gap: var(--meld-tile-gap);
+  flex: 0 0 auto;
   font-size: 0;
   line-height: 0;
+}
+
+.meld-tile-slot {
+  width: var(--meld-tile-slot-size);
+  height: var(--meld-tile-slot-size);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+  flex: 0 0 auto;
 }
 
 .meld-area .table-tile-img {
@@ -1336,10 +1360,11 @@ button {
 
 .called-tile-stack {
   position: relative;
-  display: inline-grid;
-  place-items: center;
-  width: calc(var(--center-river-tile-width, 38px) * 1.40625);
-  min-height: var(--center-river-tile-width, 38px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 
 .called-tile-stack .table-tile-img {
@@ -1348,7 +1373,7 @@ button {
 
 .called-tile-stack .added-kan-tile {
   position: absolute;
-  top: -8px;
+  bottom: calc(var(--open-tile-width) * 0.44);
   left: 50%;
   transform: translateX(-50%) rotate(calc(var(--meld-seat-rotation) + 90deg));
 }
@@ -1527,9 +1552,14 @@ button {
   width: calc(var(--open-tile-width) * 0.7);
 }
 
+.battle-surface:not(.is-start-screen) .meld-tile-slot {
+  width: var(--meld-tile-slot-size);
+  height: var(--meld-tile-slot-size);
+}
+
 .battle-surface:not(.is-start-screen) .called-tile-stack {
-  width: calc(var(--open-tile-width) * 1.40625);
-  min-height: var(--open-tile-width);
+  width: 100%;
+  height: 100%;
 }
 
 .battle-surface:not(.is-start-screen) .self-hand,
