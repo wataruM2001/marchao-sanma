@@ -620,6 +620,55 @@ button {
   gap: 5px;
 }
 
+.result-ryukyoku-hands {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(243, 216, 142, 0.35);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.result-ryukyoku-player {
+  display: grid;
+  gap: 6px;
+}
+
+.result-ryukyoku-player-title {
+  color: var(--ui-gold, #f3d88e);
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.result-ryukyoku-tile-row {
+  --center-river-tile-width: clamp(21px, 5.25vw, 27px);
+  --meld-seat-rotation: 0deg;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.result-ryukyoku-tile-row .meld-group {
+  margin-left: 8px;
+}
+
+.result-ryukyoku-tile-row .table-tile-img {
+  width: clamp(21px, 5.25vw, 27px);
+  height: auto;
+  aspect-ratio: 128 / 180;
+  object-fit: contain;
+}
+
+.result-ryukyoku-tile-row .table-tile-img.called-tile {
+  transform: rotate(90deg);
+}
+
+.result-ryukyoku-tile-row .called-tile-stack .added-kan-tile {
+  transform: translateX(-50%) rotate(90deg);
+}
+
 .result-tile-img {
   width: clamp(21px, 5.25vw, 27px);
   height: auto;
