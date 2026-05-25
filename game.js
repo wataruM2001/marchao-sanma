@@ -1874,7 +1874,7 @@
         reason: "riichiAnkan",
       });
     }
-    return afterPlayerDiscard(discardDrawnTile(gameState, playerIndex));
+    return discardDrawnTile(gameState, playerIndex);
   }
 
   function afterPlayerDraw(gameState) {
@@ -2004,8 +2004,7 @@
     if (action === "skip" && pending.availableActions?.canSkip) {
       if (pending.source === "afterDraw") {
         if (player?.isRiichi) {
-          const discarded = discardDrawnTile(gameState, playerIndex);
-          return afterPlayerDiscard(discarded);
+          return discardDrawnTile(gameState, playerIndex);
         }
         return clearPendingAction(gameState, "discard");
       }
@@ -2020,9 +2019,16 @@
     return gameState;
   }
 
+  function hasUnresolvedDraw(gameState) {
+    return gameState?.phase === "discard";
+  }
+
   function nextTurn(gameState) {
     let next = syncDrawWallState(cloneGameState(gameState));
     if (next.phase === "actionPending" || next.phase === "ryukyoku" || next.phase === "ended" || next.phase === "result") {
+      return next;
+    }
+    if (hasUnresolvedDraw(next)) {
       return next;
     }
     if (next.drawWall.length <= 0) {
