@@ -41,6 +41,10 @@ create index if not exists hanchan_stats_hanchan_id_idx
 alter table public.shared_paifus enable row level security;
 alter table public.hanchan_stats enable row level security;
 
+drop policy if exists "Public can read public shared paifus" on public.shared_paifus;
+drop policy if exists "Public can insert shared paifus for test" on public.shared_paifus;
+drop policy if exists "Public can insert hanchan stats for test" on public.hanchan_stats;
+
 create policy "Public can read public shared paifus"
   on public.shared_paifus
   for select
