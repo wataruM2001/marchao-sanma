@@ -3341,7 +3341,8 @@ button:disabled:hover,
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) {
     --center-layout-gap: 1px;
-    --center-river-tile-width: clamp(18px, 4.7vh, 24px);
+    --center-river-tile-width: clamp(17px, 4.35vh, 22px);
+    --landscape-tile-width: var(--center-river-tile-width);
     --center-river-tile-long: calc(var(--center-river-tile-width) * 1.40625);
     --side-river-width: calc(4 * var(--center-river-tile-long));
     --center-panel-width: calc(6 * var(--center-river-tile-width));
@@ -3351,21 +3352,27 @@ button:disabled:hover,
     --center-layout-top: clamp(90px, 34vh, 132px);
     --center-layout-upshift: calc(var(--center-river-tile-long) * 1.2);
     --center-layout-downshift: -8px;
-    --hand-tile-width: clamp(20px, 5vh, 34px);
+    --hand-tile-width: var(--landscape-tile-width);
     --draw-tile-gap-ratio: 0.24;
     --draw-tile-gap: calc(var(--hand-tile-width) * var(--draw-tile-gap-ratio));
     --battle-action-gap: clamp(6px, calc(var(--hand-tile-width) * 0.55), 18px);
-    --open-tile-width: calc((var(--hand-tile-width) + var(--center-river-tile-width)) / 2);
+    --open-tile-width: var(--landscape-tile-width);
     --open-tile-height: calc(var(--open-tile-width) * 1.40625);
+    --dora-tile-width: var(--landscape-tile-width);
+    --dora-tile-height: calc(var(--landscape-tile-width) * 1.40625);
+    --landscape-side-margin: clamp(40px, calc(var(--hand-tile-width) * 5), 180px);
     --meld-group-gap: 5px;
     --meld-tile-gap: 1px;
     --battle-effect-font-size: clamp(42px, 11vh, 58px);
     --battle-effect-marchao-font-size: clamp(34px, 9vh, 46px);
     --self-flower-left-shift: calc(var(--hand-tile-width) * 2.4);
+    box-sizing: border-box;
+    padding-left: var(--landscape-side-margin);
+    padding-right: var(--landscape-side-margin);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .center-table-layout {
-    max-width: 94vw;
+    max-width: calc(100vw - (var(--landscape-side-margin) * 2));
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .center-table-layout .center-tableau {
@@ -3375,7 +3382,17 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .dora-indicator-row {
-    transform: translateY(1px);
+    position: fixed;
+    left: 50%;
+    top: 10px;
+    width: auto;
+    min-width: calc(var(--landscape-tile-width) * 5);
+    height: var(--dora-tile-height);
+    transform: translateX(-50%);
+  }
+
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .dora-indicator-tile {
+    width: var(--landscape-tile-width);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .round-title-block {
@@ -3421,15 +3438,15 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .opponent-left {
-    left: 2px;
+    left: var(--landscape-side-margin);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .opponent-right {
-    right: 2px;
+    right: var(--landscape-side-margin);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .side-hand {
-    --side-tile-width: var(--center-river-tile-width);
+    --side-tile-width: var(--landscape-tile-width);
     --side-tile-long: var(--center-river-tile-long);
   }
 
@@ -3451,8 +3468,8 @@ button:disabled:hover,
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .self-hand-area {
     bottom: 2px;
-    width: min(86vw, 680px);
-    max-width: calc(100vw - 18px);
+    width: calc(100vw - (var(--landscape-side-margin) * 2));
+    max-width: calc(100vw - (var(--landscape-side-margin) * 2));
     gap: 3px;
   }
 
@@ -3495,6 +3512,21 @@ button:disabled:hover,
     min-height: 0;
     padding: 2px 3px;
     gap: 0;
+    justify-content: center;
+  }
+
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .self-hand .table-tile-img,
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .side-hand .table-tile-img,
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .discard-river .table-tile-img,
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .self-flower-lane .table-tile-img,
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .side-flower-lane .table-tile-img,
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .meld-area .table-tile-img,
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .called-tile-stack .table-tile-img,
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .table-tile-img.mini {
+    width: var(--landscape-tile-width);
+    height: auto;
+    aspect-ratio: 128 / 180;
+    object-fit: contain;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .self-flower-lane {
