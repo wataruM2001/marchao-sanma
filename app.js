@@ -11,6 +11,7 @@
   const EFFECT_SCREEN_MARGIN = 16;
   const EFFECT_PANEL_MARGIN = 16;
   const CPU_DISCARD_DELAY_MS = 1500;
+  const AFTER_DISCARD_REACTION_DELAY_MS = 50;
   const RESULT_YAKU_NAME_MAP = {
     riichi: "立直",
     double_riichi: "ダブル立直",
@@ -67,6 +68,7 @@
   let lastHandResult = null;
   let battleSettlement = null;
   let cpuTurnTimer = 0;
+  let afterDiscardTimer = 0;
   let resultTransitionTimer = 0;
   let battleEffectTimer = 0;
   let activeBattleEffect = null;
@@ -195,6 +197,11 @@
   function clearCpuTurnTimer() {
     window.clearTimeout(cpuTurnTimer);
     cpuTurnTimer = 0;
+  }
+
+  function clearAfterDiscardTimer() {
+    window.clearTimeout(afterDiscardTimer);
+    afterDiscardTimer = 0;
   }
 
   function updateResultPanelBounds() {
@@ -454,6 +461,7 @@
       return;
     }
     clearCpuTurnTimer();
+    clearAfterDiscardTimer();
     clearResultTransitionTimer();
     resetBattleEffectState();
     syncPlayersFromInputs();
@@ -482,6 +490,7 @@
       return;
     }
     clearCpuTurnTimer();
+    clearAfterDiscardTimer();
     clearResultTransitionTimer();
     resetBattleEffectState();
     syncPlayersFromInputs();
@@ -539,10 +548,7 @@
     if (currentPlayer?.seat !== "self") return;
     try {
       battleState = Game.discardTile(battleState, battleState.currentPlayerIndex, tileId);
-      battleState = Game.afterPlayerDiscard(battleState);
-      enterResultIfHandEnded();
-      renderBattleTable();
-      scheduleCpuTurn();
+      renderBattleStateAndScheduleNext();
     } catch (error) {
       els.battleStatus.textContent = error.message;
     }
@@ -587,12 +593,36 @@
     if (!battleState || appScreen !== "playing" || battleState.phase !== "actionPending") return;
     try {
       battleState = Game.performPendingAction(battleState, action);
-      enterResultIfHandEnded();
-      renderBattleTable();
-      scheduleCpuTurn();
+      renderBattleStateAndScheduleNext();
     } catch (error) {
       els.battleStatus.textContent = error.message;
     }
+  }
+
+  function isVisibleDiscardState(gameState) {
+    return gameState?.phase === "draw" && gameState?.lastAction?.type === "discard";
+  }
+
+  function renderBattleStateAndScheduleNext() {
+    const ended = enterResultIfHandEnded();
+    renderBattleTable();
+    if (ended) return;
+    if (isVisibleDiscardState(battleState)) {
+      scheduleAfterVisibleDiscard();
+      return;
+    }
+    scheduleCpuTurn();
+  }
+
+  function scheduleAfterVisibleDiscard() {
+    clearAfterDiscardTimer();
+    if (!battleState || appScreen !== "playing" || !isVisibleDiscardState(battleState)) return;
+    afterDiscardTimer = window.setTimeout(() => {
+      afterDiscardTimer = 0;
+      if (!battleState || appScreen !== "playing" || !isVisibleDiscardState(battleState)) return;
+      battleState = Game.afterPlayerDiscard(battleState);
+      renderBattleStateAndScheduleNext();
+    }, AFTER_DISCARD_REACTION_DELAY_MS);
   }
 
   function scheduleCpuTurn() {
@@ -610,9 +640,7 @@
     if (!currentPlayer?.isCpu) return;
     if (currentPlayer.isRiichi) {
       battleState = Game.handleRiichiDraw(currentPlayer, battleState);
-      enterResultIfHandEnded();
-      renderBattleTable();
-      scheduleCpuTurn();
+      renderBattleStateAndScheduleNext();
       return;
     }
     const discard = Game.decideCpuDiscard(currentPlayer, battleState);
@@ -623,15 +651,13 @@
       return;
     }
     battleState = Game.discardTile(battleState, battleState.currentPlayerIndex, discard.id);
-    battleState = Game.afterPlayerDiscard(battleState);
-    enterResultIfHandEnded();
-    renderBattleTable();
-    scheduleCpuTurn();
+    renderBattleStateAndScheduleNext();
   }
 
   function enterResultIfHandEnded() {
     if (!battleState || !["result", "ryukyoku"].includes(battleState.phase)) return false;
     clearCpuTurnTimer();
+    clearAfterDiscardTimer();
     if (appScreen === "result") return true;
     if (battleState.phase === "ryukyoku") {
       clearResultTransitionTimer();
@@ -1154,6 +1180,8 @@
   }
 
   function startNextBattleHand(nextRound) {
+    clearCpuTurnTimer();
+    clearAfterDiscardTimer();
     clearResultTransitionTimer();
     resetBattleEffectState();
     const previousPlayers = battleState.players.map((player) => ({
