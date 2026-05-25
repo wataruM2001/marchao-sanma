@@ -3343,16 +3343,17 @@ button:disabled:hover,
     --center-layout-gap: 1px;
     --center-river-tile-width: clamp(17px, 4.35vh, 22px);
     --landscape-tile-width: var(--center-river-tile-width);
+    --self-hand-landscape-tile-width: calc(var(--landscape-tile-width) * 1.25);
     --center-river-tile-long: calc(var(--center-river-tile-width) * 1.40625);
     --side-river-width: calc(4 * var(--center-river-tile-long));
     --center-panel-width: calc(6 * var(--center-river-tile-width));
-    --center-panel-height: calc(6 * var(--center-river-tile-width));
+    --center-panel-height: calc(7.15 * var(--center-river-tile-width));
     --self-river-height: calc(3 * var(--center-river-tile-long));
     --center-layout-scale: 1;
-    --center-layout-top: clamp(90px, 34vh, 132px);
-    --center-layout-upshift: calc(var(--center-river-tile-long) * 1.2);
-    --center-layout-downshift: -8px;
-    --hand-tile-width: var(--landscape-tile-width);
+    --center-layout-top: 5px;
+    --center-layout-upshift: 0px;
+    --center-layout-downshift: 0px;
+    --hand-tile-width: var(--self-hand-landscape-tile-width);
     --draw-tile-gap-ratio: 0.24;
     --draw-tile-gap: calc(var(--hand-tile-width) * var(--draw-tile-gap-ratio));
     --battle-action-gap: clamp(6px, calc(var(--hand-tile-width) * 0.55), 18px);
@@ -3377,14 +3378,14 @@ button:disabled:hover,
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .center-table-layout .center-tableau {
     gap: 2px;
-    padding: 5px;
+    padding: calc(var(--dora-tile-height) + 5px) 5px 5px;
     border-radius: 8px;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .dora-indicator-row {
     position: absolute;
     left: 50%;
-    top: calc(10px - var(--center-layout-top) + var(--center-layout-upshift) - var(--center-layout-downshift));
+    top: 0;
     width: auto;
     min-width: calc(var(--landscape-tile-width) * 5);
     height: var(--dora-tile-height);
@@ -3396,12 +3397,12 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .round-title-block {
-    top: calc(50% - 5px);
+    top: calc(50% + 10px);
     width: calc(var(--center-river-tile-width) * 3.2);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) #battleRoundLabel {
-    font-size: clamp(15px, 4.3vh, 20px);
+    font-size: clamp(14px, 3.9vh, 18px);
     line-height: 0.92;
     white-space: nowrap;
   }
@@ -3413,18 +3414,18 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .center-score-display .score-display {
-    font-size: clamp(12px, 3.5vh, 16px);
+    font-size: clamp(10px, 3vh, 14px);
     white-space: nowrap;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .kamicha-score {
     left: 9px;
-    top: calc(50% - var(--center-river-tile-long) + 4px);
+    top: calc(50% - var(--center-river-tile-long) + 16px);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .shimocha-score {
     right: 9px;
-    top: calc(50% - var(--center-river-tile-long) + 4px);
+    top: calc(50% - var(--center-river-tile-long) + 16px);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .self-score {
@@ -3527,6 +3528,10 @@ button:disabled:hover,
     height: auto;
     aspect-ratio: 128 / 180;
     object-fit: contain;
+  }
+
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .self-hand .table-tile-img {
+    width: var(--hand-tile-width);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .self-flower-lane {
