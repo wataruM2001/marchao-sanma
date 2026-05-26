@@ -3013,10 +3013,6 @@ input[type="checkbox"] {
   height: var(--river-tile-width);
 }
 
-.center-table-layout .river-left .table-tile-img.riichi-discard {
-  transform: rotate(var(--tile-rotation));
-}
-
 .center-table-layout .river-right {
   grid-column: 3;
   grid-row: 1;
