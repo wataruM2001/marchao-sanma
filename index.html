@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオサンマ</title>
-  <link rel="stylesheet" href="./styles.css?v=settlement-buttons-v1" />
+  <link rel="stylesheet" href="./styles.css?v=resume-rinshan-stats-reset-v1" />
   </head>
   <body>
     <main class="app-shell">
@@ -151,6 +151,31 @@
                   </div>
                 </section>
               </div>
+              <div class="stats-reset-area">
+                <button class="primary-button stats-reset-button" id="statsResetButton" type="button">すべての成績をリセット</button>
+                <div class="stats-reset-confirm" id="statsResetConfirm" hidden>
+                  <p>
+                    保存されているすべての成績を削除します。<br />
+                    この操作は取り消せません。<br />
+                    本当に削除しますか？
+                  </p>
+                  <div class="stats-reset-actions">
+                    <button class="mini-button" id="statsResetCancelButton" type="button">キャンセル</button>
+                    <button class="primary-button" id="statsResetConfirmButton" type="button">削除する</button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="resume-required-screen" id="resumeRequiredScreen" hidden>
+            <article class="resume-required-panel">
+              <h2>対局を再開</h2>
+              <p>
+                前回の対局途中データがあります。<br />
+                この対局を再開してください。
+              </p>
+              <button class="primary-button resume-required-button" id="resumeRequiredButton" type="button">再開する</button>
             </article>
           </section>
 
@@ -465,11 +490,11 @@
     </main>
 
     <script src="./tiles.js?v=flower-ma"></script>
-    <script src="./game.js?v=self-riichi-delay-v1"></script>
+    <script src="./game.js?v=resume-rinshan-stats-reset-v1"></script>
     <script src="./rules.js?v=settlement-chip-score-v1"></script>
-    <script src="./hand-evaluation.js?v=dora-indicator-manchu-flower"></script>
+    <script src="./hand-evaluation.js?v=resume-rinshan-stats-reset-v1"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./supabaseClient.js?v=shared-paifu-url-v1"></script>
-    <script src="./app.js?v=settlement-buttons-v1"></script>
+    <script src="./app.js?v=resume-rinshan-stats-reset-v1"></script>
   </body>
 </html>
