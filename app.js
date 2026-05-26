@@ -109,6 +109,7 @@
   let statsSelectedMonth = new Date().getMonth() + 1;
   let isViewingSharedPaifu = false;
   let currentSharedPaifuUrl = "";
+  let isSettlementPreview = false;
 
   const els = {
     undoButton: document.getElementById("undoButton"),
@@ -247,12 +248,98 @@
   function init() {
     renderTileGroups();
     bindEvents();
-    if (new URLSearchParams(window.location.search).get("paifu")) {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("preview") === "settlement") {
+      setupSettlementPreview();
+    } else if (urlParams.get("paifu")) {
       loadSharedPaifuFromUrl();
     } else if (hasInProgressHanchanSave()) {
       appScreen = "resume";
     }
     render();
+  }
+
+  function setupSettlementPreview() {
+    if (!Game) return;
+    isSettlementPreview = true;
+    isViewingSharedPaifu = false;
+    currentSharedPaifuUrl = "";
+    appScreen = "settlement";
+    lastHandResult = null;
+    settlementBreakdownVisible = false;
+    resultTransparent = false;
+    clearCpuTurnTimer();
+    clearRiichiAutoDiscardTimer();
+    clearAfterDiscardTimer();
+    clearResultTransitionTimer();
+    resetBattleEffectState();
+    const startedAt = new Date().toISOString();
+    paifuReplay = {
+      ...createPaifuReplay(),
+      id: "settlement_preview",
+      startedAt,
+      endedAt: startedAt,
+    };
+    paifuHandIndex = 0;
+    paifuStepIndex = 0;
+    lastPaifuSnapshotSignature = "";
+    battleState = createBattleHand({
+      dealerIndex: 0,
+      initialDealerIndex: 0,
+      roundWind: "east",
+      handNumber: 1,
+      honba: 0,
+      kyotaku: 1,
+    });
+    normalizeHanchanTimingFields(battleState, startedAt);
+    recordPaifuSnapshot(battleState, "deal", "Settlement preview");
+    battleSettlement = [
+      {
+        index: 0,
+        name: "player1",
+        rank: 1,
+        points: 52300,
+        basePointScore: 12.3,
+        uma: 20,
+        oka: 15,
+        specialAdjustment: -7,
+        tobi: 0,
+        chipScore: 20,
+        internalFinalPoint: 60.3,
+        displayFinalPoint: 6030,
+        kyotakuRecovery: 1000,
+      },
+      {
+        index: 1,
+        name: "player2",
+        rank: 2,
+        points: 31800,
+        basePointScore: -8.2,
+        uma: 0,
+        oka: 0,
+        specialAdjustment: -5,
+        tobi: 0,
+        chipScore: -10,
+        internalFinalPoint: -23.2,
+        displayFinalPoint: -2320,
+        kyotakuRecovery: 0,
+      },
+      {
+        index: 2,
+        name: "player3",
+        rank: 3,
+        points: 20900,
+        basePointScore: -19.1,
+        uma: -20,
+        oka: 0,
+        specialAdjustment: -5,
+        tobi: 0,
+        chipScore: -10,
+        internalFinalPoint: -54.1,
+        displayFinalPoint: -5410,
+        kyotakuRecovery: 0,
+      },
+    ];
   }
 
   function resetBattleEffectState() {
@@ -835,6 +922,7 @@
     appScreen = "playing";
     lastHandResult = null;
     battleSettlement = null;
+    isSettlementPreview = false;
     isViewingSharedPaifu = false;
     currentSharedPaifuUrl = "";
     paifuReplay = createPaifuReplay();
@@ -2000,6 +2088,7 @@
     }
     currentSharedPaifuUrl = paifuReplay?.sharedUrl || "";
     isViewingSharedPaifu = true;
+    isSettlementPreview = false;
     battleState = null;
     lastHandResult = null;
     paifuHandIndex = 0;
@@ -3337,7 +3426,7 @@
     if (isSettlement) renderBattleSettlementPanel();
     if (isStats) renderStatsScreen();
     if (isPaifu) renderPaifuPanel();
-    if (isSettlement) {
+    if (isSettlement && !isSettlementPreview) {
       clearInProgressHanchanSave();
     } else if (appScreen === "playing" || appScreen === "result") {
       saveInProgressHanchan();
