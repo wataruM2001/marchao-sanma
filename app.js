@@ -2416,12 +2416,17 @@
     if (!record) return null;
     return {
       hanchan_id: record.id,
+      ended_at: record.endedAt,
       rank: record.rank,
+      final_raw_score: record.finalRawScore,
       settlement_point: record.settlementPoint,
       chip_count: record.chipCount,
       total_hands: record.totalHands,
       win_count: record.winCount,
       deal_in_count: record.dealInCount,
+      riichi_count: record.riichiCount,
+      called_hand_count: record.calledHandCount,
+      duration_seconds: record.durationSeconds,
     };
   }
 
@@ -2435,6 +2440,10 @@
     const row = buildHanchanStatsRow(battleSettlement);
     if (!row) return;
     window.statsApi.saveHanchanStats(row).then((result) => {
+      if (result?.skipped) {
+        console.info(result.reason || "Supabase stats save skipped.");
+        return;
+      }
       if (!result.ok) {
         lastSavedStatsHanchanId = "";
         console.warn("半荘成績を保存できませんでした", result.reason || result.error);
