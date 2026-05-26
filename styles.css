@@ -3382,11 +3382,14 @@ button:disabled:hover,
     --landscape-tile-width: var(--center-river-tile-width);
     --self-hand-landscape-tile-width: calc(var(--landscape-tile-width) * 1.5);
     --center-river-tile-long: calc(var(--center-river-tile-width) * 1.40625);
+    --discard-tile-width: var(--center-river-tile-long);
+    --discard-tile-height: var(--center-river-tile-width);
+    --center-panel-size-landscape: calc((var(--discard-tile-width) * 5) + var(--discard-tile-height));
     --side-river-width: calc(4 * var(--center-river-tile-long));
-    --center-panel-width: clamp(220px, 29vw, 270px);
-    --center-panel-base-height: calc(7.15 * var(--center-river-tile-width));
-    --center-panel-text-lift: calc(var(--center-river-tile-long) * 0.8);
-    --center-panel-height: calc(var(--center-panel-base-height) - var(--center-panel-text-lift));
+    --center-panel-width: var(--center-panel-size-landscape);
+    --center-panel-base-height: var(--center-panel-size-landscape);
+    --center-panel-text-lift: 0px;
+    --center-panel-height: var(--center-panel-size-landscape);
     --self-river-height: calc(3 * var(--center-river-tile-long));
     --center-layout-scale: 1;
     --center-layout-top: 5px;
@@ -3420,6 +3423,14 @@ button:disabled:hover,
     gap: 2px;
     padding: calc(var(--dora-tile-height) + 5px) 5px 5px;
     border-radius: 8px;
+    width: var(--center-panel-size-landscape);
+    height: var(--center-panel-size-landscape);
+    min-width: var(--center-panel-size-landscape);
+    min-height: var(--center-panel-size-landscape);
+    max-width: var(--center-panel-size-landscape);
+    max-height: var(--center-panel-size-landscape);
+    aspect-ratio: 1 / 1;
+    box-sizing: border-box;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .dora-indicator-row {
@@ -3436,8 +3447,8 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .round-title-block {
-    top: calc((var(--center-panel-base-height) / 2) + 20px - var(--center-panel-text-lift));
-    width: calc(var(--center-panel-width) - 12px);
+    top: calc(var(--dora-tile-height) + ((var(--center-panel-size-landscape) - var(--dora-tile-height)) / 2));
+    width: calc(var(--center-panel-size-landscape) - 8px);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) #battleRoundLabel {
@@ -3455,43 +3466,57 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .round-info-landscape {
-    display: flex;
-    flex-direction: column;
+    display: grid;
     gap: 0;
+    justify-items: center;
     align-items: center;
-    justify-content: center;
     width: 100%;
     color: #f3d88e;
-    font-size: clamp(22px, calc(3.9vh + 10px), 28px);
     font-weight: 900;
-    line-height: 0.92;
     text-align: center;
     white-space: nowrap;
   }
 
-  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .round-info-landscape .round-info-line {
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .landscape-round-line-main,
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .landscape-round-line-sub,
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .landscape-round-line-remaining {
     display: block;
-    font-size: inherit;
-    line-height: inherit;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+    word-break: keep-all;
+  }
+
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .landscape-round-line-main {
+    font-size: 40px;
+    line-height: 0.9;
+    font-weight: 900;
+  }
+
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .landscape-round-line-sub,
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .landscape-round-line-remaining {
+    font-size: 20px;
+    line-height: 1;
+    font-weight: 800;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .center-score-display .score-display {
-    font-size: clamp(20px, calc(3vh + 10px), 24px);
+    font-size: clamp(12px, 3.5vh, 15px);
     white-space: nowrap;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .kamicha-score {
-    left: 9px;
-    top: calc((var(--center-panel-base-height) / 2) - var(--center-river-tile-long) + 16px - var(--center-panel-text-lift));
+    left: 5px;
+    top: calc(50% - var(--center-river-tile-long) * 0.3);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .shimocha-score {
-    right: 9px;
-    top: calc((var(--center-panel-base-height) / 2) - var(--center-river-tile-long) + 16px - var(--center-panel-text-lift));
+    right: 5px;
+    top: calc(50% - var(--center-river-tile-long) * 0.3);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .self-score {
-    bottom: 4px;
+    bottom: 3px;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .opponent-hand {

@@ -1986,7 +1986,7 @@
     if (els.battleLandscapeRoundInfo) {
       setHtmlIfChanged(
         els.battleLandscapeRoundInfo,
-        `<span class="round-info-line">${escapeHtml(`${roundLabel}${gameState.honba}本場 供託${kyotakuCount}`)}</span><span class="round-info-line">残${escapeHtml(String(gameState.remainingDraws))}</span>`
+        `<span class="landscape-round-line-main">${escapeHtml(roundLabel)}</span><span class="landscape-round-line-sub">${escapeHtml(`${gameState.honba}本場 供託${kyotakuCount}`)}</span><span class="landscape-round-line-remaining">残${escapeHtml(String(gameState.remainingDraws))}</span>`
       );
     }
     setTextIfChanged(els.battleRemainingDraws, `残 ${gameState.remainingDraws}`);
@@ -3103,7 +3103,7 @@
     if (els.battleLandscapeRoundInfo) {
       setHtmlIfChanged(
         els.battleLandscapeRoundInfo,
-        `<span class="round-info-line">${escapeHtml(`${Rules.roundLabel(state)}${state.honba || 0}本場 供託${kyotakuCount}`)}</span><span class="round-info-line">残--</span>`
+        `<span class="landscape-round-line-main">${escapeHtml(Rules.roundLabel(state))}</span><span class="landscape-round-line-sub">${escapeHtml(`${state.honba || 0}本場 供託${kyotakuCount}`)}</span><span class="landscape-round-line-remaining">残--</span>`
       );
     }
     setTextIfChanged(els.battleRemainingDraws, "残りツモ --");
