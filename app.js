@@ -107,6 +107,11 @@
   let statsResetConfirmVisible = false;
   let statsSelectedYear = new Date().getFullYear();
   let statsSelectedMonth = new Date().getMonth() + 1;
+  let statsSupabaseRecords = [];
+  let statsSupabaseStatusText = "読み込み前";
+  let statsRankingRows = [];
+  let statsRankingStatusText = "読み込み前";
+  let statsOnlineLoadToken = 0;
   let isViewingSharedPaifu = false;
   let currentSharedPaifuUrl = "";
   let isSettlementPreview = false;
@@ -169,6 +174,10 @@
     statsMonthSelect: document.getElementById("statsMonthSelect"),
     statsSummaryTable: document.getElementById("statsSummaryTable"),
     statsHistoryTable: document.getElementById("statsHistoryTable"),
+    statsSupabaseStatus: document.getElementById("statsSupabaseStatus"),
+    statsSupabaseTable: document.getElementById("statsSupabaseTable"),
+    statsRankingStatus: document.getElementById("statsRankingStatus"),
+    statsRankingTable: document.getElementById("statsRankingTable"),
     statsPrevPageButton: document.getElementById("statsPrevPageButton"),
     statsNextPageButton: document.getElementById("statsNextPageButton"),
     statsPageLabel: document.getElementById("statsPageLabel"),
@@ -707,8 +716,13 @@
     els.startStatsButton?.addEventListener("click", () => {
       statsHistoryPage = 1;
       statsResetConfirmVisible = false;
+      statsSupabaseRecords = [];
+      statsRankingRows = [];
+      statsSupabaseStatusText = "Supabase成績を読み込み中...";
+      statsRankingStatusText = "ランキングを読み込み中...";
       appScreen = "stats";
       renderBattleTable();
+      loadStatsOnlineData();
     });
     els.rulesBackButton?.addEventListener("click", () => {
       appScreen = "start";
@@ -2849,6 +2863,168 @@
     `;
   }
 
+  function supabaseStatRowToRecord(row = {}) {
+    return {
+      id: row.hanchan_id || "",
+      endedAt: row.ended_at || "",
+      rank: Number(row.rank) || 0,
+      finalRawScore: Number(row.final_raw_score) || 0,
+      settlementPoint: Number(row.settlement_point) || 0,
+      chipCount: Number(row.chip_count) || 0,
+      totalHands: Number(row.total_hands) || 0,
+      winCount: Number(row.win_count) || 0,
+      dealInCount: Number(row.deal_in_count) || 0,
+      riichiCount: Number(row.riichi_count) || 0,
+      calledHandCount: Number(row.called_hand_count) || 0,
+      durationSeconds: typeof row.duration_seconds === "number" ? row.duration_seconds : null,
+    };
+  }
+
+  async function loadStatsOnlineData() {
+    const token = statsOnlineLoadToken + 1;
+    statsOnlineLoadToken = token;
+    if (!window.statsApi?.isConfigured?.()) {
+      statsSupabaseStatusText = "Supabaseが未設定です";
+      statsRankingStatusText = "Supabaseが未設定です";
+      renderStatsScreen();
+      return;
+    }
+
+    statsSupabaseStatusText = "Supabase成績を読み込み中...";
+    statsRankingStatusText = "ランキングを読み込み中...";
+    renderStatsScreen();
+
+    const [ownResult, rankingResult] = await Promise.allSettled([
+      window.statsApi.loadOwnHanchanStats?.(),
+      window.statsApi.loadRankingSummary?.(50),
+    ]);
+    if (token !== statsOnlineLoadToken) return;
+
+    const ownValue = ownResult.status === "fulfilled" ? ownResult.value : null;
+    if (ownValue?.ok) {
+      statsSupabaseRecords = (ownValue.data || []).map(supabaseStatRowToRecord);
+      statsSupabaseStatusText = `Supabase保存済み: ${statsSupabaseRecords.length}件`;
+    } else {
+      statsSupabaseRecords = [];
+      statsSupabaseStatusText = ownValue?.reason || ownResult.reason?.message || "Supabase成績を読み込めませんでした";
+    }
+
+    const rankingValue = rankingResult.status === "fulfilled" ? rankingResult.value : null;
+    if (rankingValue?.ok) {
+      statsRankingRows = rankingValue.data || [];
+      statsRankingStatusText = `ランキング: ${statsRankingRows.length}人`;
+    } else {
+      statsRankingRows = [];
+      statsRankingStatusText = rankingValue?.reason || rankingResult.reason?.message || "ランキングを読み込めませんでした";
+    }
+
+    if (appScreen === "stats") renderStatsScreen();
+  }
+
+  function renderSupabaseStatsTable(records = []) {
+    if (!records.length) {
+      return `
+        <table class="stats-table stats-history-table">
+          <thead>
+            <tr>
+              <th>終了日時</th>
+              <th>時間</th>
+              <th>着順</th>
+              <th>最終素点</th>
+              <th>収支</th>
+              <th>祝儀枚数</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="6">Supabaseに保存された自分の成績はまだありません</td></tr></tbody>
+        </table>
+      `;
+    }
+    const rows = sortStatsRecordsNewest(records).slice(0, 20);
+    return `
+      <table class="stats-table stats-history-table">
+        <thead>
+          <tr>
+            <th>終了日時</th>
+            <th>時間</th>
+            <th>着順</th>
+            <th>最終素点</th>
+            <th>収支</th>
+            <th>祝儀枚数</th>
+            <th>総局数</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((record) => `
+            <tr>
+              <td>${escapeHtml(formatStatsDate(record.endedAt))}</td>
+              <td>${escapeHtml(formatDuration(record.durationSeconds))}</td>
+              <td>${escapeHtml(`${record.rank}位`)}</td>
+              <td>${formatPlainNumber(record.finalRawScore)}</td>
+              <td>${formatSignedNumber(record.settlementPoint)}</td>
+              <td>${formatSignedNumber(record.chipCount)}</td>
+              <td>${formatPlainNumber(record.totalHands)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderRankingTable(rows = []) {
+    if (!rows.length) {
+      return `
+        <table class="stats-table stats-ranking-table">
+          <thead>
+            <tr>
+              <th>順位</th>
+              <th>名前</th>
+              <th>半荘数</th>
+              <th>合計収支</th>
+              <th>平均収支</th>
+              <th>平均着順</th>
+              <th>合計祝儀</th>
+              <th>和了率</th>
+              <th>放銃率</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="9">ランキングデータはまだありません</td></tr></tbody>
+        </table>
+      `;
+    }
+    return `
+      <table class="stats-table stats-ranking-table">
+        <thead>
+          <tr>
+            <th>順位</th>
+            <th>名前</th>
+            <th>半荘数</th>
+            <th>合計収支</th>
+            <th>平均収支</th>
+            <th>平均着順</th>
+            <th>合計祝儀</th>
+            <th>和了率</th>
+            <th>放銃率</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((row, index) => `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${escapeHtml(row.display_name || "匿名ユーザー")}</td>
+              <td>${formatPlainNumber(row.hanchan_count)}</td>
+              <td>${formatSignedNumber(row.total_settlement_point)}</td>
+              <td>${formatSignedNumber(row.average_settlement_point)}</td>
+              <td>${Number(row.average_rank || 0).toFixed(2)}</td>
+              <td>${formatSignedNumber(row.total_chip_count)}</td>
+              <td>${formatPercent(row.win_rate)}</td>
+              <td>${formatPercent(row.deal_in_rate)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
   function renderStatsScreen() {
     const storage = loadStatsStorage();
     const records = storage.records;
@@ -2860,7 +3036,11 @@
     statsHistoryPage = clampNumber(statsHistoryPage, 1, totalPages);
 
     setHiddenIfChanged(els.statsEmptyMessage, hasRecords);
-    setHiddenIfChanged(els.statsContent, !hasRecords);
+    setHiddenIfChanged(els.statsContent, false);
+    if (els.statsSupabaseStatus) setTextIfChanged(els.statsSupabaseStatus, statsSupabaseStatusText);
+    if (els.statsRankingStatus) setTextIfChanged(els.statsRankingStatus, statsRankingStatusText);
+    if (els.statsSupabaseTable) setHtmlIfChanged(els.statsSupabaseTable, renderSupabaseStatsTable(statsSupabaseRecords));
+    if (els.statsRankingTable) setHtmlIfChanged(els.statsRankingTable, renderRankingTable(statsRankingRows));
     if (els.statsRecentCountInput) {
       els.statsRecentCountInput.max = String(Math.max(1, records.length));
       if (String(els.statsRecentCountInput.value) !== String(statsRecentCount)) {
@@ -2868,8 +3048,8 @@
       }
     }
     if (!hasRecords) {
-      setHtmlIfChanged(els.statsSummaryTable, "");
-      setHtmlIfChanged(els.statsHistoryTable, "");
+      setHtmlIfChanged(els.statsSummaryTable, renderStatsSummaryTable([], statsRecentCount));
+      setHtmlIfChanged(els.statsHistoryTable, renderHanchanHistoryTable([], 1));
       if (els.statsPageLabel) setTextIfChanged(els.statsPageLabel, "1 / 1");
       if (els.statsPrevPageButton) els.statsPrevPageButton.disabled = true;
       if (els.statsNextPageButton) els.statsNextPageButton.disabled = true;
