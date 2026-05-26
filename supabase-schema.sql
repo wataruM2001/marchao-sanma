@@ -99,7 +99,11 @@ select
   coalesce(round(avg(s.settlement_point))::integer, 0) as average_settlement_point,
   coalesce(round(avg(s.rank)::numeric, 2), 0) as average_rank,
   coalesce(sum(s.chip_count), 0)::integer as total_chip_count,
-  coalesce(round(avg(s.duration_seconds))::integer, 0) as average_duration_seconds,
+  coalesce(sum(s.total_hands), 0)::integer as total_hands,
+  case when coalesce(sum(s.total_hands), 0) = 0 then 0
+    else round(sum(s.final_raw_score - 35000)::numeric / sum(s.total_hands), 1)
+  end as round_profit,
+  round(avg(s.duration_seconds))::integer as average_duration_seconds,
   case when coalesce(sum(s.total_hands), 0) = 0 then 0
     else round(sum(s.win_count)::numeric / sum(s.total_hands) * 100, 1)
   end as win_rate,
@@ -124,6 +128,8 @@ returns table (
   average_settlement_point integer,
   average_rank numeric,
   total_chip_count integer,
+  total_hands integer,
+  round_profit numeric,
   average_duration_seconds integer,
   win_rate numeric,
   deal_in_rate numeric,
@@ -142,6 +148,8 @@ as $$
     summary.average_settlement_point,
     summary.average_rank,
     summary.total_chip_count,
+    summary.total_hands,
+    summary.round_profit,
     summary.average_duration_seconds,
     summary.win_rate,
     summary.deal_in_rate,
@@ -149,7 +157,7 @@ as $$
     summary.called_rate
   from public.hanchan_ranking_summary summary
   order by summary.total_settlement_point desc, summary.average_rank asc, summary.hanchan_count desc
-  limit greatest(1, least(coalesce(limit_count, 50), 100));
+  limit greatest(1, least(coalesce(limit_count, 500), 500));
 $$;
 
 grant select on public.hanchan_ranking_summary to authenticated;
