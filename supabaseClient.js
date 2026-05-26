@@ -137,7 +137,19 @@
 
     const { data, error } = await client.auth.signInAnonymously();
     if (error) {
-      return { ok: false, skipped: true, error, reason: error.message || "Anonymous sign-in failed." };
+      console.error("Anonymous sign-in failed", error);
+      const isAnonymousDisabled =
+        error.code === "anonymous_provider_disabled" ||
+        error.error_code === "anonymous_provider_disabled" ||
+        String(error.message || "").toLowerCase().includes("anonymous sign-ins are disabled");
+      return {
+        ok: false,
+        skipped: true,
+        error,
+        reason: isAnonymousDisabled
+          ? "Supabase匿名ログインが無効です。DashboardでAnonymous sign-insを有効にしてください。"
+          : error.message || "Anonymous sign-in failed.",
+      };
     }
 
     const user = data?.user || data?.session?.user || null;
