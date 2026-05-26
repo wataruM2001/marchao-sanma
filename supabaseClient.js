@@ -127,6 +127,7 @@
       return { ok: false, error: sessionError, reason: sessionError.message || "Supabase Auth session could not be loaded." };
     }
     if (sessionData?.session?.user) {
+      console.log("Supabase user", sessionData.session.user.id);
       return { ok: true, user: sessionData.session.user, anonymousCreated: false };
     }
 
@@ -139,7 +140,9 @@
       return { ok: false, skipped: true, error, reason: error.message || "Anonymous sign-in failed." };
     }
 
-    return { ok: true, user: data?.user || data?.session?.user || null, anonymousCreated: true };
+    const user = data?.user || data?.session?.user || null;
+    if (user?.id) console.log("Supabase anonymous user", user.id);
+    return { ok: true, user, anonymousCreated: true };
   }
 
   async function getCurrentSupabaseUserId() {
@@ -165,7 +168,10 @@
       .eq("user_id", user.id)
       .maybeSingle();
     if (selectError) return { ok: false, error: selectError, reason: selectError.message || "プロフィールを確認できませんでした" };
-    if (existing) return { ok: true, userId: user.id, existed: true };
+    if (existing) {
+      console.log("Supabase profile exists", user.id);
+      return { ok: true, userId: user.id, existed: true };
+    }
 
     const { error: insertError } = await client
       .from(supabaseConfig.profilesTable)
@@ -175,6 +181,11 @@
       });
     if (insertError && insertError.code !== "23505") {
       return { ok: false, error: insertError, reason: insertError.message || "プロフィールを作成できませんでした" };
+    }
+    if (insertError?.code === "23505") {
+      console.log("Supabase profile already created", user.id);
+    } else {
+      console.log("Supabase profile created", { userId: user.id, displayName: `匿名ユーザー${String(user.id).slice(-4)}` });
     }
     return { ok: true, userId: user.id, created: !insertError };
   }
@@ -301,6 +312,7 @@
       if (!userResult.ok) return userResult;
       const userId = userResult.user?.id || null;
       if (!userId) return { ok: true, skipped: true, reason: "Supabase user unavailable." };
+      console.log("Supabase user", userId);
       const profileResult = await ensureUserProfile(userResult.user);
       if (!profileResult.ok && !profileResult.skipped) return profileResult;
 
