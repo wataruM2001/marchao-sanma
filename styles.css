@@ -3445,9 +3445,11 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .round-info-landscape {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 0;
-    justify-items: center;
+    align-items: center;
+    justify-content: center;
     width: 100%;
     color: #f3d88e;
     font-size: clamp(22px, calc(3.9vh + 10px), 28px);
@@ -3455,6 +3457,10 @@ button:disabled:hover,
     line-height: 0.92;
     text-align: center;
     white-space: nowrap;
+  }
+
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .round-info-landscape .round-info-line {
+    display: block;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .center-score-display .score-display {
