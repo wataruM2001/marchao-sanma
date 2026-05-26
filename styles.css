@@ -202,15 +202,10 @@ button {
   border-radius: 8px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.08), transparent 48%),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 50% 42%, rgba(25, 112, 78, 0.74), transparent 54%),
+    radial-gradient(circle at 50% 50%, rgba(13, 80, 57, 0.72), rgba(3, 37, 27, 1) 72%),
     #0b4a36;
-  background-size:
-    auto,
-    34px 34px,
-    34px 34px,
-    auto;
+  background-size: auto;
 }
 
 .battle-surface.is-start-screen {
@@ -228,9 +223,15 @@ button {
 }
 
 .battle-surface.is-stats-screen,
-.battle-surface.is-settings-screen,
 .battle-surface.is-resume-screen {
   background-image: url("./assets/start-background.png?v=start-bg-20260525b");
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.battle-surface.is-settings-screen {
+  background-image: url("./assets/settings-background.png?v=settings-bg-20260527a");
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
@@ -3276,17 +3277,12 @@ body {
 }
 
 /* Unified arcade mahjong theme */
-.battle-surface:not(.is-start-screen):not(.is-rules-screen) {
+.battle-surface:not(.is-start-screen):not(.is-rules-screen):not(.is-stats-screen):not(.is-settings-screen):not(.is-resume-screen) {
   background:
-    radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.07), transparent 46%),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 50% 40%, rgba(25, 112, 78, 0.68), transparent 52%),
+    radial-gradient(circle at 50% 50%, rgba(10, 74, 52, 0.8), rgba(3, 35, 26, 1) 74%),
     linear-gradient(135deg, var(--ui-felt), var(--ui-felt-dark));
-  background-size:
-    auto,
-    34px 34px,
-    34px 34px,
-    auto;
+  background-size: auto;
 }
 
 .primary-button,
