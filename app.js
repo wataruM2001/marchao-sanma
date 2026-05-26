@@ -1944,6 +1944,7 @@
     if (!els.battleSharePaifuStatus) return;
     els.battleSharePaifuStatus.textContent = message || "";
     els.battleSharePaifuStatus.classList.toggle("is-error", Boolean(isError));
+    setHiddenIfChanged(els.battleSharePaifuStatus, !message);
   }
 
   function updateSharedPaifuUrlUi(url = "") {
@@ -3291,16 +3292,22 @@
       setHiddenIfChanged(els.battleRestartButton, false);
     }
     if (els.battleSharePaifuButton) {
-      setHiddenIfChanged(els.battleSharePaifuButton, true);
-      els.battleSharePaifuButton.disabled = true;
+      const hasReplay = hasPaifuSnapshots();
+      els.battleSharePaifuButton.textContent = paifuReplay?.shareId ? "牌譜URLを表示" : "牌譜URLを作成";
+      els.battleSharePaifuButton.disabled = !hasReplay;
+      els.battleSharePaifuButton.title = hasReplay ? "" : "牌譜データがありません";
+      setHiddenIfChanged(els.battleSharePaifuButton, false);
     }
     if (els.battleCopyPaifuUrlButton) {
-      setHiddenIfChanged(els.battleCopyPaifuUrlButton, true);
-      els.battleCopyPaifuUrlButton.disabled = true;
+      const sharedUrl = paifuReplay?.sharedUrl || currentSharedPaifuUrl || "";
+      setHiddenIfChanged(els.battleCopyPaifuUrlButton, !sharedUrl);
+      els.battleCopyPaifuUrlButton.disabled = !sharedUrl;
     }
     if (els.battleSharePaifuStatus) {
-      els.battleSharePaifuStatus.textContent = "";
-      setHiddenIfChanged(els.battleSharePaifuStatus, true);
+      const sharedUrl = paifuReplay?.sharedUrl || currentSharedPaifuUrl || "";
+      els.battleSharePaifuStatus.textContent = sharedUrl ? `共有URL: ${sharedUrl}` : "";
+      els.battleSharePaifuStatus.classList.remove("is-error");
+      setHiddenIfChanged(els.battleSharePaifuStatus, !sharedUrl);
     }
   }
 
