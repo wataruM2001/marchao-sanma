@@ -3619,7 +3619,7 @@
         const snapshot = snapshotsBySeat.get(seat);
         const pointValue = result.pointChanges?.[seat];
         const chipValue = result.chipChanges?.[seat];
-        const currentPointText = `${formatPlainNumber(snapshot?.points || 0)}轤ｹ`;
+        const currentPointText = `${formatPlainNumber(snapshot?.points || 0)}点`;
         const currentChipText = formatResultChipCount(snapshot?.chips || 0);
         const pointText = formatResultPointDelta(pointValue);
         const chipText = formatResultChipDelta(chipValue);
