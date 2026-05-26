@@ -99,15 +99,61 @@ select
   coalesce(round(avg(s.settlement_point))::integer, 0) as average_settlement_point,
   coalesce(round(avg(s.rank)::numeric, 2), 0) as average_rank,
   coalesce(sum(s.chip_count), 0)::integer as total_chip_count,
+  coalesce(round(avg(s.duration_seconds))::integer, 0) as average_duration_seconds,
   case when coalesce(sum(s.total_hands), 0) = 0 then 0
     else round(sum(s.win_count)::numeric / sum(s.total_hands) * 100, 1)
   end as win_rate,
   case when coalesce(sum(s.total_hands), 0) = 0 then 0
     else round(sum(s.deal_in_count)::numeric / sum(s.total_hands) * 100, 1)
-  end as deal_in_rate
+  end as deal_in_rate,
+  case when coalesce(sum(s.total_hands), 0) = 0 then 0
+    else round(sum(s.riichi_count)::numeric / sum(s.total_hands) * 100, 1)
+  end as riichi_rate,
+  case when coalesce(sum(s.total_hands), 0) = 0 then 0
+    else round(sum(s.called_hand_count)::numeric / sum(s.total_hands) * 100, 1)
+  end as called_rate
 from public.profiles p
 join public.hanchan_stats s on s.user_id = p.user_id
 group by p.user_id, p.display_name;
+
+create or replace function public.get_hanchan_ranking_summary(limit_count integer default 50)
+returns table (
+  display_name text,
+  hanchan_count integer,
+  total_settlement_point integer,
+  average_settlement_point integer,
+  average_rank numeric,
+  total_chip_count integer,
+  average_duration_seconds integer,
+  win_rate numeric,
+  deal_in_rate numeric,
+  riichi_rate numeric,
+  called_rate numeric
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    summary.display_name,
+    summary.hanchan_count,
+    summary.total_settlement_point,
+    summary.average_settlement_point,
+    summary.average_rank,
+    summary.total_chip_count,
+    summary.average_duration_seconds,
+    summary.win_rate,
+    summary.deal_in_rate,
+    summary.riichi_rate,
+    summary.called_rate
+  from public.hanchan_ranking_summary summary
+  order by summary.total_settlement_point desc, summary.average_rank asc, summary.hanchan_count desc
+  limit greatest(1, least(coalesce(limit_count, 50), 100));
+$$;
+
+grant select on public.hanchan_ranking_summary to authenticated;
+grant execute on function public.get_hanchan_ranking_summary(integer) to authenticated;
 
 alter table public.shared_paifus enable row level security;
 alter table public.profiles enable row level security;
