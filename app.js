@@ -378,6 +378,9 @@
           authMessageText = "匿名ユーザーでランキング参加中";
           authMessageIsError = false;
         }
+      } else if (result) {
+        authMessageText = result.reason || "匿名ログインに失敗しました";
+        authMessageIsError = true;
       }
     } catch (error) {
       authMessageText = "Auth状態を取得できませんでした";
