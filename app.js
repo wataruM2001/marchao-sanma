@@ -4545,44 +4545,51 @@
     return Boolean(discard?.isRiichiDeclaration || discard?.isRiichiMarkerReplacement);
   }
 
-  function riverTileStyleForSeat(seat, index) {
-    if (seat === "self") {
-      const row = Math.floor(index / 6) + 1;
-      const column = (index % 6) + 1;
-      return `style="grid-row:${row};grid-column:${column};"`;
+  function chunkRiverDiscards(discards, size = 6) {
+    const chunks = [];
+    for (let index = 0; index < discards.length; index += size) {
+      chunks.push(discards.slice(index, index + size));
     }
-    if (seat === "shimocha") {
-      const row = 6 - (index % 6);
-      const column = Math.floor(index / 6) + 1;
-      return `style="grid-row:${row};grid-column:${column};"`;
-    }
-    if (seat === "kamicha") {
-      const row = (index % 6) + 1;
-      const column = 4 - Math.floor(index / 6);
-      return `style="grid-row:${row};grid-column:${column};"`;
-    }
-    return "";
+    return chunks;
+  }
+
+  function renderDiscardTileSlot(player, discard) {
+    const tile = discardTileOf(discard);
+    if (!tile) return "";
+    const seat = player?.seat || "self";
+    const rotationClass = tileRotationClassForSeat(seat);
+    const isRiichiMarker = isRiichiDiscardMarker(discard);
+    const tileClasses = [
+      "river-tile",
+      rotationClass,
+      discard?.isTsumogiri ? "tsumogiri" : "",
+      isRiichiMarker ? "riichi-discard" : "",
+      discard?.isRiichiMarkerReplacement ? "riichi-marker-replacement" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const slotClasses = [
+      "river-tile-slot",
+      `river-slot-${seat}`,
+      isRiichiMarker ? "is-riichi-marker" : "is-normal",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    return `<span class="${slotClasses}">${renderBattleTile(tile, tileClasses)}</span>`;
   }
 
   function renderDiscardRiver(player) {
-    const rotationClass = tileRotationClassForSeat(player?.seat);
+    const seat = player?.seat || "self";
     const discards = orderDiscardsForRiver(player);
-    return discards
-      .map((discard, index) => {
-        const tile = discardTileOf(discard);
-        if (!tile) return "";
-        const isRiichiMarker = isRiichiDiscardMarker(discard);
-        const classes = [
-          "river-tile",
-          rotationClass,
-          discard?.isTsumogiri ? "tsumogiri" : "",
-          isRiichiMarker ? "riichi-discard" : "",
-          discard?.isRiichiMarkerReplacement ? "riichi-marker-replacement" : "",
-        ]
-          .filter(Boolean)
-          .join(" ");
-        return renderBattleTile(tile, classes, false, riverTileStyleForSeat(player?.seat, index));
-      })
+    const groups = chunkRiverDiscards(discards);
+    if (seat === "self") {
+      return groups
+        .map((row) => `<div class="river-line river-line-self">${row.map((discard) => renderDiscardTileSlot(player, discard)).join("")}</div>`)
+        .join("");
+    }
+    const columnClass = seat === "kamicha" ? "river-column-kamicha" : "river-column-shimocha";
+    return groups
+      .map((column) => `<div class="river-column ${columnClass}">${column.map((discard) => renderDiscardTileSlot(player, discard)).join("")}</div>`)
       .join("");
   }
 
