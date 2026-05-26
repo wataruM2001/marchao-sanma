@@ -378,6 +378,23 @@
     return gameState;
   }
 
+  function isHaiteiContext(gameState) {
+    return Number(gameState?.remainingDraws) === 0 && gameState?.lastDrawSource === "normal";
+  }
+
+  function isHouteiContext(gameState) {
+    return Number(gameState?.remainingDraws) === 0 && gameState?.lastAction?.type === "discard";
+  }
+
+  function isChankanContext(gameState, explicit = false) {
+    return Boolean(
+      explicit ||
+      gameState?.pendingAction?.source === "chankan" ||
+      gameState?.lastAction?.type === "chankan" ||
+      gameState?.lastAction?.isChankan
+    );
+  }
+
   function seatWindForIndex(gameState, playerIndex) {
     const winds = ["east", "south", "west"];
     return winds[(playerIndex - gameState.dealerIndex + 3) % 3] || "west";
@@ -973,7 +990,10 @@
       isTsumo: false,
       isMenzen: isMenzen(player),
       isRiichi: Boolean(player.isRiichi),
+      isDoubleRiichi: player.riichiType === "double",
       isIppatsu: Boolean(player.isRiichi && player.isIppatsuChance),
+      isChankan: isChankanContext(gameState),
+      isHoutei: isHouteiContext(gameState) && !isChankanContext(gameState),
       roundWind: gameState.roundWind,
       seatWind: seatWindForIndex(gameState, playerIndex),
       doraIndicators: gameState.doraIndicators,
@@ -994,14 +1014,46 @@
       isTsumo: true,
       isMenzen: isMenzen(player),
       isRiichi: Boolean(player.isRiichi),
+      isDoubleRiichi: player.riichiType === "double",
       isIppatsu: Boolean(player.isRiichi && player.isIppatsuChance),
       isRinshan: gameState.lastDrawSource === "rinshanAfterKan",
+      isHaitei: isHaiteiContext(gameState),
       roundWind: gameState.roundWind,
       seatWind: seatWindForIndex(gameState, playerIndex),
       doraIndicators: gameState.doraIndicators,
       uraDoraIndicators: gameState.uraDoraIndicators,
     });
     return Boolean(result.best);
+  }
+
+  function canChankan(player, kanTile, gameState, kanPlayerIndex) {
+    if (!player || !kanTile || gameState?.players?.[kanPlayerIndex] === player) return false;
+    if (isFuriten(player, gameState)) return false;
+    const evaluator = HandEval();
+    if (!evaluator?.evaluateWinningHand) return false;
+    const playerIndex = gameState.players.indexOf(player);
+    const result = evaluator.evaluateWinningHand([...cloneTiles(player.hand), cloneTile(kanTile)], kanTile, {
+      allWinTiles: [...cloneTiles(player.hand), cloneTile(kanTile), ...cloneTiles(player.flowers), ...meldTiles(player)],
+      fixedMelds: player.melds || [],
+      isTsumo: false,
+      isMenzen: isMenzen(player),
+      isRiichi: Boolean(player.isRiichi),
+      isDoubleRiichi: player.riichiType === "double",
+      isIppatsu: Boolean(player.isRiichi && player.isIppatsuChance),
+      isChankan: true,
+      roundWind: gameState.roundWind,
+      seatWind: seatWindForIndex(gameState, playerIndex),
+      doraIndicators: gameState.doraIndicators,
+      uraDoraIndicators: gameState.uraDoraIndicators,
+    });
+    return Boolean(result.best);
+  }
+
+  function findChankanWinner(gameState, kanPlayerIndex, kanTile) {
+    return (gameState?.players || [])
+      .map((player, playerIndex) => ({ player, playerIndex }))
+      .filter(({ playerIndex }) => playerIndex !== kanPlayerIndex)
+      .find(({ player }) => canChankan(player, kanTile, gameState, kanPlayerIndex)) || null;
   }
 
   function canPon(player, discardTile) {
@@ -1610,6 +1662,19 @@
     const kan = candidates[0];
     if (!kan || Number(next.remainingDraws) <= 1) throw new Error("Kan is not available.");
 
+    if (kan.type === "kakan") {
+      const chankanWinner = findChankanWinner(next, playerIndex, kan.tiles?.[0]);
+      if (chankanWinner) {
+        return resolveWin(next, {
+          winType: "ron",
+          winnerIndex: chankanWinner.playerIndex,
+          discarderIndex: playerIndex,
+          winningTile: kan.tiles[0],
+          isChankan: true,
+        });
+      }
+    }
+
     if (kan.type === "ankan") {
       player.hand = removeTilesById(player.hand, kan.tiles);
       player.melds.push({
@@ -1668,10 +1733,11 @@
     return syncDrawWallState(next);
   }
 
-  function evaluateWin(gameState, { winType, winnerIndex, winningTile } = {}) {
+  function evaluateWin(gameState, { winType, winnerIndex, winningTile, isChankan = false } = {}) {
     const evaluator = HandEval();
     const winner = gameState.players[winnerIndex];
     if (!evaluator?.evaluateWinningHand || !winner || !winningTile) return null;
+    const chankan = isChankanContext(gameState, isChankan);
     const handTiles =
       winType === "ron"
         ? [...cloneTiles(winner.hand), cloneTile(winningTile)]
@@ -1689,6 +1755,9 @@
       isDoubleRiichi: winner.riichiType === "double",
       isIppatsu: Boolean(winner.isRiichi && winner.isIppatsuChance),
       isRinshan: winType === "tsumo" && gameState.lastDrawSource === "rinshanAfterKan",
+      isChankan: winType === "ron" && chankan,
+      isHaitei: winType === "tsumo" && isHaiteiContext(gameState),
+      isHoutei: winType === "ron" && isHouteiContext(gameState) && !chankan,
       isDealer: winnerIndex === gameState.dealerIndex,
       roundWind: gameState.roundWind,
       seatWind: seatWindForIndex(gameState, winnerIndex),
@@ -1866,13 +1935,15 @@
     };
   }
 
-  function resolveWin(gameState, { winType, winnerIndex, discarderIndex = null } = {}) {
+  function resolveWin(gameState, { winType, winnerIndex, discarderIndex = null, winningTile: suppliedWinningTile = null, isChankan = false } = {}) {
     const next = cloneGameState(gameState);
     const winningTile =
-      winType === "tsumo"
+      suppliedWinningTile
+        ? cloneTile(suppliedWinningTile)
+        : winType === "tsumo"
         ? drawnTileForPlayer(next, winnerIndex)
         : cloneTile(next.lastAction?.tile);
-    const evaluation = evaluateWin(next, { winType, winnerIndex, winningTile });
+    const evaluation = evaluateWin(next, { winType, winnerIndex, winningTile, isChankan });
     const settlement = applyWinSettlement(next, { winType, winnerIndex, discarderIndex, evaluation });
     next.phase = "result";
     next.pendingAction = null;
@@ -1884,6 +1955,7 @@
       winnerIndex,
       discarderIndex,
       winningTile: cloneTile(winningTile),
+      isChankan: Boolean(isChankan),
       evaluation,
       pointDeltas: settlement.pointDeltas,
       chipDeltas: settlement.chipDeltas,
