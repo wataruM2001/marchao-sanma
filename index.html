@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオサンマ</title>
-  <link rel="stylesheet" href="./styles.css?v=playing-panel-river-v12" />
+  <link rel="stylesheet" href="./styles.css?v=settings-ranking-v13" />
   </head>
   <body>
     <main class="app-shell">
@@ -31,6 +31,7 @@
       <section class="battle-table tool-panel" id="battleTable" aria-label="麻雀対局画面">
         <div class="battle-surface is-start-screen">
           <div class="table-vignette" aria-hidden="true"></div>
+          <button class="start-settings-button" id="startSettingsButton" type="button" aria-label="設定">⚙</button>
           <div class="battle-effect" id="battleEffect" aria-live="polite"></div>
           <section class="battle-result-panel" id="battleResultPanel" hidden>
             <h2 id="battleResultTitle">局結果</h2>
@@ -197,6 +198,19 @@
                   </div>
                 </div>
               </div>
+            </article>
+          </section>
+
+          <section class="settings-screen" id="settingsScreen" hidden>
+            <button class="screen-back-button settings-back-button" id="settingsBackButton" type="button" aria-label="スタート画面へ戻る">←</button>
+            <article class="settings-panel">
+              <h2>設定</h2>
+              <label class="settings-name-control">
+                <span>ユーザー名</span>
+                <input id="settingsDisplayNameInput" type="text" maxlength="8" autocomplete="off" />
+              </label>
+              <button class="primary-button settings-save-button" id="settingsSaveNameButton" type="button">保存</button>
+              <p class="settings-message" id="settingsMessage" aria-live="polite" hidden></p>
             </article>
           </section>
 
@@ -526,7 +540,7 @@
     <script src="./rules.js?v=settlement-chip-score-v1"></script>
     <script src="./hand-evaluation.js?v=general-yaku-v1"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./supabaseClient.js?v=supabase-ranking-v9"></script>
-    <script src="./app.js?v=playing-panel-river-v12"></script>
+    <script src="./supabaseClient.js?v=settings-ranking-v13"></script>
+    <script src="./app.js?v=settings-ranking-v13"></script>
   </body>
 </html>
