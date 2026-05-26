@@ -4557,11 +4557,10 @@
     const tile = discardTileOf(discard);
     if (!tile) return "";
     const seat = player?.seat || "self";
-    const rotationClass = tileRotationClassForSeat(seat);
     const isRiichiMarker = isRiichiDiscardMarker(discard);
     const tileClasses = [
       "river-tile",
-      rotationClass,
+      "tile-no-rotate",
       discard?.isTsumogiri ? "tsumogiri" : "",
       isRiichiMarker ? "riichi-discard" : "",
       discard?.isRiichiMarkerReplacement ? "riichi-marker-replacement" : "",
