@@ -738,8 +738,8 @@
       renderBattleTable();
     });
     els.statsRecentCountInput?.addEventListener("input", () => {
-      const storage = loadStatsStorage();
-      statsRecentCount = normalizeRecentStatsCount(els.statsRecentCountInput.value, storage.records.length);
+      const records = currentStatsDisplayRecords();
+      statsRecentCount = normalizeRecentStatsCount(els.statsRecentCountInput.value, records.length);
       renderStatsScreen();
     });
     els.statsYearSelect?.addEventListener("change", () => {
@@ -761,7 +761,7 @@
       renderStatsScreen();
     });
     els.statsNextPageButton?.addEventListener("click", () => {
-      const totalPages = Math.max(1, Math.ceil(loadStatsStorage().records.length / STATS_HISTORY_PAGE_SIZE));
+      const totalPages = Math.max(1, Math.ceil(currentStatsDisplayRecords().length / STATS_HISTORY_PAGE_SIZE));
       statsHistoryPage = Math.min(totalPages, statsHistoryPage + 1);
       renderStatsScreen();
     });
@@ -3049,6 +3049,10 @@
       records: localRecords,
       source: "local",
     };
+  }
+
+  function currentStatsDisplayRecords() {
+    return getStatsDisplayRecords(loadStatsStorage().records).records;
   }
 
   function statsEmptyMessageText(source, hasLocalRecords) {
