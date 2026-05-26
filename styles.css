@@ -1721,6 +1721,12 @@ button {
   height: var(--open-tile-height);
 }
 
+.meld-tile-slot.is-kakan-stack {
+  width: var(--open-tile-height);
+  height: calc(var(--open-tile-width) * 2);
+  flex-basis: var(--open-tile-height);
+}
+
 .meld-area .table-tile-img {
   width: var(--center-river-tile-width, clamp(22px, 2.7vw, 38px));
   transform: rotate(var(--meld-seat-rotation));
@@ -1749,7 +1755,7 @@ button {
 
 .called-tile-stack .added-kan-tile {
   position: absolute;
-  bottom: calc((var(--open-tile-width) - var(--open-tile-height)) / 2 + var(--meld-kakan-offset));
+  bottom: calc((var(--open-tile-width) - var(--open-tile-height)) / 2 + var(--open-tile-width));
   left: 50%;
   transform: translateX(-50%) rotate(calc(var(--meld-seat-rotation) + 90deg));
   z-index: 2;
@@ -1947,6 +1953,12 @@ button {
 .battle-surface:not(.is-start-screen) .meld-tile-slot.is-horizontal {
   width: var(--open-tile-height);
   height: var(--open-tile-height);
+}
+
+.battle-surface:not(.is-start-screen) .meld-tile-slot.is-kakan-stack {
+  width: var(--open-tile-height);
+  height: calc(var(--open-tile-width) * 2);
+  flex-basis: var(--open-tile-height);
 }
 
 .battle-surface:not(.is-start-screen) .called-tile-stack {
@@ -4482,16 +4494,6 @@ button:disabled:hover,
 
 .stats-ranking-table {
   min-width: 980px;
-}
-
-.stats-ranking-table .ranking-type-value-header,
-.stats-ranking-table .ranking-type-value-cell {
-  border: 1px solid var(--ui-gold);
-  color: #ff3b30;
-  font-weight: 900;
-  text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.8),
-    0 0 8px rgba(255, 60, 40, 0.45);
 }
 
 .stats-pagination {
