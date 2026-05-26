@@ -4162,6 +4162,7 @@ button:disabled:hover,
 }
 
 .stats-recent-control input,
+.stats-ranking-control input,
 .stats-month-control select,
 .stats-ranking-control select {
   width: 72px;
@@ -4245,8 +4246,11 @@ button:disabled:hover,
 
 .stats-page-button {
   min-height: 34px;
-  padding: 0 16px;
+  width: 88px;
+  padding: 0 10px;
   white-space: nowrap;
+  writing-mode: horizontal-tb;
+  word-break: keep-all;
 }
 
 .stats-empty-message {
