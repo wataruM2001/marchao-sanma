@@ -16,6 +16,7 @@
   const PAIFU_REPLAY_INTERVAL_MS = 1000;
   const PAIFU_STORAGE_KEY = "marchao-sanma-last-paifu-v1";
   const STATS_STORAGE_KEY = "marchaoSanmaStatsV1";
+  const IN_PROGRESS_STORAGE_KEY = "marchaoSanmaInProgressV1";
   const STATS_HISTORY_PAGE_SIZE = 10;
   const APP_VERSION = "shared-paifu-url-v1";
   const RULES_VERSION = "marchao-sanma-v1";
@@ -23,6 +24,8 @@
     riichi: "立直",
     double_riichi: "ダブル立直",
     ippatsu: "一発",
+    rinshan_kaihou: "嶺上開花",
+    rinshan: "嶺上開花",
     menzen_tsumo: "ツモ",
     tanyao: "タンヤオ",
     pinfu: "平和",
@@ -94,6 +97,7 @@
   let lastSavedStatsHanchanId = "";
   let statsRecentCount = 10;
   let statsHistoryPage = 1;
+  let statsResetConfirmVisible = false;
   let isViewingSharedPaifu = false;
   let currentSharedPaifuUrl = "";
 
@@ -144,6 +148,12 @@
     statsPrevPageButton: document.getElementById("statsPrevPageButton"),
     statsNextPageButton: document.getElementById("statsNextPageButton"),
     statsPageLabel: document.getElementById("statsPageLabel"),
+    statsResetButton: document.getElementById("statsResetButton"),
+    statsResetConfirm: document.getElementById("statsResetConfirm"),
+    statsResetCancelButton: document.getElementById("statsResetCancelButton"),
+    statsResetConfirmButton: document.getElementById("statsResetConfirmButton"),
+    resumeRequiredScreen: document.getElementById("resumeRequiredScreen"),
+    resumeRequiredButton: document.getElementById("resumeRequiredButton"),
     battleSelfHand: document.getElementById("battleSelfHand"),
     battleLeftHand: document.getElementById("battleLeftHand"),
     battleRightHand: document.getElementById("battleRightHand"),
@@ -226,7 +236,11 @@
   function init() {
     renderTileGroups();
     bindEvents();
-    loadSharedPaifuFromUrl();
+    if (new URLSearchParams(window.location.search).get("paifu")) {
+      loadSharedPaifuFromUrl();
+    } else if (hasInProgressHanchanSave()) {
+      appScreen = "resume";
+    }
     render();
   }
 
@@ -263,6 +277,92 @@
     paifuReplayTimer = 0;
   }
 
+  function cloneStorageData(value) {
+    if (value == null) return value;
+    try {
+      return typeof structuredClone === "function"
+        ? structuredClone(value)
+        : JSON.parse(JSON.stringify(value));
+    } catch (error) {
+      return JSON.parse(JSON.stringify(value));
+    }
+  }
+
+  function loadInProgressHanchanSave() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(IN_PROGRESS_STORAGE_KEY) || "null");
+      if (!parsed || !parsed.battleState || parsed.completed) return null;
+      return parsed;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function hasInProgressHanchanSave() {
+    return Boolean(loadInProgressHanchanSave());
+  }
+
+  function clearInProgressHanchanSave() {
+    localStorage.removeItem(IN_PROGRESS_STORAGE_KEY);
+  }
+
+  function saveInProgressHanchan() {
+    if (!battleState || isViewingSharedPaifu || !["playing", "result"].includes(appScreen)) return;
+    const payload = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      appScreen,
+      battleState: cloneStorageData(battleState),
+      lastHandResult: cloneStorageData(lastHandResult),
+      paifuReplay: cloneStorageData(paifuReplay),
+      paifuHandIndex,
+      paifuStepIndex,
+      lastPaifuSnapshotSignature,
+      resultTransparent,
+    };
+    try {
+      localStorage.setItem(IN_PROGRESS_STORAGE_KEY, JSON.stringify(payload));
+    } catch (error) {
+      // Progress save is best-effort; gameplay should continue even if storage is full.
+    }
+  }
+
+  function resumeInProgressHanchan() {
+    const save = loadInProgressHanchanSave();
+    if (!save) {
+      appScreen = "start";
+      renderBattleTable();
+      return;
+    }
+    clearCpuTurnTimer();
+    clearRiichiAutoDiscardTimer();
+    clearAfterDiscardTimer();
+    clearResultTransitionTimer();
+    stopPaifuPlayback();
+    resetBattleEffectState();
+    battleState = cloneStorageData(save.battleState);
+    lastHandResult = cloneStorageData(save.lastHandResult) || null;
+    battleSettlement = null;
+    paifuReplay = cloneStorageData(save.paifuReplay) || createPaifuReplay();
+    paifuHandIndex = Math.max(0, Number(save.paifuHandIndex) || 0);
+    paifuStepIndex = Math.max(0, Number(save.paifuStepIndex) || 0);
+    lastPaifuSnapshotSignature = String(save.lastPaifuSnapshotSignature || "");
+    resultTransparent = Boolean(save.resultTransparent);
+    isViewingSharedPaifu = false;
+    currentSharedPaifuUrl = "";
+    settlementBreakdownVisible = false;
+    appScreen = save.appScreen === "result" && lastHandResult ? "result" : "playing";
+    renderBattleTable();
+    if (appScreen === "playing") {
+      if (isVisibleDiscardState(battleState)) {
+        scheduleAfterVisibleDiscard();
+      } else {
+        scheduleSelfRiichiAutoDiscard();
+        scheduleCpuTurn();
+      }
+    }
+  }
+
   function updateResultPanelBounds() {
     if (!els.battleResultPanel || appScreen !== "result" || resultTransparent) return;
     const surface = els.battleSurface;
@@ -294,7 +394,15 @@
 
   function bindEvents() {
     els.battleStartButton?.addEventListener("click", () => {
+      if (hasInProgressHanchanSave()) {
+        appScreen = "resume";
+        renderBattleTable();
+        return;
+      }
       startBattleHanchan();
+    });
+    els.resumeRequiredButton?.addEventListener("click", () => {
+      resumeInProgressHanchan();
     });
     els.startRulesButton?.addEventListener("click", () => {
       appScreen = "rules";
@@ -302,6 +410,7 @@
     });
     els.startStatsButton?.addEventListener("click", () => {
       statsHistoryPage = 1;
+      statsResetConfirmVisible = false;
       appScreen = "stats";
       renderBattleTable();
     });
@@ -325,6 +434,20 @@
     els.statsNextPageButton?.addEventListener("click", () => {
       const totalPages = Math.max(1, Math.ceil(loadStatsStorage().records.length / STATS_HISTORY_PAGE_SIZE));
       statsHistoryPage = Math.min(totalPages, statsHistoryPage + 1);
+      renderStatsScreen();
+    });
+    els.statsResetButton?.addEventListener("click", () => {
+      statsResetConfirmVisible = true;
+      renderStatsScreen();
+    });
+    els.statsResetCancelButton?.addEventListener("click", () => {
+      statsResetConfirmVisible = false;
+      renderStatsScreen();
+    });
+    els.statsResetConfirmButton?.addEventListener("click", () => {
+      localStorage.removeItem(STATS_STORAGE_KEY);
+      statsHistoryPage = 1;
+      statsResetConfirmVisible = false;
       renderStatsScreen();
     });
     els.battleConfirmButton?.addEventListener("click", () => {
@@ -399,6 +522,8 @@
     });
     document.addEventListener("contextmenu", handleContextMenuTsumogiri);
     els.battleSurface?.addEventListener("pointerup", handleLandscapeBlankDoubleTap);
+    window.addEventListener("pagehide", saveInProgressHanchan);
+    window.addEventListener("beforeunload", saveInProgressHanchan);
     window.addEventListener("resize", () => {
       if (appScreen === "result") updateResultPanelBounds();
     });
@@ -789,7 +914,9 @@
   function handleBattleAction(action) {
     if (!battleState || appScreen !== "playing" || battleState.phase !== "actionPending") return;
     try {
+      const previousBattleState = battleState;
       battleState = Game.performPendingAction(battleState, action);
+      queueRiichiEffectIfJustFinalized(previousBattleState, battleState);
       renderBattleStateAndScheduleNext();
     } catch (error) {
       els.battleStatus.textContent = error.message;
@@ -819,7 +946,9 @@
     afterDiscardTimer = window.setTimeout(() => {
       afterDiscardTimer = 0;
       if (!battleState || appScreen !== "playing" || !isVisibleDiscardState(battleState)) return;
+      const previousBattleState = battleState;
       battleState = Game.afterPlayerDiscard(battleState);
+      queueRiichiEffectIfJustFinalized(previousBattleState, battleState);
       renderBattleStateAndScheduleNext();
     }, AFTER_DISCARD_REACTION_DELAY_MS);
   }
@@ -1377,6 +1506,7 @@
       battleSettlement = buildBattleSettlement(battleState);
       finalizePaifuReplay();
       saveCurrentHanchanStatsIfConfigured();
+      clearInProgressHanchanSave();
       settlementBreakdownVisible = false;
       appScreen = "settlement";
       renderBattleTable();
@@ -1406,6 +1536,7 @@
     battleSettlement = buildBattleSettlement(battleState);
     finalizePaifuReplay();
     saveCurrentHanchanStatsIfConfigured();
+    clearInProgressHanchanSave();
     settlementBreakdownVisible = false;
     appScreen = "settlement";
     renderBattleTable();
@@ -2210,6 +2341,7 @@
     const storage = loadStatsStorage();
     const records = storage.records;
     const hasRecords = records.length > 0;
+    setHiddenIfChanged(els.statsResetConfirm, !statsResetConfirmVisible);
     statsRecentCount = normalizeRecentStatsCount(statsRecentCount, records.length);
     const totalPages = Math.max(1, Math.ceil(records.length / STATS_HISTORY_PAGE_SIZE));
     statsHistoryPage = clampNumber(statsHistoryPage, 1, totalPages);
@@ -2881,15 +3013,18 @@
     const isRules = appScreen === "rules";
     const isStats = appScreen === "stats";
     const isPaifu = appScreen === "paifu";
+    const isResume = appScreen === "resume";
     toggleClassIfChanged(els.battleSurface, "is-start-screen", appScreen === "start");
     toggleClassIfChanged(els.battleSurface, "is-rules-screen", isRules);
     toggleClassIfChanged(els.battleSurface, "is-stats-screen", isStats);
     toggleClassIfChanged(els.battleSurface, "is-paifu-screen", isPaifu);
+    toggleClassIfChanged(els.battleSurface, "is-resume-screen", isResume);
     setHiddenIfChanged(els.battleResultPanel, !isResult);
     setHiddenIfChanged(els.battleSettlementPanel, !isSettlement);
     setHiddenIfChanged(els.paifuPanel, !isPaifu);
     setHiddenIfChanged(els.rulesScreen, !isRules);
     setHiddenIfChanged(els.statsScreen, !isStats);
+    setHiddenIfChanged(els.resumeRequiredScreen, !isResume);
     setHiddenIfChanged(els.battleStartButton, appScreen !== "start");
     setHiddenIfChanged(els.battleActionButtons, appScreen !== "playing");
     toggleClassIfChanged(els.battleResultPanel, "result-transparent", isResult && resultTransparent);
@@ -2898,6 +3033,11 @@
     if (isSettlement) renderBattleSettlementPanel();
     if (isStats) renderStatsScreen();
     if (isPaifu) renderPaifuPanel();
+    if (isSettlement) {
+      clearInProgressHanchanSave();
+    } else if (appScreen === "playing" || appScreen === "result") {
+      saveInProgressHanchan();
+    }
   }
 
   function battleEffectSignature(gameState) {
@@ -3182,6 +3322,28 @@
       renderActiveBattleEffect();
       playNextBattleEffect();
     }, battleEffectDurationMsForClasses(activeBattleEffect.classes));
+  }
+
+  function pushBattleEffectItem(item) {
+    if (!item?.text) return;
+    battleEffectQueue.push(item);
+    if (!activeBattleEffect) playNextBattleEffect();
+  }
+
+  function queueRiichiEffectIfJustFinalized(previousGameState, nextGameState) {
+    const pending = previousGameState?.pendingRiichi;
+    if (!pending || !Number.isInteger(pending.playerIndex)) return;
+    const beforePlayer = previousGameState?.players?.[pending.playerIndex];
+    const afterPlayer = nextGameState?.players?.[pending.playerIndex];
+    if (!afterPlayer?.isRiichi || beforePlayer?.isRiichi) return;
+    if (nextGameState?.lastAction?.type === "riichi" && nextGameState.lastAction.playerIndex === pending.playerIndex) {
+      return;
+    }
+    pushBattleEffectItem({
+      text: "リーチ",
+      playerIndex: pending.playerIndex,
+      classes: "effect-riichi",
+    });
   }
 
   function queueBattleEffects(gameState) {
