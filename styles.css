@@ -4200,6 +4200,18 @@ button:disabled:hover,
   background: rgba(255, 255, 255, 0.035);
 }
 
+.stats-online-status {
+  margin: 0;
+  color: rgba(255, 246, 219, 0.84);
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.stats-ranking-table {
+  min-width: 760px;
+}
+
 .stats-pagination {
   display: flex;
   align-items: center;
