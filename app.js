@@ -1071,7 +1071,7 @@
     const yakuNames = (best?.yaku || []).map(formatResultYakuName).filter(Boolean);
     const doraHan = Number(best?.dora?.totalHan) || 0;
     if (doraHan > 0) yakuNames.push(`ドラ${doraHan}`);
-    return `役：${yakuNames.length ? yakuNames.join(" / ") : "なし"}`;
+    return `役：${yakuNames.length ? yakuNames.join("/") : "なし"}`;
   }
 
   function winDisplayTitle(player) {
@@ -2098,15 +2098,16 @@
       ["shimocha", "下家"],
       ["kamicha", "上家"],
     ];
-    return seats
+    const rows = seats
       .map(([seat, label]) => {
         const pointValue = result.pointChanges?.[seat];
         const chipValue = result.chipChanges?.[seat];
         const pointText = formatResultPointDelta(pointValue);
         const chipText = formatResultChipDelta(chipValue);
-        return `<div class="result-player-row">${escapeHtml(label)} <span class="${resultDeltaClass(pointValue)}">${escapeHtml(pointText)}</span> ,<span class="${resultDeltaClass(chipValue)}">${escapeHtml(chipText)}</span></div>`;
+        return `<div class="result-player-row">${escapeHtml(label)} <span class="${resultDeltaClass(pointValue)}">${escapeHtml(pointText)}</span>,<span class="${resultDeltaClass(chipValue)}">${escapeHtml(chipText)}</span></div>`;
       })
       .join("");
+    return `<div class="result-player-rows">${rows}</div>`;
   }
 
   function renderResultTile(tile, modifier = "") {
@@ -2181,6 +2182,26 @@
     return renderResultTileRow("華牌", win.flowerTiles);
   }
 
+  function renderResultCompactHandLine(win) {
+    if (win.isNagashiYakuman) return "";
+    const handTiles = (win.handTiles || []).map((tile) => renderResultTile(tile)).join("");
+    const winningTile = win.winningTile ? renderResultTile(win.winningTile, "winning-tile") : "";
+    const meldTiles = (win.melds || []).map(renderMeld).join("");
+    const flowerTiles = (win.flowerTiles || []).map((tile) => renderResultTile(tile)).join("");
+    if (!handTiles && !winningTile && !meldTiles && !flowerTiles) return "";
+    return `
+      <div class="result-compact-hand-line">
+        <span>手牌：</span>
+        <div class="result-compact-hand-scroll">
+          ${handTiles}
+          ${winningTile}
+          ${meldTiles}
+          ${flowerTiles}
+        </div>
+      </div>
+    `;
+  }
+
   function renderResultOpponentHands(win) {
     const opponents = win.opponentHands || [];
     if (!opponents.length || win.isNagashiYakuman) return "";
@@ -2236,8 +2257,11 @@
               <article class="result-win-detail">
                 ${wins.length > 1 ? `<strong>${escapeHtml(win.title)}</strong>` : ""}
                 ${renderResultDoraIndicatorRow(win, result)}
-                <div class="result-detail-text">${escapeHtml(win.yakuText)}</div>
-                <div class="result-detail-text">${win.pointText}</div>
+                <div class="result-yaku-point-row">
+                  <div class="result-detail-text result-yaku-text">${escapeHtml(win.yakuText)}</div>
+                  <div class="result-detail-text result-point-text">${win.pointText}</div>
+                </div>
+                ${renderResultCompactHandLine(win)}
                 ${renderResultHandTiles(win)}
                 ${renderResultMelds(win)}
                 ${renderResultFlowers(win)}
