@@ -371,6 +371,13 @@
     return gameState;
   }
 
+  function breakDoubleRiichiRound(gameState) {
+    (gameState?.players || []).forEach((player) => {
+      player.isDoubleRiichiEligible = false;
+    });
+    return gameState;
+  }
+
   function seatWindForIndex(gameState, playerIndex) {
     const winds = ["east", "south", "west"];
     return winds[(playerIndex - gameState.dealerIndex + 3) % 3] || "west";
@@ -1192,8 +1199,11 @@
       isDealer: index === dealerIndex,
       isCpu: index !== 0,
       isRiichi: false,
+      riichiType: "",
       needsRiichiMarkerOnNextDiscard: false,
       riichiWinningTiles: [],
+      hasDiscardedThisHand: false,
+      isDoubleRiichiEligible: true,
     }));
   }
 
@@ -1347,6 +1357,11 @@
     const isRiichiDeclaration =
       next.riichiDeclaration?.playerIndex === playerIndex &&
       riichiDiscardOptions({ ...player, hand: [...player.hand, discarded] }, next).some((option) => option.tileId === tileId);
+    const isDoubleRiichiCandidate =
+      isRiichiDeclaration &&
+      player.isDoubleRiichiEligible === true &&
+      player.hasDiscardedThisHand !== true &&
+      isMenzen(player);
     const riichiWaits = isRiichiDeclaration ? getWinningTiles(player) : [];
     const isRiichiMarkerReplacement = Boolean(player.needsRiichiMarkerOnNextDiscard && !isRiichiDeclaration);
     const isTsumogiri =
@@ -1360,6 +1375,8 @@
       isRiichiMarkerReplacement,
       isTsumogiri,
     });
+    player.hasDiscardedThisHand = true;
+    player.isDoubleRiichiEligible = false;
     if (isRiichiMarkerReplacement) {
       player.needsRiichiMarkerOnNextDiscard = false;
     }
@@ -1374,6 +1391,7 @@
           playerIndex,
           riichiWinningTiles: riichiWaits,
           discardTileId: tileId,
+          isDoubleRiichiCandidate,
         }
       : null;
     next.lastAction = {
@@ -1430,7 +1448,9 @@
     if (!pending) return syncDrawWallState(next);
     const player = next.players[pending.playerIndex];
     if (player && !player.isRiichi) {
+      const isDoubleRiichi = Boolean(pending.isDoubleRiichiCandidate && isMenzen(player));
       player.isRiichi = true;
+      player.riichiType = isDoubleRiichi ? "double" : "normal";
       player.isIppatsuChance = true;
       player.riichiWinningTiles = [...(pending.riichiWinningTiles || [])];
       player.points -= 1000;
@@ -1543,6 +1563,7 @@
       fromPlayerIndex: calledFromIndex,
     });
     checkDaisangenPaoAfterCall(player, calledTile, discarder?.id, next);
+    breakDoubleRiichiRound(next);
     clearIppatsuChances(next);
     next.currentPlayerIndex = playerIndex;
     next.pendingAction = null;
@@ -1631,6 +1652,7 @@
       }
     }
 
+    breakDoubleRiichiRound(next);
     next.pendingAction = null;
     next.pendingRiichi = null;
     clearIppatsuChances(next);
@@ -1664,6 +1686,7 @@
       isTsumo: winType === "tsumo",
       isMenzen: isMenzen(winner),
       isRiichi: Boolean(winner.isRiichi),
+      isDoubleRiichi: winner.riichiType === "double",
       isIppatsu: Boolean(winner.isRiichi && winner.isIppatsuChance),
       isRinshan: winType === "tsumo" && gameState.lastDrawSource === "rinshanAfterKan",
       isDealer: winnerIndex === gameState.dealerIndex,
