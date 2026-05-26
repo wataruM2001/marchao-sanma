@@ -1903,7 +1903,7 @@ button {
 }
 
 .discard-river .table-tile-img.riichi-discard {
-  transform: rotate(calc(var(--tile-rotation) + 90deg)) scale(0.71);
+  transform: rotate(calc(var(--tile-rotation) + 90deg));
   transform-origin: center;
 }
 
@@ -2761,7 +2761,7 @@ input[type="checkbox"] {
 .score-display {
   position: absolute;
   color: rgba(255, 255, 255, 0.9);
-  font-size: 35px;
+  font-size: 30px;
   font-weight: 900;
   line-height: 1;
   letter-spacing: 0;
@@ -2817,16 +2817,25 @@ input[type="checkbox"] {
   width: var(--side-river-width);
   height: var(--center-panel-height);
   min-height: 0;
+  gap: 0;
+  row-gap: 0;
+  column-gap: 0;
+  padding: 0;
+  direction: ltr;
 }
 
 .center-table-layout .river-left {
   grid-column: 1;
   grid-row: 1;
+  align-content: start;
+  justify-content: end;
 }
 
 .center-table-layout .river-right {
   grid-column: 3;
   grid-row: 1;
+  align-content: end;
+  justify-content: start;
 }
 
 .center-table-layout .river-self {
@@ -2836,6 +2845,13 @@ input[type="checkbox"] {
   grid-row: 2;
   width: var(--center-panel-width);
   height: var(--self-river-height);
+  gap: 0;
+  row-gap: 0;
+  column-gap: 0;
+  padding: 0;
+  align-content: start;
+  justify-content: start;
+  direction: ltr;
 }
 
 @media (max-width: 680px) {
@@ -2894,7 +2910,7 @@ input[type="checkbox"] {
 .round-title-block {
   position: absolute;
   left: 50%;
-  top: calc(50% - 10px);
+  top: 50%;
   width: calc(var(--center-river-tile-width) * 3);
   transform: translate(-50%, -50%);
   display: grid;
@@ -2907,7 +2923,7 @@ input[type="checkbox"] {
   width: 100%;
   font-size: calc(var(--center-text-size-base, var(--center-river-tile-width)) + 5px);
   line-height: 0.95;
-  color: #f3d88e;
+  color: #fff;
   font-weight: 900;
   text-align: center;
 }
@@ -3359,6 +3375,10 @@ button:disabled:hover,
     0 2px 8px rgba(0, 0, 0, 0.48);
 }
 
+#battleRoundLabel {
+  color: #fff;
+}
+
 .score-display {
   color: rgba(255, 248, 220, 0.92);
   text-shadow:
@@ -3599,7 +3619,7 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .round-title-block {
-    top: calc(var(--dora-tile-height) + ((var(--center-panel-size-landscape) - var(--dora-tile-height)) / 2));
+    top: calc(var(--dora-tile-height) + ((var(--center-panel-size-landscape) - var(--dora-tile-height)) / 2) + 10px);
     width: calc(var(--center-panel-size-landscape) - 8px);
   }
 
@@ -3643,6 +3663,7 @@ button:disabled:hover,
     font-size: 20px;
     line-height: 1;
     font-weight: 900;
+    color: #fff;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .landscape-round-line-sub,
