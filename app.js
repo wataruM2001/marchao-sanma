@@ -1388,20 +1388,21 @@
     return "アガリ";
   }
 
-  function buildResultOpponentHands(gameState, winnerIndex) {
+  function buildResultOpponentHands(gameState, winnerIndex, winnerIndexes = [winnerIndex]) {
     return (gameState.players || [])
       .map((player, playerIndex) => ({
         playerIndex,
         seat: player.seat,
         label: playerPositionLabel(player.seat),
         handTiles: sortedBattleTiles(player.hand || []),
+        revealHand: player.seat === "self" || winnerIndexes.includes(playerIndex),
         melds: player.melds || [],
         flowerTiles: player.flowers || [],
       }))
       .filter((entry) => entry.playerIndex !== winnerIndex);
   }
 
-  function buildWinDisplayInfo(gameState, winnerIndex, action) {
+  function buildWinDisplayInfo(gameState, winnerIndex, action, winnerIndexes = [winnerIndex]) {
     const winner = gameState.players[winnerIndex];
     if (!winner || !action?.evaluation) return null;
     const winningTile = action.winningTile || null;
@@ -1423,7 +1424,7 @@
       doraIndicators: gameState.doraIndicators || [],
       uraDoraIndicators: winner.isRiichi ? gameState.uraDoraIndicators || [] : [],
       isNagashiYakuman: Boolean(action.nagashiYakuman),
-      opponentHands: buildResultOpponentHands(gameState, winnerIndex),
+      opponentHands: buildResultOpponentHands(gameState, winnerIndex, winnerIndexes),
     };
   }
 
@@ -1431,11 +1432,11 @@
     if (!action || action.type !== "win") return [];
     if (Array.isArray(action.winnerIndexes)) {
       return action.winnerIndexes
-        .map((winnerIndex) => buildWinDisplayInfo(gameState, winnerIndex, action))
+        .map((winnerIndex) => buildWinDisplayInfo(gameState, winnerIndex, action, action.winnerIndexes))
         .filter(Boolean);
     }
     if (Number.isInteger(action.winnerIndex)) {
-      const info = buildWinDisplayInfo(gameState, action.winnerIndex, action);
+      const info = buildWinDisplayInfo(gameState, action.winnerIndex, action, [action.winnerIndex]);
       return info ? [info] : [];
     }
     return [];
@@ -3052,7 +3053,11 @@
             (opponent) => `
               <div class="result-detail-row result-hand-row">
                 <span>${escapeHtml(opponent.label)}手牌：</span>
-                <div class="result-tile-row">${(opponent.handTiles || []).map((tile) => renderResultTile(tile)).join("")}</div>
+                <div class="result-tile-row">${
+                  opponent.revealHand
+                    ? (opponent.handTiles || []).map((tile) => renderResultTile(tile)).join("")
+                    : (opponent.handTiles || []).map(() => renderResultBackTile()).join("")
+                }</div>
               </div>
             `
           )
@@ -3581,7 +3586,26 @@
     return [...(tiles || [])].sort(compareBattleTiles);
   }
 
+  function battleWinActionWinnerIndexes(gameState = battleState) {
+    const action = gameState?.lastAction || {};
+    if (action.type !== "win") return [];
+    if (Array.isArray(action.winnerIndexes)) return action.winnerIndexes.filter(Number.isInteger);
+    if (Number.isInteger(action.winnerIndex)) return [action.winnerIndex];
+    return [];
+  }
+
+  function isBattleWinPlayerIndex(playerIndex, gameState = battleState) {
+    return battleWinActionWinnerIndexes(gameState).includes(playerIndex);
+  }
+
   function drawnTileIdForPlayer(playerIndex) {
+    if (
+      battleState?.lastAction?.type === "win" &&
+      battleState.lastAction.winType === "tsumo" &&
+      isBattleWinPlayerIndex(playerIndex, battleState)
+    ) {
+      return battleState.lastAction.winningTile?.id || "";
+    }
     if (
       (battleState?.phase === "discard" || battleState?.phase === "actionPending") &&
       battleState.lastAction?.type === "draw" &&
@@ -3629,6 +3653,18 @@
             : "drawn discard-disabled",
           canDiscard && canSelectBattleDiscard(display.drawnTile, playerIndex)
         )
+      : "";
+    return normalTiles + drawnTile;
+  }
+
+  function renderOpenBattleHand(player, playerIndex, modifier = "") {
+    const display = splitHandForDisplay(player, playerIndex);
+    const classPrefix = modifier ? `${modifier} ` : "";
+    const normalTiles = display.concealed
+      .map((tile) => renderBattleTile(tile, `${classPrefix}discard-disabled`.trim()))
+      .join("");
+    const drawnTile = display.drawnTile
+      ? renderBattleTile(display.drawnTile, `${classPrefix}drawn discard-disabled`.trim())
       : "";
     return normalTiles + drawnTile;
   }
@@ -3964,8 +4000,20 @@
     setHtmlIfChanged(els.battleSelfRiver, renderDiscardRiver(selfPlayer));
     setHtmlIfChanged(els.battleLeftRiver, renderDiscardRiver(leftPlayer));
     setHtmlIfChanged(els.battleRightRiver, renderDiscardRiver(rightPlayer));
-    setHtmlIfChanged(els.battleLeftHand, renderBackTiles(leftPlayer?.hand.length || 0, "side", drawnTileIdForPlayer(battleState.players.indexOf(leftPlayer))));
-    setHtmlIfChanged(els.battleRightHand, renderBackTiles(rightPlayer?.hand.length || 0, "side", drawnTileIdForPlayer(battleState.players.indexOf(rightPlayer))));
+    const leftIndex = battleState.players.indexOf(leftPlayer);
+    const rightIndex = battleState.players.indexOf(rightPlayer);
+    setHtmlIfChanged(
+      els.battleLeftHand,
+      isBattleWinPlayerIndex(leftIndex)
+        ? renderOpenBattleHand(leftPlayer, leftIndex, "side")
+        : renderBackTiles(leftPlayer?.hand.length || 0, "side", drawnTileIdForPlayer(leftIndex))
+    );
+    setHtmlIfChanged(
+      els.battleRightHand,
+      isBattleWinPlayerIndex(rightIndex)
+        ? renderOpenBattleHand(rightPlayer, rightIndex, "side")
+        : renderBackTiles(rightPlayer?.hand.length || 0, "side", drawnTileIdForPlayer(rightIndex))
+    );
     renderBattleScreenPanels();
   }
 
