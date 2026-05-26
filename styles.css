@@ -116,7 +116,78 @@ button {
 
 .header-actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
   gap: 10px;
+}
+
+.auth-panel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: min(520px, 100%);
+  padding: 6px 8px;
+  border: 1px solid rgba(243, 216, 142, 0.34);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--ui-text);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+}
+
+.auth-status {
+  max-width: 190px;
+  overflow: hidden;
+  color: var(--ui-gold);
+  font-size: 12px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.auth-email-input {
+  width: clamp(150px, 18vw, 220px);
+  height: 30px;
+  padding: 0 9px;
+  border: 1px solid rgba(243, 216, 142, 0.42);
+  border-radius: 6px;
+  background: rgba(4, 10, 8, 0.72);
+  color: var(--ui-text);
+  font-size: 12px;
+  outline: none;
+}
+
+.auth-email-input::placeholder {
+  color: rgba(255, 248, 220, 0.58);
+}
+
+.auth-login-button,
+.auth-logout-button {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.auth-message {
+  max-width: 260px;
+  color: var(--ui-gold);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.auth-message.is-error {
+  color: #ff9388;
 }
 
 .battle-table {
