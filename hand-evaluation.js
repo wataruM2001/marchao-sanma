@@ -549,6 +549,36 @@
     );
   }
 
+  function tripletOrQuadGroups(candidate) {
+    return (candidate.melds || []).filter((meld) => meld.type === "triplet" || meld.type === "quad");
+  }
+
+  function isConcealedTripletOrQuad(meld, meldIndex, candidate, features) {
+    if (!meld || (meld.type !== "triplet" && meld.type !== "quad")) return false;
+    if (meld.fixed) return meld.sourceType === "ankan";
+    if (features.isTsumo) return true;
+    const position = candidate.winningTilePosition || {};
+    return !(position.usage === "triplet" && position.meldIndex === meldIndex);
+  }
+
+  function concealedTripletOrQuadCount(candidate, features) {
+    return (candidate.melds || []).filter((meld, meldIndex) =>
+      isConcealedTripletOrQuad(meld, meldIndex, candidate, features)
+    ).length;
+  }
+
+  function hasSanshokuDoukou(candidate) {
+    const baseIds = new Set(tripletOrQuadGroups(candidate).map((meld) => meld.baseId).filter(Boolean));
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9].some((number) =>
+      ["man", "pin", "sou"].every((suit) => baseIds.has(`${NUMBERED_SUIT_PREFIX[suit]}${number}`))
+    );
+  }
+
+  function hasShousangen(candidate, features) {
+    const dragonTriplets = DRAGON_ORDER.filter((baseId) => hasTripletOrQuad(candidate, baseId));
+    return dragonTriplets.length === 2 && DRAGON_ORDER.includes(features.pairBaseId);
+  }
+
   function isNineGates(candidate) {
     const baseIds = candidateBaseIds(candidate);
     if (baseIds.length !== 14) return false;
@@ -611,6 +641,9 @@
     }
     if (context.isIppatsu) yaku.push({ id: "ippatsu", name: "ippatsu", han: 1 });
     if (context.isRinshan && features.isTsumo) yaku.push({ id: "rinshan_kaihou", name: "rinshan_kaihou", han: 1 });
+    if (context.isChankan && !features.isTsumo) yaku.push({ id: "chankan", name: "chankan", han: 1 });
+    if (context.isHaitei && features.isTsumo) yaku.push({ id: "haitei", name: "haitei", han: 1 });
+    if (context.isHoutei && !features.isTsumo) yaku.push({ id: "houtei", name: "houtei", han: 1 });
     if (features.isMenzen && features.isTsumo) yaku.push({ id: "menzen_tsumo", name: "menzen_tsumo", han: 1 });
     if (features.allSimples) yaku.push({ id: "tanyao", name: "tanyao", han: 1 });
 
@@ -628,6 +661,18 @@
           yaku.push(...yakuhaiForTriplet(meld.baseId, context));
         });
       if (features.allTriplets) yaku.push({ id: "toitoi", name: "toitoi", han: 2 });
+      if (concealedTripletOrQuadCount(candidate, features) >= 3) {
+        yaku.push({ id: "sanankou", name: "sanankou", han: 2 });
+      }
+      if (hasSanshokuDoukou(candidate)) {
+        yaku.push({ id: "sanshoku_doukou", name: "sanshoku_doukou", han: 2 });
+      }
+      if (hasShousangen(candidate, features)) {
+        yaku.push({ id: "shousangen", name: "shousangen", han: 2 });
+      }
+      if (features.quadCount >= 3) {
+        yaku.push({ id: "sankantsu", name: "sankantsu", han: 2 });
+      }
 
       if (features.isMenzen) {
         const sequenceCounts = (candidate.melds || [])
