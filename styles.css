@@ -3461,6 +3461,8 @@ button:disabled:hover,
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .round-info-landscape .round-info-line {
     display: block;
+    font-size: inherit;
+    line-height: inherit;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .center-score-display .score-display {
