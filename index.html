@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオサンマ</title>
-  <link rel="stylesheet" href="./styles.css?v=center-panel-square-v10" />
+  <link rel="stylesheet" href="./styles.css?v=stats-screen-ui-v11" />
   </head>
   <body>
     <main class="app-shell">
@@ -144,7 +144,7 @@
                     <h3>総合成績</h3>
                     <div class="stats-filter-controls">
                       <label class="stats-month-control">
-                        <span>年月選択</span>
+                        
                         <select id="statsYearSelect" aria-label="成績の年"></select>
                         <span>年</span>
                         <select id="statsMonthSelect" aria-label="成績の月"></select>
@@ -157,7 +157,7 @@
                       </label>
                     </div>
                   </div>
-                  <p class="stats-online-status" id="statsDataSourceStatus">表示中：端末内成績</p>
+                  <p class="stats-online-status" id="statsDataSourceStatus" hidden>表示中：端末内成績</p>
                   <div class="stats-table-scroll" id="statsSummaryTable"></div>
                 </section>
                 <section class="stats-section">
@@ -166,6 +166,8 @@
                     <label class="stats-ranking-control">
                       <span>種別</span>
                       <select id="statsRankingKindSelect" aria-label="ランキング種別"></select>
+                      <input id="statsRankingMinInput" type="number" min="1" max="999" value="1" aria-label="&#12521;&#12531;&#12461;&#12531;&#12464;&#26368;&#20302;&#21322;&#33624;&#25968;" />
+                      <span>&#21322;&#33624;&#20197;&#19978;</span>
                     </label>
                   </div>
                   <p class="stats-online-status" id="statsRankingStatus">読み込み前</p>
@@ -525,6 +527,6 @@
     <script src="./hand-evaluation.js?v=general-yaku-v1"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./supabaseClient.js?v=supabase-ranking-v9"></script>
-    <script src="./app.js?v=supabase-ranking-v9"></script>
+    <script src="./app.js?v=stats-screen-ui-v11"></script>
   </body>
 </html>
