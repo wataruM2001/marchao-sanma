@@ -112,6 +112,7 @@
       pendingAction: clonePendingAction(gameState.pendingAction),
       riichiDeclaration: gameState.riichiDeclaration ? { ...gameState.riichiDeclaration } : null,
       pendingRiichi: gameState.pendingRiichi ? { ...gameState.pendingRiichi } : null,
+      ponDiscardRestriction: gameState.ponDiscardRestriction ? { ...gameState.ponDiscardRestriction } : null,
       paoState: gameState.paoState ? { ...gameState.paoState } : null,
     };
   }
@@ -1429,6 +1430,7 @@
     });
     player.hasDiscardedThisHand = true;
     player.isDoubleRiichiEligible = false;
+    next.ponDiscardRestriction = null;
     if (isRiichiMarkerReplacement) {
       player.needsRiichiMarkerOnNextDiscard = false;
     }
@@ -1620,6 +1622,11 @@
     next.currentPlayerIndex = playerIndex;
     next.pendingAction = null;
     next.pendingRiichi = null;
+    next.ponDiscardRestriction = {
+      playerId: player.id,
+      playerIndex,
+      baseTileId: baseId,
+    };
     next.phase = "discard";
     next.lastAction = {
       type: "pon",
