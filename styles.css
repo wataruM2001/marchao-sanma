@@ -2999,18 +2999,9 @@ input[type="checkbox"] {
 .center-table-layout .river-left {
   grid-column: 1;
   grid-row: 1;
-  display: grid;
-  grid-template-columns: repeat(4, var(--river-tile-long));
-  grid-template-rows: repeat(6, var(--river-tile-width));
-  grid-auto-flow: column;
-  grid-auto-columns: var(--river-tile-long);
-  align-content: start;
-  justify-content: end;
-}
-
-.center-table-layout .river-left .river-tile-slot {
-  width: var(--river-tile-long);
-  height: var(--river-tile-width);
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 .center-table-layout .river-right {
