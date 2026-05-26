@@ -1347,6 +1347,9 @@ button {
 }
 
 .side-hand {
+  --side-tile-width: clamp(17px, 2vw, 27px);
+  --side-tile-long: calc(var(--side-tile-width) * 1.40625);
+  --side-drawn-gap: clamp(8px, 1vw, 14px);
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1726,6 +1729,16 @@ button {
 
 .side-hand .table-tile-img.drawn {
   margin-top: clamp(8px, 1vw, 14px);
+}
+
+.opponent-left .side-hand .table-tile-img.drawn {
+  margin-top: calc(((var(--side-tile-width) - var(--side-tile-long)) / 2) + var(--side-drawn-gap));
+  margin-bottom: calc((var(--side-tile-width) - var(--side-tile-long)) / 2);
+}
+
+.opponent-right .side-hand .table-tile-img.drawn {
+  margin-top: calc((var(--side-tile-width) - var(--side-tile-long)) / 2);
+  margin-bottom: calc(((var(--side-tile-width) - var(--side-tile-long)) / 2) + var(--side-drawn-gap));
 }
 
 .table-tile-img.mini,
@@ -2504,6 +2517,16 @@ input[type="checkbox"] {
 
 .side-hand .table-tile-img.drawn {
   margin-top: calc((var(--side-tile-width) - var(--side-tile-long)) / 2);
+}
+
+.opponent-left .side-hand .table-tile-img.drawn {
+  margin-top: calc(((var(--side-tile-width) - var(--side-tile-long)) / 2) + var(--side-drawn-gap, 12px));
+  margin-bottom: calc((var(--side-tile-width) - var(--side-tile-long)) / 2);
+}
+
+.opponent-right .side-hand .table-tile-img.drawn {
+  margin-top: calc((var(--side-tile-width) - var(--side-tile-long)) / 2);
+  margin-bottom: calc(((var(--side-tile-width) - var(--side-tile-long)) / 2) + var(--side-drawn-gap, 12px));
 }
 
 .discard-river {
