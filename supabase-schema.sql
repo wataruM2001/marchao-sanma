@@ -91,13 +91,17 @@ create index if not exists hanchan_stats_user_ended_at_idx
 create unique index if not exists hanchan_stats_user_hanchan_unique
   on public.hanchan_stats (user_id, hanchan_id);
 
-create or replace view public.hanchan_ranking_summary as
+drop function if exists public.get_hanchan_ranking_summary(integer);
+drop view if exists public.hanchan_ranking_summary;
+
+create view public.hanchan_ranking_summary as
 select
   p.display_name,
   count(s.*)::integer as hanchan_count,
   coalesce(sum(s.settlement_point), 0)::integer as total_settlement_point,
   coalesce(round(avg(s.settlement_point))::integer, 0) as average_settlement_point,
   coalesce(round(avg(s.rank)::numeric, 2), 0) as average_rank,
+  coalesce(round(avg(s.final_raw_score))::integer, 0) as average_final_raw_score,
   coalesce(sum(s.chip_count), 0)::integer as total_chip_count,
   coalesce(sum(s.total_hands), 0)::integer as total_hands,
   case when coalesce(sum(s.total_hands), 0) = 0 then 0
@@ -120,13 +124,14 @@ from public.profiles p
 join public.hanchan_stats s on s.user_id = p.user_id
 group by p.user_id, p.display_name;
 
-create or replace function public.get_hanchan_ranking_summary(limit_count integer default 50)
+create function public.get_hanchan_ranking_summary(limit_count integer default 50)
 returns table (
   display_name text,
   hanchan_count integer,
   total_settlement_point integer,
   average_settlement_point integer,
   average_rank numeric,
+  average_final_raw_score integer,
   total_chip_count integer,
   total_hands integer,
   round_profit numeric,
@@ -147,6 +152,7 @@ as $$
     summary.total_settlement_point,
     summary.average_settlement_point,
     summary.average_rank,
+    summary.average_final_raw_score,
     summary.total_chip_count,
     summary.total_hands,
     summary.round_profit,
