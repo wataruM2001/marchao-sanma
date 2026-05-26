@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオサンマ</title>
-  <link rel="stylesheet" href="./styles.css?v=landscape-doubletap-v1" />
+  <link rel="stylesheet" href="./styles.css?v=settlement-buttons-v1" />
   </head>
   <body>
     <main class="app-shell">
@@ -36,12 +36,14 @@
           <section class="battle-settlement-panel" id="battleSettlementPanel" hidden>
             <h2>半荘精算</h2>
             <div class="battle-settlement-body" id="battleSettlementBody"></div>
-            <button class="primary-button battle-result-button" id="battleSettlementDetailButton" type="button">精算内訳</button>
-            <button class="primary-button battle-result-button" id="battlePaifuButton" type="button">牌譜を見る</button>
-            <button class="mini-button battle-result-button" id="battleSharePaifuButton" type="button">牌譜URLを作成</button>
+            <div class="settlement-button-row">
+              <button class="primary-button battle-result-button settlement-main-button" id="battleSettlementDetailButton" type="button">精算内訳</button>
+              <button class="primary-button battle-result-button settlement-main-button" id="battlePaifuButton" type="button">牌譜参照</button>
+              <button class="primary-button battle-result-button settlement-main-button" id="battleRestartButton" type="button">終了</button>
+            </div>
+            <button class="mini-button battle-result-button" id="battleSharePaifuButton" type="button" hidden>牌譜URLを作成</button>
             <button class="mini-button battle-result-button" id="battleCopyPaifuUrlButton" type="button" hidden>コピー</button>
-            <p class="battle-share-status" id="battleSharePaifuStatus" aria-live="polite"></p>
-            <button class="primary-button battle-result-button" id="battleRestartButton" type="button">もう一度対局</button>
+            <p class="battle-share-status" id="battleSharePaifuStatus" aria-live="polite" hidden></p>
           </section>
           <section class="paifu-panel paifu-control-bar" id="paifuPanel" hidden>
             <h2 class="paifu-screen-title" id="paifuTitle">牌譜</h2>
@@ -468,6 +470,6 @@
     <script src="./hand-evaluation.js?v=dora-indicator-manchu-flower"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./supabaseClient.js?v=shared-paifu-url-v1"></script>
-    <script src="./app.js?v=landscape-doubletap-v1"></script>
+    <script src="./app.js?v=settlement-buttons-v1"></script>
   </body>
 </html>
