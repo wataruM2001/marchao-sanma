@@ -1940,6 +1940,10 @@ button {
   height: var(--center-panel-height, calc(6 * var(--river-tile-width)));
 }
 
+.river-left .river-column {
+  height: auto;
+}
+
 .river-column-kamicha {
   flex-direction: column;
   align-items: flex-end;
