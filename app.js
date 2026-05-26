@@ -4589,7 +4589,10 @@
     }
     const columnClass = seat === "kamicha" ? "river-column-kamicha" : "river-column-shimocha";
     return groups
-      .map((column) => `<div class="river-column ${columnClass}">${column.map((discard) => renderDiscardTileSlot(player, discard)).join("")}</div>`)
+      .map((column) => {
+        const riichiClass = column.some(isRiichiDiscardMarker) ? "has-riichi-discard" : "no-riichi-discard";
+        return `<div class="river-column ${columnClass} ${riichiClass}">${column.map((discard) => renderDiscardTileSlot(player, discard)).join("")}</div>`;
+      })
       .join("");
   }
 
