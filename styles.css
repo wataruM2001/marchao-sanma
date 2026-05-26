@@ -1931,7 +1931,7 @@ button {
 .river-line-self {
   width: max-content;
   height: var(--river-tile-long);
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: flex-start;
 }
 
@@ -1972,19 +1972,19 @@ button {
 
 .river-self .river-tile-slot.is-riichi-marker {
   width: var(--river-tile-long);
-  height: var(--river-tile-long);
+  height: var(--river-tile-width);
 }
 
 .river-left .river-tile-slot.is-normal,
 .river-right .river-tile-slot.is-normal {
-  width: var(--river-tile-long);
-  height: var(--river-tile-width);
+  width: var(--river-tile-width);
+  height: var(--river-tile-long);
 }
 
 .river-left .river-tile-slot.is-riichi-marker,
 .river-right .river-tile-slot.is-riichi-marker {
   width: var(--river-tile-long);
-  height: var(--river-tile-long);
+  height: var(--river-tile-width);
 }
 
 .river-left .table-tile-img {
