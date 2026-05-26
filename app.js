@@ -98,6 +98,8 @@
   let statsRecentCount = 10;
   let statsHistoryPage = 1;
   let statsResetConfirmVisible = false;
+  let statsSelectedYear = new Date().getFullYear();
+  let statsSelectedMonth = new Date().getMonth() + 1;
   let isViewingSharedPaifu = false;
   let currentSharedPaifuUrl = "";
 
@@ -143,6 +145,8 @@
     statsEmptyMessage: document.getElementById("statsEmptyMessage"),
     statsContent: document.getElementById("statsContent"),
     statsRecentCountInput: document.getElementById("statsRecentCountInput"),
+    statsYearSelect: document.getElementById("statsYearSelect"),
+    statsMonthSelect: document.getElementById("statsMonthSelect"),
     statsSummaryTable: document.getElementById("statsSummaryTable"),
     statsHistoryTable: document.getElementById("statsHistoryTable"),
     statsPrevPageButton: document.getElementById("statsPrevPageButton"),
@@ -425,6 +429,20 @@
     els.statsRecentCountInput?.addEventListener("input", () => {
       const storage = loadStatsStorage();
       statsRecentCount = normalizeRecentStatsCount(els.statsRecentCountInput.value, storage.records.length);
+      renderStatsScreen();
+    });
+    els.statsYearSelect?.addEventListener("change", () => {
+      const year = Number(els.statsYearSelect.value);
+      if (Number.isFinite(year)) {
+        statsSelectedYear = Math.floor(year);
+      }
+      renderStatsScreen();
+    });
+    els.statsMonthSelect?.addEventListener("change", () => {
+      const month = Number(els.statsMonthSelect.value);
+      if (Number.isFinite(month)) {
+        statsSelectedMonth = clampNumber(Math.floor(month), 1, 12);
+      }
       renderStatsScreen();
     });
     els.statsPrevPageButton?.addEventListener("click", () => {
@@ -1936,10 +1954,20 @@
   function normalizeHanchanStatRecord(record) {
     if (!record || typeof record !== "object") return null;
     const id = String(record.id || record.hanchan_id || record.hanchanId || "");
+    const startedAt = String(record.startedAt || record.started_at || "");
     const endedAt = String(record.endedAt || record.ended_at || record.created_at || "");
     if (!id || !endedAt) return null;
+    const rawDuration = Number(record.durationSeconds ?? record.duration_seconds);
+    const startedMs = new Date(startedAt).getTime();
+    const endedMs = new Date(endedAt).getTime();
+    const durationSeconds = Number.isFinite(rawDuration)
+      ? Math.max(0, Math.floor(rawDuration))
+      : Number.isFinite(startedMs) && Number.isFinite(endedMs)
+        ? Math.max(0, Math.floor((endedMs - startedMs) / 1000))
+        : null;
     return {
       id,
+      startedAt,
       endedAt,
       rank: clampNumber(Math.round(Number(record.rank) || 0), 1, 3),
       finalRawScore: Math.round(Number(record.finalRawScore ?? record.final_raw_score ?? record.rawScore ?? 0) || 0),
@@ -1950,6 +1978,7 @@
       dealInCount: Math.max(0, Math.round(Number(record.dealInCount ?? record.deal_in_count ?? 0) || 0)),
       riichiCount: Math.max(0, Math.round(Number(record.riichiCount ?? record.riichi_count ?? 0) || 0)),
       calledHandCount: Math.max(0, Math.round(Number(record.calledHandCount ?? record.called_hand_count ?? 0) || 0)),
+      durationSeconds,
     };
   }
 
@@ -1998,9 +2027,17 @@
     if (!selfSettlement || !paifuReplay?.id) return null;
     const selfPlayerId = selfPlayerIdFromReplay();
     const counts = countSelfReplayStats(selfPlayerId);
+    const startedAt = paifuReplay.startedAt || "";
+    const endedAt = paifuReplay.endedAt || new Date().toISOString();
+    const startedMs = new Date(startedAt).getTime();
+    const endedMs = new Date(endedAt).getTime();
+    const durationSeconds = Number.isFinite(startedMs) && Number.isFinite(endedMs)
+      ? Math.max(0, Math.floor((endedMs - startedMs) / 1000))
+      : null;
     return {
       id: paifuReplay.id,
-      endedAt: paifuReplay.endedAt || new Date().toISOString(),
+      startedAt,
+      endedAt,
       rank: Number(selfSettlement.rank) || 0,
       finalRawScore: Math.round(Number(selfSettlement.points) || 0),
       settlementPoint: Number(selfSettlement.displayFinalPoint ?? selfSettlement.finalScore) || 0,
@@ -2010,6 +2047,7 @@
       dealInCount: counts.dealInCount,
       riichiCount: counts.riichiCount,
       calledHandCount: counts.calledHandCount,
+      durationSeconds,
     };
   }
 
@@ -2056,6 +2094,60 @@
     });
   }
 
+  function isSameYearMonth(record, year, month) {
+    const endedAt = new Date(record?.endedAt);
+    return (
+      Number.isFinite(endedAt.getTime()) &&
+      endedAt.getFullYear() === Number(year) &&
+      endedAt.getMonth() + 1 === Number(month)
+    );
+  }
+
+  function filterYearMonthRecords(records = [], year = statsSelectedYear, month = statsSelectedMonth) {
+    return records.filter((record) => isSameYearMonth(record, year, month));
+  }
+
+  function statsYearMonthLabel(year = statsSelectedYear, month = statsSelectedMonth) {
+    return `${year}/${String(month).padStart(2, "0")}`;
+  }
+
+  function statsAvailableYears(records = []) {
+    const currentYear = new Date().getFullYear();
+    const years = new Set([currentYear, statsSelectedYear]);
+    records.forEach((record) => {
+      const endedAt = new Date(record.endedAt);
+      if (Number.isFinite(endedAt.getTime())) {
+        years.add(endedAt.getFullYear());
+      }
+    });
+    return [...years].sort((left, right) => right - left);
+  }
+
+  function renderStatsMonthControls(records = []) {
+    const years = statsAvailableYears(records);
+    if (!years.includes(statsSelectedYear)) {
+      statsSelectedYear = years[0] || new Date().getFullYear();
+    }
+    statsSelectedMonth = clampNumber(statsSelectedMonth, 1, 12);
+    if (els.statsYearSelect) {
+      const yearHtml = years.map((year) => `<option value="${year}">${year}</option>`).join("");
+      setHtmlIfChanged(els.statsYearSelect, yearHtml);
+      if (String(els.statsYearSelect.value) !== String(statsSelectedYear)) {
+        els.statsYearSelect.value = String(statsSelectedYear);
+      }
+    }
+    if (els.statsMonthSelect) {
+      const monthHtml = Array.from({ length: 12 }, (_, index) => {
+        const month = index + 1;
+        return `<option value="${month}">${month}</option>`;
+      }).join("");
+      setHtmlIfChanged(els.statsMonthSelect, monthHtml);
+      if (String(els.statsMonthSelect.value) !== String(statsSelectedMonth)) {
+        els.statsMonthSelect.value = String(statsSelectedMonth);
+      }
+    }
+  }
+
   function getRecentRecords(records = [], count = 10) {
     const limit = normalizeRecentStatsCount(count, records.length);
     return sortStatsRecordsNewest(records).slice(0, limit);
@@ -2075,9 +2167,14 @@
     const totalHands = records.reduce((sum, record) => sum + (Number(record.totalHands) || 0), 0);
     const sum = (key) => records.reduce((total, record) => total + (Number(record[key]) || 0), 0);
     const rawProfit = records.reduce((total, record) => total + ((Number(record.finalRawScore) || 0) - 35000), 0);
+    const durationRecords = records.filter((record) => typeof record.durationSeconds === "number" && Number.isFinite(record.durationSeconds));
+    const averageDurationSeconds = durationRecords.length
+      ? durationRecords.reduce((total, record) => total + record.durationSeconds, 0) / durationRecords.length
+      : null;
     return {
       hanchanCount: count,
       totalHands,
+      averageDurationSeconds,
       averageRank: sum("rank") / count,
       averageSettlementPoint: sum("settlementPoint") / count,
       averageChipCount: sum("chipCount") / count,
@@ -2102,6 +2199,15 @@
     const number = Number(value);
     if (!Number.isFinite(number)) return "-";
     return `${number.toFixed(1)}%`;
+  }
+
+  function formatDuration(seconds) {
+    const number = Number(seconds);
+    if (seconds == null || !Number.isFinite(number)) return "-";
+    const totalSeconds = Math.max(0, Math.floor(number));
+    const minutes = Math.floor(totalSeconds / 60);
+    const restSeconds = totalSeconds % 60;
+    return `${minutes}m${String(restSeconds).padStart(2, "0")}s`;
   }
 
   function formatStatsDate(value) {
@@ -2240,9 +2346,11 @@
         <td>-</td>
         <td>-</td>
         <td>-</td>
+        <td>-</td>
       `;
     }
     return `
+      <td>${formatDuration(summary.averageDurationSeconds)}</td>
       <td>${summary.averageRank.toFixed(2)}</td>
       <td>${formatSignedNumber(summary.averageSettlementPoint)}</td>
       <td>${formatSignedNumber(summary.averageChipCount, 1)}\u679a</td>
@@ -2256,17 +2364,18 @@
 
   function renderStatsSummaryTable(records = [], recentCount = 10) {
     const allSummary = calculateStatsSummary(records);
-    const monthSummary = calculateStatsSummary(filterThisMonthRecords(records));
+    const monthSummary = calculateStatsSummary(filterYearMonthRecords(records, statsSelectedYear, statsSelectedMonth));
     const recentRecords = getRecentRecords(records, recentCount);
     const recentSummary = calculateStatsSummary(recentRecords);
-    const recentLabel = `\u76f4\u8fd1${recentRecords.length || normalizeRecentStatsCount(recentCount, records.length)}\u534a\u8358`;
+    const recentLabel = `\u76f4\u8fd1${recentRecords.length || normalizeRecentStatsCount(recentCount, records.length)}\u6226`;
     return `
       <table class="stats-table stats-summary-table">
         <thead>
           <tr>
             <th>\u5bfe\u8c61</th>
+            <th>\u5e73\u5747\u6642\u9593</th>
             <th>\u5e73\u5747\u7740\u9806</th>
-            <th>\u534a\u8358\u5e73\u5747\u7cbe\u7b97\u30dd\u30a4\u30f3\u30c8</th>
+            <th>\u5e73\u5747\u53ce\u652f</th>
             <th>\u534a\u8358\u5e73\u5747\u795d\u5100</th>
             <th>\u5c40\u53ce\u652f</th>
             <th>\u548c\u4e86\u7387</th>
@@ -2276,8 +2385,8 @@
           </tr>
         </thead>
         <tbody>
-          <tr><th>\u5168\u534a\u8358</th>${renderStatsSummaryCells(allSummary)}</tr>
-          <tr><th>\u4eca\u6708</th>${renderStatsSummaryCells(monthSummary)}</tr>
+          <tr><th>\u901a\u7b97</th>${renderStatsSummaryCells(allSummary)}</tr>
+          <tr><th>${escapeHtml(statsYearMonthLabel())}</th>${renderStatsSummaryCells(monthSummary)}</tr>
           <tr><th>${escapeHtml(recentLabel)}</th>${renderStatsSummaryCells(recentSummary)}</tr>
         </tbody>
       </table>
@@ -2294,9 +2403,10 @@
       <thead>
         <tr>
           <th>\u7d42\u4e86\u65e5\u6642</th>
-          <th>\u9806\u4f4d</th>
+          <th>\u6642\u9593</th>
+          <th>\u7740\u9806</th>
           <th>\u6700\u7d42\u7d20\u70b9</th>
-          <th>\u5408\u8a08\u7cbe\u7b97\u30dd\u30a4\u30f3\u30c8</th>
+          <th>\u53ce\u652f</th>
           <th>\u795d\u5100\u679a\u6570</th>
           <th>\u7dcf\u5c40\u6570</th>
           <th>\u548c\u4e86\u56de\u6570</th>
@@ -2310,7 +2420,7 @@
       return `
         <table class="stats-table stats-history-table">
           ${header}
-          <tbody><tr><td colspan="10">\u5c65\u6b74\u306f\u3042\u308a\u307e\u305b\u3093</td></tr></tbody>
+          <tbody><tr><td colspan="11">\u5c65\u6b74\u306f\u3042\u308a\u307e\u305b\u3093</td></tr></tbody>
         </table>
       `;
     }
@@ -2321,6 +2431,7 @@
           ${pageRecords.map((record) => `
             <tr>
               <td>${escapeHtml(formatStatsDate(record.endedAt))}</td>
+              <td>${escapeHtml(formatDuration(record.durationSeconds))}</td>
               <td>${escapeHtml(`${record.rank}\u4f4d`)}</td>
               <td>${formatPlainNumber(record.finalRawScore)}</td>
               <td>${formatSignedNumber(record.settlementPoint)}</td>
@@ -2342,6 +2453,7 @@
     const records = storage.records;
     const hasRecords = records.length > 0;
     setHiddenIfChanged(els.statsResetConfirm, !statsResetConfirmVisible);
+    renderStatsMonthControls(records);
     statsRecentCount = normalizeRecentStatsCount(statsRecentCount, records.length);
     const totalPages = Math.max(1, Math.ceil(records.length / STATS_HISTORY_PAGE_SIZE));
     statsHistoryPage = clampNumber(statsHistoryPage, 1, totalPages);
