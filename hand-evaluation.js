@@ -606,6 +606,7 @@
     const yaku = [];
     if (context.isRiichi) yaku.push({ id: "riichi", name: "riichi", han: 1 });
     if (context.isIppatsu) yaku.push({ id: "ippatsu", name: "ippatsu", han: 1 });
+    if (context.isRinshan && features.isTsumo) yaku.push({ id: "rinshan_kaihou", name: "rinshan_kaihou", han: 1 });
     if (features.isMenzen && features.isTsumo) yaku.push({ id: "menzen_tsumo", name: "menzen_tsumo", han: 1 });
     if (features.allSimples) yaku.push({ id: "tanyao", name: "tanyao", han: 1 });
 
