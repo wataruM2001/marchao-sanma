@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオサンマ</title>
-  <link rel="stylesheet" href="./styles.css?v=resume-rinshan-stats-reset-v1" />
+  <link rel="stylesheet" href="./styles.css?v=stats-month-duration-v1" />
   </head>
   <body>
     <main class="app-shell">
@@ -133,11 +133,20 @@
                 <section class="stats-section">
                   <div class="stats-section-heading">
                     <h3>総合成績</h3>
-                    <label class="stats-recent-control">
-                      <span>直近</span>
-                      <input id="statsRecentCountInput" type="number" min="1" value="10" />
-                      <span>半荘</span>
-                    </label>
+                    <div class="stats-filter-controls">
+                      <label class="stats-month-control">
+                        <span>年月選択</span>
+                        <select id="statsYearSelect" aria-label="成績の年"></select>
+                        <span>年</span>
+                        <select id="statsMonthSelect" aria-label="成績の月"></select>
+                        <span>月</span>
+                      </label>
+                      <label class="stats-recent-control">
+                        <span>直近</span>
+                        <input id="statsRecentCountInput" type="number" min="1" value="10" />
+                        <span>戦</span>
+                      </label>
+                    </div>
                   </div>
                   <div class="stats-table-scroll" id="statsSummaryTable"></div>
                 </section>
@@ -495,6 +504,6 @@
     <script src="./hand-evaluation.js?v=resume-rinshan-stats-reset-v1"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./supabaseClient.js?v=shared-paifu-url-v1"></script>
-    <script src="./app.js?v=resume-rinshan-stats-reset-v1"></script>
+    <script src="./app.js?v=stats-month-duration-v1"></script>
   </body>
 </html>
