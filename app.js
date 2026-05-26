@@ -2441,13 +2441,19 @@
     if (!row) return;
     window.statsApi.saveHanchanStats(row).then((result) => {
       if (result?.skipped) {
-        console.info(result.reason || "Supabase stats save skipped.");
+        console.info("Supabase stats save skipped", result.reason || "Not logged in.");
+        return;
+      }
+      if (result?.duplicate) {
+        console.log("Supabase stats already saved", { hanchanId: row.hanchan_id });
         return;
       }
       if (!result.ok) {
         lastSavedStatsHanchanId = "";
-        console.warn("半荘成績を保存できませんでした", result.reason || result.error);
+        console.error("Supabase stats save failed", result.reason || result.error);
+        return;
       }
+      console.log("Supabase stats saved", row);
     });
   }
 
