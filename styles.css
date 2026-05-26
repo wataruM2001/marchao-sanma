@@ -2757,18 +2757,6 @@ input[type="checkbox"] {
   transform: none;
 }
 
-.center-table-layout .discard-river {
-  position: relative;
-  overflow: visible;
-}
-
-.center-table-layout .discard-river .table-tile-img.river-tile-positioned {
-  position: absolute;
-  left: var(--river-tile-left, 0);
-  top: var(--river-tile-top, 0);
-  margin: 0;
-}
-
 .dora-indicator-row {
   grid-column: 2;
   grid-row: 1;
