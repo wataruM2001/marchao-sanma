@@ -991,6 +991,7 @@
     });
     els.paifuBackButton?.addEventListener("click", () => {
       stopPaifuPlayback();
+      resetBattleEffectState();
       appScreen = isViewingSharedPaifu ? "start" : "settlement";
       renderBattleTable();
     });
@@ -1971,6 +1972,8 @@
           isWinner: winnerIndexes.includes(entry.index),
           isTenpai: winningTiles.length > 0,
           winningTiles: [...winningTiles],
+          points: Number(player.points) || 0,
+          chips: Number(player.chips) || 0,
           handTiles: sortedBattleTiles(cloneResultTilesSnapshot(handSource)),
           drawnTile,
           melds: cloneResultMeldsSnapshot(player.melds || []),
@@ -3561,9 +3564,16 @@
 
   function formatResultChipDelta(value) {
     const number = Number(value) || 0;
-    if (number > 0) return `+${number}pt`;
-    if (number < 0) return `${number}pt`;
-    return "0pt";
+    if (number > 0) return `+${number}枚`;
+    if (number < 0) return `${number}枚`;
+    return "0枚";
+  }
+
+  function formatResultChipCount(value) {
+    const number = Number(value) || 0;
+    if (number > 0) return `+${number}枚`;
+    if (number < 0) return `${number}枚`;
+    return "0枚";
   }
 
   function resultDeltaClass(value) {
@@ -3579,13 +3589,17 @@
       ["shimocha", "下家"],
       ["kamicha", "上家"],
     ];
+    const snapshotsBySeat = new Map((result.playerHandSnapshots || []).map((entry) => [entry.seat, entry]));
     const rows = seats
       .map(([seat, label]) => {
+        const snapshot = snapshotsBySeat.get(seat);
         const pointValue = result.pointChanges?.[seat];
         const chipValue = result.chipChanges?.[seat];
+        const currentPointText = `${formatPlainNumber(snapshot?.points || 0)}轤ｹ`;
+        const currentChipText = formatResultChipCount(snapshot?.chips || 0);
         const pointText = formatResultPointDelta(pointValue);
         const chipText = formatResultChipDelta(chipValue);
-        return `<div class="result-player-row">${escapeHtml(label)} <span class="${resultDeltaClass(pointValue)}">${escapeHtml(pointText)}</span>,<span class="${resultDeltaClass(chipValue)}">${escapeHtml(chipText)}</span></div>`;
+        return `<div class="result-player-row">${escapeHtml(label)} ${escapeHtml(currentPointText)},${escapeHtml(currentChipText)} <span class="${resultDeltaClass(pointValue)}">${escapeHtml(pointText)}</span>,<span class="${resultDeltaClass(chipValue)}">${escapeHtml(chipText)}</span></div>`;
       })
       .join("");
     return `<div class="result-player-rows">${rows}</div>`;
@@ -3708,9 +3722,9 @@
 
   function renderResultPlayerHandSnapshots(result) {
     const hands = result.playerHandSnapshots || [];
-    if (!hands.length) return "";
+    if (!hands.length || result.type !== "ryukyoku") return "";
     return `
-      <div class="result-ryukyoku-hands result-all-player-hands">
+      <div class="result-ryukyoku-hands result-ryukyoku-status-list">
         ${hands
           .map((entry) => {
             const waitText = result.type === "ryukyoku"
@@ -4228,6 +4242,13 @@
 
   function renderBattleEffect(gameState) {
     if (!els.battleEffect) return;
+    if (appScreen !== "playing") {
+      window.clearTimeout(battleEffectTimer);
+      activeBattleEffect = null;
+      battleEffectQueue = [];
+      renderActiveBattleEffect();
+      return;
+    }
     queueBattleEffects(gameState);
     renderActiveBattleEffect();
   }
