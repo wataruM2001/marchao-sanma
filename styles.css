@@ -1995,6 +1995,10 @@ button {
   transform: translateY(calc(var(--river-tile-width) * 0.24)) rotate(calc(var(--tile-rotation) + 90deg));
 }
 
+.river-right .river-tile-slot.is-riichi-marker .table-tile-img.riichi-discard {
+  transform: translateY(calc(var(--river-tile-width) * -0.24)) rotate(calc(var(--tile-rotation) + 90deg));
+}
+
 .river-left .table-tile-img {
   direction: ltr;
 }
