@@ -68,12 +68,25 @@
     if (!createClient) return null;
     cachedClient = createClient(supabaseConfig.url, supabaseConfig.publishableKey, {
       auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: "pkce",
       },
     });
     return cachedClient;
+  }
+
+  function authRedirectUrl() {
+    const fallback = supabaseConfig.shareUrlBase || root.location?.origin || "";
+    try {
+      const url = new URL(root.location?.href || fallback);
+      url.search = "";
+      url.hash = "";
+      return url.toString();
+    } catch {
+      return fallback;
+    }
   }
 
   function cloneJson(value) {
@@ -232,11 +245,64 @@
     },
   };
 
+  const authApi = {
+    isConfigured,
+
+    async getSession() {
+      const client = getSupabaseClient();
+      if (!client) return unavailableResult("getSession");
+      const { data, error } = await client.auth.getSession();
+      if (error) return { ok: false, error, reason: error.message || "セッションを取得できませんでした" };
+      return { ok: true, session: data?.session || null, user: data?.session?.user || null };
+    },
+
+    async getUser() {
+      const client = getSupabaseClient();
+      if (!client) return unavailableResult("getUser");
+      const { data, error } = await client.auth.getUser();
+      if (error) return { ok: false, error, reason: error.message || "ユーザー情報を取得できませんでした" };
+      return { ok: true, user: data?.user || null };
+    },
+
+    async signInWithEmail(email) {
+      const client = getSupabaseClient();
+      if (!client) return unavailableResult("signInWithEmail");
+      const normalizedEmail = String(email || "").trim();
+      if (!normalizedEmail) return { ok: false, reason: "メールアドレスを入力してください" };
+      const { data, error } = await client.auth.signInWithOtp({
+        email: normalizedEmail,
+        options: {
+          emailRedirectTo: authRedirectUrl(),
+        },
+      });
+      if (error) return { ok: false, error, reason: error.message || "ログインメールを送信できませんでした" };
+      return { ok: true, data };
+    },
+
+    async signOut() {
+      const client = getSupabaseClient();
+      if (!client) return unavailableResult("signOut");
+      const { error } = await client.auth.signOut();
+      if (error) return { ok: false, error, reason: error.message || "ログアウトできませんでした" };
+      return { ok: true };
+    },
+
+    onAuthStateChange(callback) {
+      const client = getSupabaseClient();
+      if (!client || !callback) return null;
+      const { data } = client.auth.onAuthStateChange((event, session) => {
+        callback(event, session);
+      });
+      return data?.subscription || null;
+    },
+  };
+
   root.MarchaoSupabase = {
     config: supabaseConfig,
     getClient: getSupabaseClient,
     isConfigured,
   };
+  root.authApi = authApi;
   root.paifuShareApi = paifuShareApi;
   root.statsApi = statsApi;
 })();
