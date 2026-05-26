@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオサンマ</title>
-  <link rel="stylesheet" href="./styles.css?v=supabase-anonymous-auth-v3" />
+  <link rel="stylesheet" href="./styles.css?v=supabase-ranking-v4" />
   </head>
   <body>
     <main class="app-shell">
@@ -167,6 +167,16 @@
                     <span id="statsPageLabel">1 / 1</span>
                     <button class="mini-button stats-page-button" id="statsNextPageButton" type="button">次ページ</button>
                   </div>
+                </section>
+                <section class="stats-section">
+                  <h3>Supabase 自分の成績</h3>
+                  <p class="stats-online-status" id="statsSupabaseStatus">読み込み前</p>
+                  <div class="stats-table-scroll" id="statsSupabaseTable"></div>
+                </section>
+                <section class="stats-section">
+                  <h3>ランキング</h3>
+                  <p class="stats-online-status" id="statsRankingStatus">読み込み前</p>
+                  <div class="stats-table-scroll" id="statsRankingTable"></div>
                 </section>
               </div>
               <div class="stats-reset-area">
@@ -512,7 +522,7 @@
     <script src="./rules.js?v=settlement-chip-score-v1"></script>
     <script src="./hand-evaluation.js?v=general-yaku-v1"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./supabaseClient.js?v=supabase-anonymous-auth-v3"></script>
-    <script src="./app.js?v=supabase-anonymous-auth-v3"></script>
+    <script src="./supabaseClient.js?v=supabase-ranking-v4"></script>
+    <script src="./app.js?v=supabase-ranking-v4"></script>
   </body>
 </html>
