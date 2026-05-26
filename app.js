@@ -15,6 +15,8 @@
   const AFTER_DISCARD_REACTION_DELAY_MS = 50;
   const PAIFU_REPLAY_INTERVAL_MS = 1000;
   const PAIFU_STORAGE_KEY = "marchao-sanma-last-paifu-v1";
+  const STATS_STORAGE_KEY = "marchaoSanmaStatsV1";
+  const STATS_HISTORY_PAGE_SIZE = 10;
   const APP_VERSION = "shared-paifu-url-v1";
   const RULES_VERSION = "marchao-sanma-v1";
   const RESULT_YAKU_NAME_MAP = {
@@ -89,6 +91,8 @@
   let showPaifuOpponentHands = false;
   let lastPaifuSnapshotSignature = "";
   let lastSavedStatsHanchanId = "";
+  let statsRecentCount = 10;
+  let statsHistoryPage = 1;
   let isViewingSharedPaifu = false;
   let currentSharedPaifuUrl = "";
 
@@ -128,6 +132,17 @@
     rulesScreen: document.getElementById("rulesScreen"),
     rulesBackButton: document.getElementById("rulesBackButton"),
     startRulesButton: document.getElementById("startRulesButton"),
+    startStatsButton: document.getElementById("startStatsButton"),
+    statsScreen: document.getElementById("statsScreen"),
+    statsBackButton: document.getElementById("statsBackButton"),
+    statsEmptyMessage: document.getElementById("statsEmptyMessage"),
+    statsContent: document.getElementById("statsContent"),
+    statsRecentCountInput: document.getElementById("statsRecentCountInput"),
+    statsSummaryTable: document.getElementById("statsSummaryTable"),
+    statsHistoryTable: document.getElementById("statsHistoryTable"),
+    statsPrevPageButton: document.getElementById("statsPrevPageButton"),
+    statsNextPageButton: document.getElementById("statsNextPageButton"),
+    statsPageLabel: document.getElementById("statsPageLabel"),
     battleSelfHand: document.getElementById("battleSelfHand"),
     battleLeftHand: document.getElementById("battleLeftHand"),
     battleRightHand: document.getElementById("battleRightHand"),
@@ -284,9 +299,32 @@
       appScreen = "rules";
       renderBattleTable();
     });
+    els.startStatsButton?.addEventListener("click", () => {
+      statsHistoryPage = 1;
+      appScreen = "stats";
+      renderBattleTable();
+    });
     els.rulesBackButton?.addEventListener("click", () => {
       appScreen = "start";
       renderBattleTable();
+    });
+    els.statsBackButton?.addEventListener("click", () => {
+      appScreen = "start";
+      renderBattleTable();
+    });
+    els.statsRecentCountInput?.addEventListener("input", () => {
+      const storage = loadStatsStorage();
+      statsRecentCount = normalizeRecentStatsCount(els.statsRecentCountInput.value, storage.records.length);
+      renderStatsScreen();
+    });
+    els.statsPrevPageButton?.addEventListener("click", () => {
+      statsHistoryPage = Math.max(1, statsHistoryPage - 1);
+      renderStatsScreen();
+    });
+    els.statsNextPageButton?.addEventListener("click", () => {
+      const totalPages = Math.max(1, Math.ceil(loadStatsStorage().records.length / STATS_HISTORY_PAGE_SIZE));
+      statsHistoryPage = Math.min(totalPages, statsHistoryPage + 1);
+      renderStatsScreen();
     });
     els.battleConfirmButton?.addEventListener("click", () => {
       handleBattleResultConfirm();
@@ -1682,34 +1720,459 @@
     return counts;
   }
 
-  function buildHanchanStatsRow(settlement) {
+  function loadStatsStorage() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STATS_STORAGE_KEY) || "null");
+      const records = Array.isArray(parsed?.records) ? parsed.records.map(normalizeHanchanStatRecord).filter(Boolean) : [];
+      return { version: 1, records };
+    } catch (error) {
+      console.warn("成績データを読み込めませんでした", error);
+      return { version: 1, records: [] };
+    }
+  }
+
+  function saveStatsStorage(storage) {
+    try {
+      const records = Array.isArray(storage?.records) ? storage.records.map(normalizeHanchanStatRecord).filter(Boolean) : [];
+      localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify({ version: 1, records }));
+    } catch (error) {
+      console.warn("成績データを保存できませんでした", error);
+    }
+  }
+
+  function normalizeHanchanStatRecord(record) {
+    if (!record || typeof record !== "object") return null;
+    const id = String(record.id || record.hanchan_id || record.hanchanId || "");
+    const endedAt = String(record.endedAt || record.ended_at || record.created_at || "");
+    if (!id || !endedAt) return null;
+    return {
+      id,
+      endedAt,
+      rank: clampNumber(Math.round(Number(record.rank) || 0), 1, 3),
+      finalRawScore: Math.round(Number(record.finalRawScore ?? record.final_raw_score ?? record.rawScore ?? 0) || 0),
+      settlementPoint: Math.round(Number(record.settlementPoint ?? record.settlement_point ?? record.finalScore ?? 0) || 0),
+      chipCount: Math.round(Number(record.chipCount ?? record.chip_count ?? 0) || 0),
+      totalHands: Math.max(0, Math.round(Number(record.totalHands ?? record.total_hands ?? 0) || 0)),
+      winCount: Math.max(0, Math.round(Number(record.winCount ?? record.win_count ?? 0) || 0)),
+      dealInCount: Math.max(0, Math.round(Number(record.dealInCount ?? record.deal_in_count ?? 0) || 0)),
+      riichiCount: Math.max(0, Math.round(Number(record.riichiCount ?? record.riichi_count ?? 0) || 0)),
+      calledHandCount: Math.max(0, Math.round(Number(record.calledHandCount ?? record.called_hand_count ?? 0) || 0)),
+    };
+  }
+
+  function saveHanchanStatRecord(record) {
+    const normalized = normalizeHanchanStatRecord(record);
+    if (!normalized) return;
+    const storage = loadStatsStorage();
+    const existingIndex = storage.records.findIndex((entry) => entry.id === normalized.id);
+    if (existingIndex >= 0) {
+      storage.records[existingIndex] = normalized;
+    } else {
+      storage.records.push(normalized);
+    }
+    saveStatsStorage(storage);
+  }
+
+  function countSelfReplayStats(selfPlayerId) {
+    const counts = { winCount: 0, dealInCount: 0, riichiCount: 0, calledHandCount: 0 };
+    if (!selfPlayerId) return counts;
+    (paifuReplay?.hands || []).forEach((hand) => {
+      const result = hand?.result || {};
+      const snapshots = Array.isArray(hand?.snapshots) ? hand.snapshots : [];
+      const winnerIds = Array.isArray(result.winnerIds)
+        ? result.winnerIds
+        : (result.wins || []).map((win) => win?.winnerId).filter(Boolean);
+      if (winnerIds.includes(selfPlayerId)) counts.winCount += 1;
+      if ((result.type === "ron" || winnerIds.length > 0) && result.loserId === selfPlayerId) {
+        counts.dealInCount += 1;
+      }
+      const hasSelfRiichi = snapshots.some((snapshot) => {
+        if (snapshot.actionType === "riichi" && snapshot.actionPlayerId === selfPlayerId) return true;
+        return (snapshot.players || []).some((player) => player.id === selfPlayerId && player.isRiichi);
+      });
+      if (hasSelfRiichi) counts.riichiCount += 1;
+      const hasSelfCall = snapshots.some((snapshot) => {
+        const self = (snapshot.players || []).find((player) => player.id === selfPlayerId);
+        return (self?.melds || []).some((meld) => meld?.type !== "ankan");
+      });
+      if (hasSelfCall) counts.calledHandCount += 1;
+    });
+    return counts;
+  }
+
+  function buildHanchanStatRecord(settlement) {
     const selfSettlement = (settlement || []).find((item) => item.index === 0) || null;
     if (!selfSettlement || !paifuReplay?.id) return null;
     const selfPlayerId = selfPlayerIdFromReplay();
-    const counts = countSelfWinAndDealIn(selfPlayerId);
+    const counts = countSelfReplayStats(selfPlayerId);
     return {
-      hanchan_id: paifuReplay.id,
+      id: paifuReplay.id,
+      endedAt: paifuReplay.endedAt || new Date().toISOString(),
       rank: Number(selfSettlement.rank) || 0,
-      settlement_point: Number(selfSettlement.displayFinalPoint ?? selfSettlement.finalScore) || 0,
-      chip_count: Math.round((Number(selfSettlement.chips) || 0) / 500),
-      total_hands: paifuReplay.hands?.length || 0,
-      win_count: counts.winCount,
-      deal_in_count: counts.dealInCount,
+      finalRawScore: Math.round(Number(selfSettlement.points) || 0),
+      settlementPoint: Number(selfSettlement.displayFinalPoint ?? selfSettlement.finalScore) || 0,
+      chipCount: Math.round((Number(selfSettlement.chips) || 0) / 500),
+      totalHands: paifuReplay.hands?.length || 0,
+      winCount: counts.winCount,
+      dealInCount: counts.dealInCount,
+      riichiCount: counts.riichiCount,
+      calledHandCount: counts.calledHandCount,
+    };
+  }
+
+  function buildHanchanStatsRow(settlement) {
+    const record = buildHanchanStatRecord(settlement);
+    if (!record) return null;
+    return {
+      hanchan_id: record.id,
+      rank: record.rank,
+      settlement_point: record.settlementPoint,
+      chip_count: record.chipCount,
+      total_hands: record.totalHands,
+      win_count: record.winCount,
+      deal_in_count: record.dealInCount,
     };
   }
 
   function saveCurrentHanchanStatsIfConfigured() {
-    if (!window.statsApi?.saveHanchanStats || !window.statsApi.isConfigured?.()) return;
     if (!battleSettlement || !paifuReplay?.id || lastSavedStatsHanchanId === paifuReplay.id) return;
+    const record = buildHanchanStatRecord(battleSettlement);
+    if (!record) return;
+    saveHanchanStatRecord(record);
+    lastSavedStatsHanchanId = paifuReplay.id;
+    if (!window.statsApi?.saveHanchanStats || !window.statsApi.isConfigured?.()) return;
     const row = buildHanchanStatsRow(battleSettlement);
     if (!row) return;
-    lastSavedStatsHanchanId = paifuReplay.id;
     window.statsApi.saveHanchanStats(row).then((result) => {
       if (!result.ok) {
         lastSavedStatsHanchanId = "";
         console.warn("半荘成績を保存できませんでした", result.reason || result.error);
       }
     });
+  }
+
+  function sortStatsRecordsNewest(records = []) {
+    return [...records].sort((left, right) => new Date(right.endedAt).getTime() - new Date(left.endedAt).getTime());
+  }
+
+  function filterThisMonthRecords(records = []) {
+    const now = new Date();
+    return records.filter((record) => {
+      const endedAt = new Date(record.endedAt);
+      return endedAt.getFullYear() === now.getFullYear() && endedAt.getMonth() === now.getMonth();
+    });
+  }
+
+  function getRecentRecords(records = [], count = 10) {
+    const limit = normalizeRecentStatsCount(count, records.length);
+    return sortStatsRecordsNewest(records).slice(0, limit);
+  }
+
+  function normalizeRecentStatsCount(value, totalCount = 0) {
+    const fallback = 10;
+    const parsed = Math.floor(Number(value));
+    const safe = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    const max = Math.max(1, Number(totalCount) || 1);
+    return clampNumber(safe, 1, max);
+  }
+
+  function calculateStatsSummary(records = []) {
+    const count = records.length;
+    if (!count) return null;
+    const totalHands = records.reduce((sum, record) => sum + (Number(record.totalHands) || 0), 0);
+    const sum = (key) => records.reduce((total, record) => total + (Number(record[key]) || 0), 0);
+    const rawProfit = records.reduce((total, record) => total + ((Number(record.finalRawScore) || 0) - 35000), 0);
+    return {
+      hanchanCount: count,
+      totalHands,
+      averageRank: sum("rank") / count,
+      averageSettlementPoint: sum("settlementPoint") / count,
+      averageChipCount: sum("chipCount") / count,
+      roundProfit: totalHands > 0 ? rawProfit / totalHands : 0,
+      winRate: totalHands > 0 ? (sum("winCount") / totalHands) * 100 : 0,
+      dealInRate: totalHands > 0 ? (sum("dealInCount") / totalHands) * 100 : 0,
+      riichiRate: totalHands > 0 ? (sum("riichiCount") / totalHands) * 100 : 0,
+      calledRate: totalHands > 0 ? (sum("calledHandCount") / totalHands) * 100 : 0,
+    };
+  }
+
+  function formatSignedNumber(value, digits = 0) {
+    const number = Number(value) || 0;
+    const rounded = digits > 0 ? Math.round(number * (10 ** digits)) / (10 ** digits) : Math.round(number);
+    const text = digits > 0 ? rounded.toFixed(digits) : String(rounded);
+    if (rounded > 0) return `+${text}`;
+    if (rounded < 0) return text;
+    return digits > 0 ? (0).toFixed(digits) : "0";
+  }
+
+  function formatPercent(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return "-";
+    return `${number.toFixed(1)}%`;
+  }
+
+  function formatStatsDate(value) {
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return "-";
+    const pad = (number) => String(number).padStart(2, "0");
+    return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function renderStatsSummaryCells(summary) {
+    if (!summary) {
+      return `
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+      `;
+    }
+    return `
+      <td>${summary.averageRank.toFixed(2)}</td>
+      <td>${formatSignedNumber(summary.averageSettlementPoint)}</td>
+      <td>${formatSignedNumber(summary.averageChipCount, 1)}枚</td>
+      <td>${formatSignedNumber(summary.roundProfit)}</td>
+      <td>${formatPercent(summary.winRate)}</td>
+      <td>${formatPercent(summary.dealInRate)}</td>
+      <td>${formatPercent(summary.riichiRate)}</td>
+      <td>${formatPercent(summary.calledRate)}</td>
+    `;
+  }
+
+  function renderStatsSummaryTable(records = [], recentCount = 10) {
+    const allSummary = calculateStatsSummary(records);
+    const monthSummary = calculateStatsSummary(filterThisMonthRecords(records));
+    const recentRecords = getRecentRecords(records, recentCount);
+    const recentSummary = calculateStatsSummary(recentRecords);
+    const recentLabel = `直近${recentRecords.length || normalizeRecentStatsCount(recentCount, records.length)}半荘`;
+    return `
+      <table class="stats-table stats-summary-table">
+        <thead>
+          <tr>
+            <th>対象</th>
+            <th>平均着順</th>
+            <th>半荘平均精算ポイント</th>
+            <th>半荘平均祝儀</th>
+            <th>局収支</th>
+            <th>和了率</th>
+            <th>放銃率</th>
+            <th>立直率</th>
+            <th>副露率</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th>全半荘</th>${renderStatsSummaryCells(allSummary)}</tr>
+          <tr><th>今月</th>${renderStatsSummaryCells(monthSummary)}</tr>
+          <tr><th>${escapeHtml(recentLabel)}</th>${renderStatsSummaryCells(recentSummary)}</tr>
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderHanchanHistoryTable(records = [], page = 1) {
+    const sorted = sortStatsRecordsNewest(records);
+    const totalPages = Math.max(1, Math.ceil(sorted.length / STATS_HISTORY_PAGE_SIZE));
+    const currentPage = clampNumber(page, 1, totalPages);
+    const start = (currentPage - 1) * STATS_HISTORY_PAGE_SIZE;
+    const pageRecords = sorted.slice(start, start + STATS_HISTORY_PAGE_SIZE);
+    if (!pageRecords.length) {
+      return `
+        <table class="stats-table stats-history-table">
+          <thead>
+            <tr>
+              <th>終了日時</th>
+              <th>順位</th>
+              <th>最終素点</th>
+              <th>合計精算ポイント</th>
+              <th>祝儀枚数</th>
+              <th>総局数</th>
+              <th>和了回数</th>
+              <th>放銃回数</th>
+              <th>立直回数</th>
+              <th>副露局数</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="10">履歴はありません</td></tr></tbody>
+        </table>
+      `;
+    }
+    return `
+      <table class="stats-table stats-history-table">
+        <thead>
+          <tr>
+            <th>終了日時</th>
+            <th>順位</th>
+            <th>最終素点</th>
+            <th>合計精算ポイント</th>
+            <th>祝儀枚数</th>
+            <th>総局数</th>
+            <th>和了回数</th>
+            <th>放銃回数</th>
+            <th>立直回数</th>
+            <th>副露局数</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pageRecords.map((record) => `
+            <tr>
+              <td>${escapeHtml(formatStatsDate(record.endedAt))}</td>
+              <td>${escapeHtml(`${record.rank}位`)}</td>
+              <td>${formatPlainNumber(record.finalRawScore)}</td>
+              <td>${formatSignedNumber(record.settlementPoint)}</td>
+              <td>${formatSignedNumber(record.chipCount)}</td>
+              <td>${formatPlainNumber(record.totalHands)}</td>
+              <td>${formatPlainNumber(record.winCount)}</td>
+              <td>${formatPlainNumber(record.dealInCount)}</td>
+              <td>${formatPlainNumber(record.riichiCount)}</td>
+              <td>${formatPlainNumber(record.calledHandCount)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderStatsSummaryCells(summary) {
+    if (!summary) {
+      return `
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+      `;
+    }
+    return `
+      <td>${summary.averageRank.toFixed(2)}</td>
+      <td>${formatSignedNumber(summary.averageSettlementPoint)}</td>
+      <td>${formatSignedNumber(summary.averageChipCount, 1)}\u679a</td>
+      <td>${formatSignedNumber(summary.roundProfit)}</td>
+      <td>${formatPercent(summary.winRate)}</td>
+      <td>${formatPercent(summary.dealInRate)}</td>
+      <td>${formatPercent(summary.riichiRate)}</td>
+      <td>${formatPercent(summary.calledRate)}</td>
+    `;
+  }
+
+  function renderStatsSummaryTable(records = [], recentCount = 10) {
+    const allSummary = calculateStatsSummary(records);
+    const monthSummary = calculateStatsSummary(filterThisMonthRecords(records));
+    const recentRecords = getRecentRecords(records, recentCount);
+    const recentSummary = calculateStatsSummary(recentRecords);
+    const recentLabel = `\u76f4\u8fd1${recentRecords.length || normalizeRecentStatsCount(recentCount, records.length)}\u534a\u8358`;
+    return `
+      <table class="stats-table stats-summary-table">
+        <thead>
+          <tr>
+            <th>\u5bfe\u8c61</th>
+            <th>\u5e73\u5747\u7740\u9806</th>
+            <th>\u534a\u8358\u5e73\u5747\u7cbe\u7b97\u30dd\u30a4\u30f3\u30c8</th>
+            <th>\u534a\u8358\u5e73\u5747\u795d\u5100</th>
+            <th>\u5c40\u53ce\u652f</th>
+            <th>\u548c\u4e86\u7387</th>
+            <th>\u653e\u9283\u7387</th>
+            <th>\u7acb\u76f4\u7387</th>
+            <th>\u526f\u9732\u7387</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th>\u5168\u534a\u8358</th>${renderStatsSummaryCells(allSummary)}</tr>
+          <tr><th>\u4eca\u6708</th>${renderStatsSummaryCells(monthSummary)}</tr>
+          <tr><th>${escapeHtml(recentLabel)}</th>${renderStatsSummaryCells(recentSummary)}</tr>
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderHanchanHistoryTable(records = [], page = 1) {
+    const sorted = sortStatsRecordsNewest(records);
+    const totalPages = Math.max(1, Math.ceil(sorted.length / STATS_HISTORY_PAGE_SIZE));
+    const currentPage = clampNumber(page, 1, totalPages);
+    const start = (currentPage - 1) * STATS_HISTORY_PAGE_SIZE;
+    const pageRecords = sorted.slice(start, start + STATS_HISTORY_PAGE_SIZE);
+    const header = `
+      <thead>
+        <tr>
+          <th>\u7d42\u4e86\u65e5\u6642</th>
+          <th>\u9806\u4f4d</th>
+          <th>\u6700\u7d42\u7d20\u70b9</th>
+          <th>\u5408\u8a08\u7cbe\u7b97\u30dd\u30a4\u30f3\u30c8</th>
+          <th>\u795d\u5100\u679a\u6570</th>
+          <th>\u7dcf\u5c40\u6570</th>
+          <th>\u548c\u4e86\u56de\u6570</th>
+          <th>\u653e\u9283\u56de\u6570</th>
+          <th>\u7acb\u76f4\u56de\u6570</th>
+          <th>\u526f\u9732\u5c40\u6570</th>
+        </tr>
+      </thead>
+    `;
+    if (!pageRecords.length) {
+      return `
+        <table class="stats-table stats-history-table">
+          ${header}
+          <tbody><tr><td colspan="10">\u5c65\u6b74\u306f\u3042\u308a\u307e\u305b\u3093</td></tr></tbody>
+        </table>
+      `;
+    }
+    return `
+      <table class="stats-table stats-history-table">
+        ${header}
+        <tbody>
+          ${pageRecords.map((record) => `
+            <tr>
+              <td>${escapeHtml(formatStatsDate(record.endedAt))}</td>
+              <td>${escapeHtml(`${record.rank}\u4f4d`)}</td>
+              <td>${formatPlainNumber(record.finalRawScore)}</td>
+              <td>${formatSignedNumber(record.settlementPoint)}</td>
+              <td>${formatSignedNumber(record.chipCount)}</td>
+              <td>${formatPlainNumber(record.totalHands)}</td>
+              <td>${formatPlainNumber(record.winCount)}</td>
+              <td>${formatPlainNumber(record.dealInCount)}</td>
+              <td>${formatPlainNumber(record.riichiCount)}</td>
+              <td>${formatPlainNumber(record.calledHandCount)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderStatsScreen() {
+    const storage = loadStatsStorage();
+    const records = storage.records;
+    const hasRecords = records.length > 0;
+    statsRecentCount = normalizeRecentStatsCount(statsRecentCount, records.length);
+    const totalPages = Math.max(1, Math.ceil(records.length / STATS_HISTORY_PAGE_SIZE));
+    statsHistoryPage = clampNumber(statsHistoryPage, 1, totalPages);
+
+    setHiddenIfChanged(els.statsEmptyMessage, hasRecords);
+    setHiddenIfChanged(els.statsContent, !hasRecords);
+    if (els.statsRecentCountInput) {
+      els.statsRecentCountInput.max = String(Math.max(1, records.length));
+      if (String(els.statsRecentCountInput.value) !== String(statsRecentCount)) {
+        els.statsRecentCountInput.value = String(statsRecentCount);
+      }
+    }
+    if (!hasRecords) {
+      setHtmlIfChanged(els.statsSummaryTable, "");
+      setHtmlIfChanged(els.statsHistoryTable, "");
+      if (els.statsPageLabel) setTextIfChanged(els.statsPageLabel, "1 / 1");
+      if (els.statsPrevPageButton) els.statsPrevPageButton.disabled = true;
+      if (els.statsNextPageButton) els.statsNextPageButton.disabled = true;
+      return;
+    }
+    setHtmlIfChanged(els.statsSummaryTable, renderStatsSummaryTable(records, statsRecentCount));
+    setHtmlIfChanged(els.statsHistoryTable, renderHanchanHistoryTable(records, statsHistoryPage));
+    if (els.statsPageLabel) setTextIfChanged(els.statsPageLabel, `${statsHistoryPage} / ${totalPages}`);
+    if (els.statsPrevPageButton) els.statsPrevPageButton.disabled = statsHistoryPage <= 1;
+    if (els.statsNextPageButton) els.statsNextPageButton.disabled = statsHistoryPage >= totalPages;
   }
 
   function hasPaifuSnapshots() {
@@ -2346,20 +2809,24 @@
     const isResult = appScreen === "result";
     const isSettlement = appScreen === "settlement";
     const isRules = appScreen === "rules";
+    const isStats = appScreen === "stats";
     const isPaifu = appScreen === "paifu";
     toggleClassIfChanged(els.battleSurface, "is-start-screen", appScreen === "start");
     toggleClassIfChanged(els.battleSurface, "is-rules-screen", isRules);
+    toggleClassIfChanged(els.battleSurface, "is-stats-screen", isStats);
     toggleClassIfChanged(els.battleSurface, "is-paifu-screen", isPaifu);
     setHiddenIfChanged(els.battleResultPanel, !isResult);
     setHiddenIfChanged(els.battleSettlementPanel, !isSettlement);
     setHiddenIfChanged(els.paifuPanel, !isPaifu);
     setHiddenIfChanged(els.rulesScreen, !isRules);
+    setHiddenIfChanged(els.statsScreen, !isStats);
     setHiddenIfChanged(els.battleStartButton, appScreen !== "start");
     setHiddenIfChanged(els.battleActionButtons, appScreen !== "playing");
     toggleClassIfChanged(els.battleResultPanel, "result-transparent", isResult && resultTransparent);
     if (isResult) renderBattleResultPanel();
     if (isResult) updateResultPanelBounds();
     if (isSettlement) renderBattleSettlementPanel();
+    if (isStats) renderStatsScreen();
     if (isPaifu) renderPaifuPanel();
   }
 

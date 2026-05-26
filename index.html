@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオサンマ</title>
-  <link rel="stylesheet" href="./styles.css?v=landscape-center-square-v1" />
+  <link rel="stylesheet" href="./styles.css?v=stats-screen-v1" />
   </head>
   <body>
     <main class="app-shell">
@@ -119,6 +119,39 @@
             <img class="rules-score-table" src="./assets/rules-score-table.png" alt="点数早見表" />
           </section>
 
+          <section class="stats-screen" id="statsScreen" hidden>
+            <button class="stats-back-button" id="statsBackButton" type="button" aria-label="スタート画面へ戻る">←</button>
+            <article class="stats-panel">
+              <h2>成績</h2>
+              <p class="stats-empty-message" id="statsEmptyMessage" hidden>
+                まだ成績がありません。<br />
+                半荘を1回終了すると、ここに成績が記録されます。
+              </p>
+              <div class="stats-content" id="statsContent">
+                <section class="stats-section">
+                  <div class="stats-section-heading">
+                    <h3>総合成績</h3>
+                    <label class="stats-recent-control">
+                      <span>直近</span>
+                      <input id="statsRecentCountInput" type="number" min="1" value="10" />
+                      <span>半荘</span>
+                    </label>
+                  </div>
+                  <div class="stats-table-scroll" id="statsSummaryTable"></div>
+                </section>
+                <section class="stats-section">
+                  <h3>全半荘履歴</h3>
+                  <div class="stats-table-scroll" id="statsHistoryTable"></div>
+                  <div class="stats-pagination">
+                    <button class="mini-button stats-page-button" id="statsPrevPageButton" type="button">前ページ</button>
+                    <span id="statsPageLabel">1 / 1</span>
+                    <button class="mini-button stats-page-button" id="statsNextPageButton" type="button">次ページ</button>
+                  </div>
+                </section>
+              </div>
+            </article>
+          </section>
+
           <div class="opponent-hand opponent-left" aria-label="上家の手牌">
             <div class="opponent-name" id="battleLeftName">上家</div>
             <div class="side-hand" id="battleLeftHand"></div>
@@ -166,7 +199,7 @@
             <div class="battle-control-row">
               <button class="primary-button battle-start-button start-menu-button" id="battleStartButton" type="button">対局開始</button>
               <button class="primary-button start-menu-button start-menu-secondary" id="startRulesButton" type="button">ルール</button>
-              <button class="primary-button start-menu-button start-menu-secondary" id="startStatsButton" type="button" disabled>成績</button>
+              <button class="primary-button start-menu-button start-menu-secondary" id="startStatsButton" type="button">成績</button>
               <div class="battle-action-buttons" id="battleActionButtons" aria-label="対局アクション"></div>
             </div>
             <div class="self-name" id="battleSelfName">自分</div>
@@ -435,6 +468,6 @@
     <script src="./hand-evaluation.js?v=dora-indicator-manchu-flower"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./supabaseClient.js?v=shared-paifu-url-v1"></script>
-    <script src="./app.js?v=paifu-hand-toggle-v1"></script>
+    <script src="./app.js?v=stats-screen-v1"></script>
   </body>
 </html>
