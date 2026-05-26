@@ -1782,12 +1782,12 @@ button {
 .discard-river {
   position: absolute;
   z-index: 2;
-  display: grid;
+  display: flex;
   grid-template-columns: repeat(6, var(--river-tile-width, clamp(24px, 3vw, 42px)));
   grid-auto-rows: calc(var(--river-tile-width, clamp(24px, 3vw, 42px)) * 1.40625);
-  gap: clamp(2px, 0.35vw, 5px);
-  align-content: start;
-  justify-content: start;
+  gap: 0;
+  align-items: flex-start;
+  justify-content: flex-start;
   min-height: calc(var(--river-tile-width, 38px) * 1.40625);
   padding: clamp(5px, 0.7vw, 8px);
   border-radius: 8px;
@@ -1801,6 +1801,9 @@ button {
   left: 50%;
   bottom: clamp(108px, 15vw, 156px);
   transform: translateX(-50%);
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
   grid-template-rows: repeat(3, var(--river-tile-long));
   height: calc(3 * var(--river-tile-long) + 2 * clamp(2px, 0.35vw, 5px) + 16px);
   width: calc(6 * var(--river-tile-width, clamp(24px, 3vw, 42px)) + 5 * clamp(2px, 0.35vw, 5px) + 16px);
@@ -1809,9 +1812,12 @@ button {
 .river-left {
   --river-tile-width: clamp(22px, 2.7vw, 38px);
   --river-tile-long: calc(var(--river-tile-width) * 1.40625);
-  direction: rtl;
+  direction: ltr;
   left: clamp(116px, 14vw, 230px);
   top: 28%;
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  justify-content: flex-start;
   grid-template-columns: repeat(4, var(--river-tile-long));
   grid-template-rows: repeat(6, var(--river-tile-width));
   grid-auto-flow: column;
@@ -1825,6 +1831,9 @@ button {
   --river-tile-long: calc(var(--river-tile-width) * 1.40625);
   right: clamp(116px, 14vw, 230px);
   top: 28%;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: flex-start;
   grid-template-columns: repeat(4, var(--river-tile-long));
   grid-template-rows: repeat(6, var(--river-tile-width));
   grid-auto-flow: column;
@@ -1910,6 +1919,67 @@ button {
   align-self: center;
   transform: rotate(var(--tile-rotation));
   filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.24));
+}
+
+.river-line,
+.river-column {
+  display: flex;
+  gap: 0;
+  flex: 0 0 auto;
+}
+
+.river-line-self {
+  width: max-content;
+  height: var(--river-tile-long);
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.river-column {
+  width: var(--river-tile-long);
+  height: var(--center-panel-height, calc(6 * var(--river-tile-width)));
+}
+
+.river-column-kamicha {
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+.river-column-shimocha {
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.river-tile-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.river-self .river-tile-slot.is-normal {
+  width: var(--river-tile-width);
+  height: var(--river-tile-long);
+}
+
+.river-self .river-tile-slot.is-riichi-marker {
+  width: var(--river-tile-long);
+  height: var(--river-tile-long);
+}
+
+.river-left .river-tile-slot.is-normal,
+.river-right .river-tile-slot.is-normal {
+  width: var(--river-tile-long);
+  height: var(--river-tile-width);
+}
+
+.river-left .river-tile-slot.is-riichi-marker,
+.river-right .river-tile-slot.is-riichi-marker {
+  width: var(--river-tile-long);
+  height: var(--river-tile-long);
 }
 
 .river-left .table-tile-img {
@@ -2920,14 +2990,16 @@ input[type="checkbox"] {
 .center-table-layout .river-left {
   grid-column: 1;
   grid-row: 1;
-  align-content: start;
-  justify-content: end;
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 .center-table-layout .river-right {
   grid-column: 3;
   grid-row: 1;
-  align-content: end;
+  flex-direction: row;
+  align-items: flex-end;
   justify-content: start;
 }
 
@@ -2942,8 +3014,9 @@ input[type="checkbox"] {
   row-gap: 0;
   column-gap: 0;
   padding: 0;
-  align-content: start;
-  justify-content: start;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
   direction: ltr;
 }
 
