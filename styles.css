@@ -4031,16 +4031,28 @@ button:disabled:hover,
   flex-wrap: wrap;
 }
 
-.stats-recent-control {
+.stats-filter-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.stats-recent-control,
+.stats-month-control {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   color: var(--ui-text);
   font-weight: 800;
   white-space: nowrap;
+  writing-mode: horizontal-tb;
+  word-break: keep-all;
 }
 
-.stats-recent-control input {
+.stats-recent-control input,
+.stats-month-control select {
   width: 72px;
   min-height: 32px;
   padding: 0 8px;
@@ -4050,6 +4062,11 @@ button:disabled:hover,
   background: rgba(0, 0, 0, 0.48);
   font-weight: 900;
   text-align: center;
+}
+
+.stats-month-control select {
+  width: auto;
+  min-width: 72px;
 }
 
 .stats-table-scroll {
