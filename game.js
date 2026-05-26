@@ -988,6 +988,7 @@
       isMenzen: isMenzen(player),
       isRiichi: Boolean(player.isRiichi),
       isIppatsu: Boolean(player.isRiichi && player.isIppatsuChance),
+      isRinshan: gameState.lastDrawSource === "rinshanAfterKan",
       roundWind: gameState.roundWind,
       seatWind: seatWindForIndex(gameState, playerIndex),
       doraIndicators: gameState.doraIndicators,
@@ -1209,7 +1210,7 @@
     return syncDrawWallState(next);
   }
 
-  function drawRinshanReplacement(gameState, playerIndex, flowers = []) {
+  function drawRinshanReplacement(gameState, playerIndex, flowers = [], drawSource = "rinshanAfterFlower") {
     let next = cloneGameState(gameState);
 
     while (next.rinshanTiles.length > 0) {
@@ -1224,6 +1225,7 @@
       }
 
       next.players[playerIndex].hand.push(drawn.tile);
+      next.lastDrawSource = drawSource;
       return { state: syncDrawWallState(next), tile: drawn.tile, flowers };
     }
 
@@ -1247,7 +1249,7 @@
       if (drawn.tile.isFlower) {
         next = flowerAsAir(next, playerIndex, drawn.tile);
         flowers.push(drawn.tile);
-        const replacement = drawRinshanReplacement(next, playerIndex, flowers);
+        const replacement = drawRinshanReplacement(next, playerIndex, flowers, "rinshanAfterFlower");
         next = replacement.state;
         if (replacement.tile) {
           next.lastAction = {
@@ -1255,6 +1257,7 @@
             playerIndex,
             tileId: replacement.tile.id,
             flowers: flowers.map((tile) => tile.id),
+            drawSource: next.lastDrawSource,
           };
           return { state: next, tile: replacement.tile, flowers };
         }
@@ -1262,11 +1265,13 @@
       }
 
       next.players[playerIndex].hand.push(drawn.tile);
+      next.lastDrawSource = "normal";
       next.lastAction = {
         type: "draw",
         playerIndex,
         tileId: drawn.tile.id,
         flowers: flowers.map((tile) => tile.id),
+        drawSource: next.lastDrawSource,
       };
       return { state: syncDrawWallState(next), tile: drawn.tile, flowers };
     }
@@ -1380,6 +1385,7 @@
       isRiichiDeclaration,
       isRiichiMarkerReplacement,
     };
+    next.lastDrawSource = "normal";
     return syncDrawWallState(next);
   }
 
@@ -1414,9 +1420,7 @@
       ...(next.lastAction || {}),
       type: "riichiDeclaration",
       playerIndex,
-      effect: "リーチ",
     };
-    next.lastEffect = "リーチ";
     return syncDrawWallState(next);
   }
 
@@ -1455,11 +1459,6 @@
       throw new Error("Riichi discard is not available.");
     }
     next = discardTile(next, playerIndex, discardTileId);
-    next.lastEffect = "リーチ";
-    next.lastAction = {
-      ...(next.lastAction || {}),
-      effect: "リーチ",
-    };
     return syncDrawWallState(next);
   }
 
@@ -1562,7 +1561,7 @@
 
   function drawAfterKan(next, playerIndex) {
     if (next.rinshanTiles.length <= 0) return endHandAsRyukyoku(next);
-    const replacement = drawRinshanReplacement(next, playerIndex);
+    const replacement = drawRinshanReplacement(next, playerIndex, [], "rinshanAfterKan");
     next = replacement.state;
     const doraTile = next.drawWall.shift() || null;
     const uraTile = next.drawWall.shift() || null;
@@ -1577,6 +1576,7 @@
         playerIndex,
         tileId: replacement.tile.id,
         afterKan: true,
+        drawSource: next.lastDrawSource,
       };
     }
     return next;
@@ -1665,6 +1665,7 @@
       isMenzen: isMenzen(winner),
       isRiichi: Boolean(winner.isRiichi),
       isIppatsu: Boolean(winner.isRiichi && winner.isIppatsuChance),
+      isRinshan: winType === "tsumo" && gameState.lastDrawSource === "rinshanAfterKan",
       isDealer: winnerIndex === gameState.dealerIndex,
       roundWind: gameState.roundWind,
       seatWind: seatWindForIndex(gameState, winnerIndex),
@@ -2132,6 +2133,7 @@
       remainingDraws: wallSections.drawWall.length,
       phase: "dealing",
       lastAction: null,
+      lastDrawSource: "normal",
       paoState: null,
     };
 
