@@ -1291,6 +1291,8 @@
     const currentPlayer = battleState.players[battleState.currentPlayerIndex];
     if (currentPlayer?.seat !== "self") return;
     if (currentPlayer?.isRiichi && !battleState.riichiDeclaration) return;
+    const selectedTile = currentPlayer?.hand?.find((tile) => tile.id === tileId);
+    if (isPonDiscardRestrictedTile(selectedTile, battleState.currentPlayerIndex)) return;
     try {
       battleState = Game.discardTile(battleState, battleState.currentPlayerIndex, tileId);
       renderBattleStateAndScheduleNext();
@@ -4283,6 +4285,28 @@
     return battleWinActionWinnerIndexes(gameState).includes(playerIndex);
   }
 
+  function battleTileBaseId(tile) {
+    if (!tile) return "";
+    return tile.baseId || Tiles.getTileDefinition?.(tile)?.baseId || Tiles.getTileDefinition?.(tile.id)?.baseId || tile.id || "";
+  }
+
+  function isPonDiscardRestrictedTile(tile, playerIndex) {
+    const restriction = battleState?.ponDiscardRestriction;
+    if (!restriction || battleState?.phase !== "discard") return false;
+    if (restriction.playerIndex !== playerIndex) return false;
+    const player = battleState.players?.[playerIndex];
+    if (player?.seat !== "self") return false;
+    return battleTileBaseId(tile) === restriction.baseTileId;
+  }
+
+  function shouldRevealTenpaiHandInRyukyoku(gameState, playerIndex) {
+    if (!gameState || gameState.phase !== "ryukyoku") return false;
+    const player = gameState.players?.[playerIndex];
+    if (!player || player.seat === "self") return false;
+    const tenpaiIndexes = gameState.lastAction?.tenpaiPlayerIndexes || [];
+    return tenpaiIndexes.includes(playerIndex);
+  }
+
   function drawnTileIdForPlayer(playerIndex) {
     if (
       battleState?.lastAction?.type === "win" &&
@@ -4293,7 +4317,7 @@
     }
     if (
       (battleState?.phase === "discard" || battleState?.phase === "actionPending") &&
-      battleState.lastAction?.type === "draw" &&
+      (battleState.lastAction?.type === "draw" || battleState.lastAction?.type === "riichiDeclaration") &&
       battleState.lastAction.playerIndex === playerIndex
     ) {
       return battleState.lastAction.tileId;
@@ -4327,16 +4351,21 @@
     const normalTiles = display.concealed
       .map((tile) => {
         const canDiscardTile = canDiscard && canSelectBattleDiscard(tile, playerIndex);
-        return renderBattleTile(tile, canDiscardTile ? "discardable" : "discard-disabled", canDiscardTile);
+        const restrictedClass = isPonDiscardRestrictedTile(tile, playerIndex) ? " is-disabled-discard" : "";
+        return renderBattleTile(tile, canDiscardTile ? "discardable" : `discard-disabled${restrictedClass}`, canDiscardTile);
       })
       .join("");
+    const canDiscardDrawnTile = display.drawnTile && canDiscard && canSelectBattleDiscard(display.drawnTile, playerIndex);
+    const drawnRestrictedClass = display.drawnTile && isPonDiscardRestrictedTile(display.drawnTile, playerIndex)
+      ? " is-disabled-discard"
+      : "";
     const drawnTile = display.drawnTile
       ? renderBattleTile(
           display.drawnTile,
-          canDiscard && canSelectBattleDiscard(display.drawnTile, playerIndex)
+          canDiscardDrawnTile
             ? "discardable drawn"
-            : "drawn discard-disabled",
-          canDiscard && canSelectBattleDiscard(display.drawnTile, playerIndex)
+            : `drawn discard-disabled${drawnRestrictedClass}`,
+          canDiscardDrawnTile
         )
       : "";
     return normalTiles + drawnTile;
@@ -4357,6 +4386,7 @@
   }
 
   function canSelectBattleDiscard(tile, playerIndex) {
+    if (isPonDiscardRestrictedTile(tile, playerIndex)) return false;
     if (!battleState?.riichiDeclaration) return true;
     return (
       battleState.riichiDeclaration.playerIndex === playerIndex &&
@@ -4701,13 +4731,13 @@
     const rightIndex = battleState.players.indexOf(rightPlayer);
     setHtmlIfChanged(
       els.battleLeftHand,
-      isBattleWinPlayerIndex(leftIndex)
+      isBattleWinPlayerIndex(leftIndex) || shouldRevealTenpaiHandInRyukyoku(battleState, leftIndex)
         ? renderOpenBattleHand(leftPlayer, leftIndex, "side")
         : renderSideBackHand(leftPlayer, leftIndex)
     );
     setHtmlIfChanged(
       els.battleRightHand,
-      isBattleWinPlayerIndex(rightIndex)
+      isBattleWinPlayerIndex(rightIndex) || shouldRevealTenpaiHandInRyukyoku(battleState, rightIndex)
         ? renderOpenBattleHand(rightPlayer, rightIndex, "side")
         : renderSideBackHand(rightPlayer, rightIndex)
     );
