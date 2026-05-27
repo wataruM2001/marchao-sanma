@@ -3581,23 +3581,26 @@
 
   function formatResultPointDelta(value) {
     const number = Number(value) || 0;
-    if (number > 0) return `+${formatPlainNumber(number)}点`;
-    if (number < 0) return `${formatPlainNumber(number)}点`;
-    return "0点";
+    return `${number >= 0 ? "+" : ""}${formatPlainNumber(number)}点`;
+  }
+
+  function resultChipPointsToCount(value) {
+    return Math.round((Number(value) || 0) / 500);
   }
 
   function formatResultChipDelta(value) {
-    const number = Number(value) || 0;
-    if (number > 0) return `+${number}枚`;
-    if (number < 0) return `${number}枚`;
-    return "0枚";
+    const number = resultChipPointsToCount(value);
+    return `${number >= 0 ? "+" : ""}${formatPlainNumber(number)}枚`;
   }
 
   function formatResultChipCount(value) {
-    const number = Number(value) || 0;
-    if (number > 0) return `+${number}枚`;
-    if (number < 0) return `${number}枚`;
-    return "0枚";
+    const number = resultChipPointsToCount(value);
+    if (number > 0) return `+${formatPlainNumber(number)}`;
+    return formatPlainNumber(number);
+  }
+
+  function formatResultPointBefore(value) {
+    return formatPlainNumber(Number(value) || 0);
   }
 
   function resultDeltaClass(value) {
@@ -3617,13 +3620,15 @@
     const rows = seats
       .map(([seat, label]) => {
         const snapshot = snapshotsBySeat.get(seat);
-        const pointValue = result.pointChanges?.[seat];
-        const chipValue = result.chipChanges?.[seat];
-        const currentPointText = `${formatPlainNumber(snapshot?.points || 0)}点`;
-        const currentChipText = formatResultChipCount(snapshot?.chips || 0);
+        const pointValue = Number(result.pointChanges?.[seat]) || 0;
+        const chipValue = Number(result.chipChanges?.[seat]) || 0;
+        const pointsBeforeResult = (Number(snapshot?.points) || 0) - pointValue;
+        const chipsBeforeResult = (Number(snapshot?.chips) || 0) - chipValue;
+        const currentPointText = formatResultPointBefore(pointsBeforeResult);
+        const currentChipText = formatResultChipCount(chipsBeforeResult);
         const pointText = formatResultPointDelta(pointValue);
         const chipText = formatResultChipDelta(chipValue);
-        return `<div class="result-player-row">${escapeHtml(label)} ${escapeHtml(currentPointText)},${escapeHtml(currentChipText)} <span class="${resultDeltaClass(pointValue)}">${escapeHtml(pointText)}</span>,<span class="${resultDeltaClass(chipValue)}">${escapeHtml(chipText)}</span></div>`;
+        return `<div class="result-player-row">${escapeHtml(label)} ${escapeHtml(currentPointText)} <span class="${resultDeltaClass(pointValue)}">${escapeHtml(pointText)}</span>, ${escapeHtml(currentChipText)} <span class="${resultDeltaClass(chipValue)}">${escapeHtml(chipText)}</span></div>`;
       })
       .join("");
     return `<div class="result-player-rows">${rows}</div>`;
