@@ -676,18 +676,21 @@
   function discardCandidatesForPlayer(player, gameState) {
     if (!player || player.hand.length === 0) return [];
     const playerIndex = gameState?.players?.indexOf(player) ?? -1;
+    const baseCandidates = cloneTiles(player.hand).filter((tile) => {
+      return !(tile.isFlower && player.hasHadFirstDrawTurnThisHand === false);
+    });
     const riichiOptions =
       gameState?.riichiDeclaration?.playerIndex === playerIndex
         ? gameState.riichiDeclaration.options || []
         : null;
-    if (!riichiOptions) return cloneTiles(player.hand);
+    if (!riichiOptions) return baseCandidates;
     const eligibleRiichiOptions = riichiOptions.filter(
       (option) => riichiOptionRemainingWinningTileCount(option, gameState) >= 2
     );
     const legalTileIds = new Set(
       (eligibleRiichiOptions.length > 0 ? eligibleRiichiOptions : riichiOptions).map((option) => option.tileId)
     );
-    return cloneTiles(player.hand).filter((tile) => legalTileIds.has(tile.id));
+    return baseCandidates.filter((tile) => legalTileIds.has(tile.id));
   }
 
   function playerAfterDiscard(player, discardTile) {
@@ -1256,6 +1259,7 @@
       needsRiichiMarkerOnNextDiscard: false,
       riichiWinningTiles: [],
       hasDiscardedThisHand: false,
+      hasHadFirstDrawTurnThisHand: false,
       isDoubleRiichiEligible: true,
     }));
   }
@@ -1295,9 +1299,42 @@
     return { state: endHandAsRyukyoku(syncDrawWallState(next)), tile: null, flowers };
   }
 
-  function drawNonFlowerTileWithFlowerReplacement(gameState, playerIndex = gameState.currentPlayerIndex) {
+  function revealInitialFlowerTilesIfNeeded(gameState, playerIndex) {
     let next = cloneGameState(gameState);
     const flowers = [];
+    const player = next.players[playerIndex];
+
+    if (!player || player.hasHadFirstDrawTurnThisHand) {
+      return { state: syncDrawWallState(next), flowers };
+    }
+
+    player.hasHadFirstDrawTurnThisHand = true;
+
+    while (next.players[playerIndex]?.hand.some((tile) => tile.isFlower)) {
+      const currentPlayer = next.players[playerIndex];
+      const flowerIndex = currentPlayer.hand.findIndex((tile) => tile.isFlower);
+      const [flowerTile] = currentPlayer.hand.splice(flowerIndex, 1);
+      next = flowerAsAir(next, playerIndex, flowerTile);
+      flowers.push(flowerTile);
+      const replacement = drawRinshanReplacement(next, playerIndex, flowers, "rinshanAfterFlower");
+      next = replacement.state;
+      if (next.phase === "ryukyoku") break;
+    }
+
+    return { state: syncDrawWallState(next), flowers };
+  }
+
+  function beginPlayerDrawTurn(gameState, playerIndex) {
+    const initialFlowers = revealInitialFlowerTilesIfNeeded(gameState, playerIndex);
+    if (initialFlowers.state.phase === "ryukyoku" || initialFlowers.state.phase === "ended") {
+      return { state: initialFlowers.state, tile: null, flowers: initialFlowers.flowers };
+    }
+    return drawNonFlowerTileWithFlowerReplacement(initialFlowers.state, playerIndex, initialFlowers.flowers);
+  }
+
+  function drawNonFlowerTileWithFlowerReplacement(gameState, playerIndex = gameState.currentPlayerIndex, existingFlowers = []) {
+    let next = cloneGameState(gameState);
+    const flowers = cloneTiles(existingFlowers);
 
     if (next.phase === "ryukyoku" || next.phase === "ended") {
       return { state: next, tile: null, flowers };
@@ -1342,21 +1379,6 @@
     return { state: endHandAsRyukyoku(syncDrawWallState(next)), tile: null, flowers };
   }
 
-  function replaceInitialFlowers(gameState, playerIndex) {
-    let next = cloneGameState(gameState);
-
-    while (next.players[playerIndex].hand.some((tile) => tile.isFlower)) {
-      const player = next.players[playerIndex];
-      const flowerIndex = player.hand.findIndex((tile) => tile.isFlower);
-      const [flowerTile] = player.hand.splice(flowerIndex, 1);
-      next = flowerAsAir(next, playerIndex, flowerTile);
-      next = drawRinshanReplacement(next, playerIndex).state;
-      if (next.phase === "ryukyoku") break;
-    }
-
-    return syncDrawWallState(next);
-  }
-
   function dealInitialHands(gameState) {
     let next = {
       ...cloneGameState(gameState),
@@ -1373,14 +1395,9 @@
       }
     }
 
-    for (let playerIndex = 0; playerIndex < next.players.length; playerIndex += 1) {
-      next = replaceInitialFlowers(next, playerIndex);
-      if (next.phase === "ryukyoku") return next;
-    }
-
     next.currentPlayerIndex = next.dealerIndex;
     next.phase = "draw";
-    next = drawNonFlowerTileWithFlowerReplacement(next, next.dealerIndex).state;
+    next = beginPlayerDrawTurn(next, next.dealerIndex).state;
     if (next.phase !== "ryukyoku") {
       next.phase = "discard";
     }
@@ -1399,6 +1416,9 @@
     const tileIndex = player.hand.findIndex((tile) => tile.id === tileId);
     if (tileIndex < 0) {
       throw new Error("Discard tile is not in the player's hand.");
+    }
+    if (player.hasHadFirstDrawTurnThisHand === false && player.hand[tileIndex]?.isFlower) {
+      throw new Error("Flower tiles cannot be discarded before the first draw turn.");
     }
     if (
       next.riichiDeclaration?.playerIndex === playerIndex &&
@@ -2183,7 +2203,7 @@
     const playerIndex = nextPlayerIndex(next.currentPlayerIndex);
     next.currentPlayerIndex = playerIndex;
     next.phase = "draw";
-    next = drawNonFlowerTileWithFlowerReplacement(next, playerIndex).state;
+    next = beginPlayerDrawTurn(next, playerIndex).state;
     if (next.phase !== "ryukyoku") {
       next.phase = "discard";
     }
