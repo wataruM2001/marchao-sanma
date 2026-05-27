@@ -1290,7 +1290,7 @@
     if (currentPlayer?.seat !== "self") return;
     if (currentPlayer?.isRiichi && !battleState.riichiDeclaration) return;
     const selectedTile = currentPlayer?.hand?.find((tile) => tile.id === tileId);
-    if (isPonDiscardRestrictedTile(selectedTile, battleState.currentPlayerIndex)) return;
+    if (isDisabledBattleDiscardTile(selectedTile, battleState.currentPlayerIndex)) return;
     try {
       battleState = Game.discardTile(battleState, battleState.currentPlayerIndex, tileId);
       renderBattleStateAndScheduleNext();
@@ -4344,6 +4344,17 @@
     return battleTileBaseId(tile) === restriction.baseTileId;
   }
 
+  function isInitialFlowerDiscardRestrictedTile(tile, playerIndex) {
+    if (!tile?.isFlower || battleState?.phase !== "discard") return false;
+    const player = battleState?.players?.[playerIndex];
+    if (player?.seat !== "self") return false;
+    return player.hasHadFirstDrawTurnThisHand === false;
+  }
+
+  function isDisabledBattleDiscardTile(tile, playerIndex) {
+    return isPonDiscardRestrictedTile(tile, playerIndex) || isInitialFlowerDiscardRestrictedTile(tile, playerIndex);
+  }
+
   function shouldRevealTenpaiHandInRyukyoku(gameState, playerIndex) {
     if (!gameState || gameState.phase !== "ryukyoku") return false;
     const player = gameState.players?.[playerIndex];
@@ -4396,12 +4407,12 @@
     const normalTiles = display.concealed
       .map((tile) => {
         const canDiscardTile = canDiscard && canSelectBattleDiscard(tile, playerIndex);
-        const restrictedClass = isPonDiscardRestrictedTile(tile, playerIndex) ? " is-disabled-discard" : "";
+        const restrictedClass = isDisabledBattleDiscardTile(tile, playerIndex) ? " is-disabled-discard" : "";
         return renderBattleTile(tile, canDiscardTile ? "discardable" : `discard-disabled${restrictedClass}`, canDiscardTile);
       })
       .join("");
     const canDiscardDrawnTile = display.drawnTile && canDiscard && canSelectBattleDiscard(display.drawnTile, playerIndex);
-    const drawnRestrictedClass = display.drawnTile && isPonDiscardRestrictedTile(display.drawnTile, playerIndex)
+    const drawnRestrictedClass = display.drawnTile && isDisabledBattleDiscardTile(display.drawnTile, playerIndex)
       ? " is-disabled-discard"
       : "";
     const drawnTile = display.drawnTile
@@ -4431,7 +4442,7 @@
   }
 
   function canSelectBattleDiscard(tile, playerIndex) {
-    if (isPonDiscardRestrictedTile(tile, playerIndex)) return false;
+    if (isDisabledBattleDiscardTile(tile, playerIndex)) return false;
     if (!battleState?.riichiDeclaration) return true;
     return (
       battleState.riichiDeclaration.playerIndex === playerIndex &&
