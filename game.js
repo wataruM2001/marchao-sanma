@@ -925,6 +925,28 @@
       .filter((entry) => entry.player && entry.index !== playerIndex);
   }
 
+  function relativeOpponentEntryFor(player, gameState, offset) {
+    const playerIndex = gameState?.players?.indexOf(player) ?? -1;
+    if (playerIndex < 0) return null;
+    const index = (playerIndex + offset + 3) % 3;
+    const opponent = gameState?.players?.[index] || null;
+    return opponent ? { player: opponent, index } : null;
+  }
+
+  function shimochaEntryFor(player, gameState) {
+    return relativeOpponentEntryFor(player, gameState, 1);
+  }
+
+  function kamichaEntryFor(player, gameState) {
+    return relativeOpponentEntryFor(player, gameState, 2);
+  }
+
+  function dealerEntryFor(gameState) {
+    const index = Number.isInteger(gameState?.dealerIndex) ? gameState.dealerIndex : -1;
+    const player = index >= 0 ? gameState?.players?.[index] : null;
+    return player ? { player, index } : null;
+  }
+
   function dangerousOpponentEntriesFor(player, gameState) {
     return opponentEntriesFor(player, gameState).filter((entry) => isDangerousPlayer(entry.player, gameState));
   }
@@ -934,6 +956,22 @@
     const shanten = estimateShanten(player);
     const isFarFromReady = completedMeldCount <= 1 || shanten >= 2;
     return isFarFromReady && dangerousOpponentEntriesFor(player, gameState).length > 0;
+  }
+
+  function shouldUseUltraSpecialCpuMode(player, gameState) {
+    const playerIndex = gameState?.players?.indexOf(player) ?? -1;
+    if (playerIndex < 0 || playerIndex === gameState?.dealerIndex) return false;
+    const completedMeldCount = countCompletedMeldsForCpu(player);
+    const shanten = estimateShanten(player);
+    if (completedMeldCount < 2 || shanten > 1) return false;
+    const kamicha = kamichaEntryFor(player, gameState)?.player;
+    const shimocha = shimochaEntryFor(player, gameState)?.player;
+    return Boolean(
+      kamicha &&
+      shimocha &&
+      isDangerousPlayer(kamicha, gameState) &&
+      isDangerousPlayer(shimocha, gameState)
+    );
   }
 
   function maxCompletedMeldsFromCounts(counts) {
@@ -991,6 +1029,11 @@
     return dangerousOpponentEntriesFor(player, gameState).filter((entry) =>
       discardTilesOf(entry.player).some((discard) => tileBaseId(discard) === baseId)
     ).length;
+  }
+
+  function hasSameBaseTileInRiver(tile, player) {
+    const baseId = tileBaseId(tile);
+    return discardTilesOf(player).some((discard) => tileBaseId(discard) === baseId);
   }
 
   function opponentDiscardedSameHonor(tile, player, gameState) {
@@ -1087,6 +1130,34 @@
     })[0]?.tile || null;
   }
 
+  function chooseUltraSpecialTieBreaker(candidates, player, gameState, random = Math.random) {
+    const ranked = cloneTiles(candidates).map((tile) => ({
+      tile,
+      acceptance: countAcceptanceTilesAfterDiscard(player, tile, gameState),
+      edgePriority: edgeDiscardPriority(tile),
+      doraPriority: doraDiscardPriority(tile, gameState),
+      tieBreaker: random(),
+    }));
+    return ranked.sort((left, right) => {
+      if (left.edgePriority !== right.edgePriority) return left.edgePriority - right.edgePriority;
+      if (left.doraPriority !== right.doraPriority) return left.doraPriority - right.doraPriority;
+      if (left.acceptance !== right.acceptance) return right.acceptance - left.acceptance;
+      return left.tieBreaker - right.tieBreaker;
+    })[0]?.tile || null;
+  }
+
+  function chooseTenpaiKeepingMaxAcceptanceDiscard(candidates, player, gameState, random = Math.random) {
+    const tenpaiCandidates = cloneTiles(candidates).filter((tile) =>
+      estimateShanten(playerAfterDiscard(player, tile)) === 0
+    );
+    return chooseMaxAcceptanceDiscard(
+      tenpaiCandidates.length > 0 ? tenpaiCandidates : candidates,
+      player,
+      gameState,
+      random
+    );
+  }
+
   function chooseDefensiveDiscard(player, gameState, random = Math.random) {
     const allCandidates = discardCandidatesForPlayer(player, gameState);
     if (allCandidates.length === 0) return null;
@@ -1097,6 +1168,56 @@
 
   function chooseSpecialCpuDiscard(player, gameState, random = Math.random) {
     return chooseDefensiveDiscard(player, gameState, random);
+  }
+
+  function chooseUltraSpecialCpuDiscard(player, gameState, random = Math.random) {
+    const candidates = discardCandidatesForPlayer(player, gameState);
+    if (candidates.length === 0) return null;
+    const shanten = estimateShanten(player);
+    const acceptanceCount = acceptanceTilesForPlayerState(player, gameState).length;
+    if (shanten === 0 && acceptanceCount >= 4) {
+      return chooseTenpaiKeepingMaxAcceptanceDiscard(candidates, player, gameState, random);
+    }
+
+    const kamicha = kamichaEntryFor(player, gameState);
+    const shimocha = shimochaEntryFor(player, gameState);
+    const opponents = [kamicha, shimocha].filter(Boolean);
+    const bothRiverTiles = candidates.filter((tile) =>
+      opponents.length === 2 &&
+      opponents.every((entry) => hasSameBaseTileInRiver(tile, entry.player))
+    );
+    if (bothRiverTiles.length > 0) {
+      return chooseUltraSpecialTieBreaker(bothRiverTiles, player, gameState, random);
+    }
+
+    const honorOrNoChanceTiles = candidates.filter((tile) =>
+      (
+        tileSuit(tile) === "honor" &&
+        opponents.some((entry) => hasSameBaseTileInRiver(tile, entry.player))
+      ) ||
+      noChanceTile(tile, player, gameState)
+    );
+    if (honorOrNoChanceTiles.length > 0) {
+      return chooseUltraSpecialTieBreaker(honorOrNoChanceTiles, player, gameState, random);
+    }
+
+    const dealer = dealerEntryFor(gameState);
+    const dealerRiverTiles = dealer && dealer.player !== player
+      ? candidates.filter((tile) => hasSameBaseTileInRiver(tile, dealer.player))
+      : [];
+    if (dealerRiverTiles.length > 0) {
+      return chooseUltraSpecialTieBreaker(dealerRiverTiles, player, gameState, random);
+    }
+
+    const childOpponent = opponents.find((entry) => entry.index !== dealer?.index);
+    const childRiverTiles = childOpponent
+      ? candidates.filter((tile) => hasSameBaseTileInRiver(tile, childOpponent.player))
+      : [];
+    if (childRiverTiles.length > 0) {
+      return chooseUltraSpecialTieBreaker(childRiverTiles, player, gameState, random);
+    }
+
+    return chooseStandardCpuDiscard(player, gameState, random);
   }
 
   function preferRedFiveDiscard(tile, player, gameState) {
@@ -1110,9 +1231,14 @@
 
   function chooseCpuDiscard(player, gameState, random = Math.random) {
     if (!player || player.hand.length === 0) return null;
-    const selected = shouldUseSpecialCpuMode(player, gameState)
-      ? chooseSpecialCpuDiscard(player, gameState, random)
-      : chooseStandardCpuDiscard(player, gameState, random);
+    let selected = null;
+    if (shouldUseUltraSpecialCpuMode(player, gameState)) {
+      selected = chooseUltraSpecialCpuDiscard(player, gameState, random);
+    } else if (shouldUseSpecialCpuMode(player, gameState)) {
+      selected = chooseSpecialCpuDiscard(player, gameState, random);
+    } else {
+      selected = chooseStandardCpuDiscard(player, gameState, random);
+    }
     return preferRedFiveDiscard(selected, player, gameState);
   }
 
@@ -2433,10 +2559,12 @@
     countWinningTilesInDrawableAndRinshanTiles,
     countWinningTilesInDrawableTiles,
     chooseCpuDiscard,
+    shouldUseUltraSpecialCpuMode,
     shouldUseSpecialCpuMode,
     isDangerousPlayer,
     countCompletedMeldsForCpu,
     chooseStandardCpuDiscard,
+    chooseUltraSpecialCpuDiscard,
     chooseSpecialCpuDiscard,
     chooseDefensiveDiscard,
     removeRonDangerTiles,
