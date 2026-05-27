@@ -683,10 +683,95 @@
     return countWinningTilesInDrawableAndRinshanTiles(option?.waits || [], gameState);
   }
 
+  function acceptanceTilesForPlayerState(player, gameState) {
+    const shanten = estimateShanten(player);
+    return acceptanceSourceTilesForPlayer(player, gameState).filter((drawTileCandidate) => {
+      const afterDraw = {
+        ...player,
+        hand: [...cloneTiles(player?.hand || []), cloneTile(drawTileCandidate)],
+      };
+      return estimateShanten(afterDraw) === shanten - 1;
+    });
+  }
+
+  function isMiddlePinSou456(tile) {
+    const suit = tileSuit(tile);
+    const number = tileNumber(tile);
+    return (suit === "pin" || suit === "sou") && number >= 4 && number <= 6;
+  }
+
+  function isTerminalOrHonor(tile) {
+    const suit = tileSuit(tile);
+    const number = tileNumber(tile);
+    return suit === "honor" || (["man", "pin", "sou"].includes(suit) && (number === 1 || number === 9));
+  }
+
+  function hasYakuWithoutRiichi(player, gameState, acceptanceTiles = acceptanceTilesForPlayerState(player, gameState)) {
+    const evaluator = HandEval();
+    if (!evaluator?.evaluateWinningHand) return false;
+    const playerIndex = playerIndexForAcceptance(player, gameState);
+    return acceptanceTiles.some((winningTile) => {
+      const tile = cloneTile(winningTile);
+      const result = evaluator.evaluateWinningHand([...cloneTiles(player?.hand || []), tile], tile, {
+        allWinTiles: [
+          ...cloneTiles(player?.hand || []),
+          tile,
+          ...cloneTiles(player?.flowers || []),
+          ...meldTiles(player),
+        ],
+        fixedMelds: player?.melds || [],
+        isTsumo: false,
+        isMenzen: isMenzen(player),
+        isRiichi: false,
+        isDoubleRiichi: false,
+        isIppatsu: false,
+        isChankan: false,
+        isHaitei: false,
+        isHoutei: false,
+        roundWind: gameState?.roundWind,
+        seatWind: seatWindForIndex(gameState, playerIndex),
+        doraIndicators: [],
+        uraDoraIndicators: [],
+      });
+      return Boolean(result?.best);
+    });
+  }
+
+  function cpuRiichiOptionMatchesNewCriteria(player, gameState, option) {
+    const discardTile = (player?.hand || []).find((tile) => tile.id === option?.tileId);
+    if (!discardTile) return false;
+    const afterDiscard = playerAfterDiscard(player, discardTile);
+    const acceptanceTiles = acceptanceTilesForPlayerState(afterDiscard, gameState);
+    const totalAcceptanceCount = acceptanceTiles.length;
+    const nonMiddleAcceptanceCount = acceptanceTiles.filter((tile) => !isMiddlePinSou456(tile)).length;
+    const terminalHonorAcceptanceCount = acceptanceTiles.filter(isTerminalOrHonor).length;
+    const completedMeldCount = countCompletedMeldsForCpu(afterDiscard);
+    const hasYaku = hasYakuWithoutRiichi(afterDiscard, gameState, acceptanceTiles);
+
+    if (
+      completedMeldCount === 3 &&
+      totalAcceptanceCount === 3 &&
+      nonMiddleAcceptanceCount >= 1 &&
+      !hasYaku
+    ) {
+      return true;
+    }
+
+    if (
+      completedMeldCount === 3 &&
+      totalAcceptanceCount >= 4 &&
+      nonMiddleAcceptanceCount >= 1
+    ) {
+      return true;
+    }
+
+    return completedMeldCount !== 3 && terminalHonorAcceptanceCount >= 2;
+  }
+
   function cpuRiichiOptions(player, gameState) {
     if (!player?.isCpu || !canRiichi(player, gameState)) return [];
-    return riichiDiscardOptions(player, gameState).filter(
-      (option) => riichiOptionRemainingWinningTileCount(option, gameState) >= 2
+    return riichiDiscardOptions(player, gameState).filter((option) =>
+      cpuRiichiOptionMatchesNewCriteria(player, gameState, option)
     );
   }
 
@@ -705,6 +790,10 @@
         ? gameState.riichiDeclaration.options || []
         : null;
     if (!riichiOptions) return baseCandidates;
+    if (gameState?.riichiDeclaration?.isCpu) {
+      const legalTileIds = new Set(riichiOptions.map((option) => option.tileId));
+      return baseCandidates.filter((tile) => legalTileIds.has(tile.id));
+    }
     const eligibleRiichiOptions = riichiOptions.filter(
       (option) => riichiOptionRemainingWinningTileCount(option, gameState) >= 2
     );
@@ -735,14 +824,7 @@
 
   function countAcceptanceTilesAfterDiscard(player, discardTile, gameState) {
     const afterDiscard = playerAfterDiscard(player, discardTile);
-    const shantenAfterDiscard = estimateShanten(afterDiscard);
-    return acceptanceSourceTilesForPlayer(player, gameState).filter((drawTileCandidate) => {
-      const afterDraw = {
-        ...afterDiscard,
-        hand: [...cloneTiles(afterDiscard.hand), cloneTile(drawTileCandidate)],
-      };
-      return estimateShanten(afterDraw) === shantenAfterDiscard - 1;
-    }).length;
+    return acceptanceTilesForPlayerState(afterDiscard, gameState).length;
   }
 
   function chooseLegacyCpuDiscard(candidates, player, gameState, random = Math.random) {
@@ -1516,17 +1598,21 @@
     return syncDrawWallState(next);
   }
 
-  function startRiichiDeclaration(gameState, playerIndex) {
+  function startRiichiDeclaration(gameState, playerIndex, optionsOverride = null) {
     const next = cloneGameState(gameState);
     const player = next.players[playerIndex];
     const riichiCheckState = { ...next, phase: "discard" };
     if (!canRiichi(player, riichiCheckState)) {
       throw new Error("Riichi is not available.");
     }
+    const options = Array.isArray(optionsOverride) && optionsOverride.length > 0
+      ? optionsOverride
+      : riichiDiscardOptions(player, riichiCheckState);
     next.pendingAction = null;
     next.riichiDeclaration = {
       playerIndex,
-      options: riichiDiscardOptions(player, riichiCheckState),
+      isCpu: Boolean(player?.isCpu),
+      options,
     };
     next.phase = "discard";
     next.lastAction = {
@@ -2076,8 +2162,9 @@
       if (canTsumo(player, next)) {
         return resolveWin(next, { winType: "tsumo", winnerIndex: next.currentPlayerIndex });
       }
-      if (shouldCpuRiichi(player, next)) {
-        return startRiichiDeclaration(next, next.currentPlayerIndex);
+      const cpuOptions = cpuRiichiOptions(player, next);
+      if (cpuOptions.length > 0) {
+        return startRiichiDeclaration(next, next.currentPlayerIndex, cpuOptions);
       }
       return syncDrawWallState(next);
     }
