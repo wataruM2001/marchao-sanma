@@ -31,7 +31,7 @@
   };
   const SOUND_VOLUME = {
     startGame: 0.55,
-    discard: 0.45,
+    discard: 0.225,
     skipPrompt: 0.45,
     screenTransition: 0.45,
     riichi: 0.6,
