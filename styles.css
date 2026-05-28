@@ -4845,6 +4845,30 @@ button:disabled:hover,
   background: rgba(0, 0, 0, 0.22);
 }
 
+.stats-history-table {
+  min-width: 1080px;
+}
+
+.stats-copy-status {
+  margin: 8px 0 0;
+  color: rgba(255, 246, 219, 0.92);
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.stats-copy-status.is-error {
+  color: #ffb5a8;
+}
+
+.stats-paifu-copy-button {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
+  word-break: keep-all;
+}
+
 .stats-table th,
 .stats-table td {
   padding: 9px 10px;
