@@ -3226,6 +3226,17 @@ input[type="checkbox"] {
   margin-top: calc((var(--side-tile-width) - var(--side-tile-long)) / 2 - 1px);
 }
 
+.opponent-left .side-hand,
+.opponent-right .side-hand {
+  overflow: visible;
+  min-width: var(--side-tile-long);
+}
+
+.opponent-left .side-hand .table-tile-img,
+.opponent-right .side-hand .table-tile-img {
+  margin-inline: calc((var(--side-tile-long) - var(--side-tile-width)) / 2);
+}
+
 .dora-indicator-row {
   column-gap: 0;
   font-size: 0;
