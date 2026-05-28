@@ -5252,8 +5252,8 @@
               return `
                 <span class="meld-tile-slot is-horizontal is-kakan-stack">
                   <span class="called-tile-stack">
-                    ${renderMeldTileImage(tile, "called-tile")}
-                    ${renderMeldTileImage(meld.addedTile, "called-tile added-kan-tile")}
+                    ${renderMeldTileImage(tile, "kakan-stack-tile")}
+                    ${renderMeldTileImage(meld.addedTile, "kakan-stack-tile added-kan-tile")}
                   </span>
                 </span>
               `;
