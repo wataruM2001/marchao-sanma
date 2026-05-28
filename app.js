@@ -168,6 +168,7 @@
   let isViewingSharedPaifu = false;
   let currentSharedPaifuUrl = "";
   let isSettlementPreview = false;
+  let isFuroDebugScenario = false;
   let authSession = null;
   let authUser = null;
   let authMessageText = "";
@@ -342,6 +343,8 @@
       setupSettlementPreview();
     } else if (urlParams.get("paifu")) {
       loadSharedPaifuFromUrl();
+    } else if (urlParams.get("debug") === "furo-test-2meld") {
+      setupFuroTestScenario();
     } else if (hasInProgressHanchanSave()) {
       appScreen = "resume";
     }
@@ -350,6 +353,7 @@
 
   function setupSettlementPreview() {
     if (!Game) return;
+    isFuroDebugScenario = false;
     isSettlementPreview = true;
     isViewingSharedPaifu = false;
     currentSharedPaifuUrl = "";
@@ -429,6 +433,115 @@
         kyotakuRecovery: 0,
       },
     ];
+  }
+
+  function setupFuroTestScenario() {
+    if (!Game || !Tiles?.createTiles) return;
+    isFuroDebugScenario = true;
+    isSettlementPreview = false;
+    isViewingSharedPaifu = false;
+    currentSharedPaifuUrl = "";
+    appScreen = "playing";
+    lastHandResult = null;
+    battleSettlement = null;
+    settlementBreakdownVisible = false;
+    resultTransparent = false;
+    clearCpuTurnTimer();
+    clearRiichiAutoDiscardTimer();
+    clearAfterDiscardTimer();
+    clearResultTransitionTimer();
+    resetBattleEffectState();
+
+    const pool = Tiles.createTiles().map((tile) => ({ ...tile }));
+    const takeTile = (kindId) => {
+      const index = pool.findIndex((tile) => Tiles.tileKindId(tile) === kindId);
+      if (index < 0) throw new Error(`Debug tile not found: ${kindId}`);
+      return pool.splice(index, 1)[0];
+    };
+    const takeTiles = (kindIds) => kindIds.map(takeTile);
+    const calledFromSeatForDebug = (playerIndex, fromPlayerIndex) => {
+      if (fromPlayerIndex === (playerIndex + 2) % 3) return "kamicha";
+      if (fromPlayerIndex === (playerIndex + 1) % 3) return "shimocha";
+      return "toimen";
+    };
+    const makePonMeld = (playerIndex, fromPlayerIndex, kindId, suffix) => {
+      const calledTile = takeTile(kindId);
+      const handTiles = takeTiles([kindId, kindId]);
+      const calledFromSeat = calledFromSeatForDebug(playerIndex, fromPlayerIndex);
+      return {
+        id: `debug_pon_${kindId}_${suffix}`,
+        type: "pon",
+        baseId: calledTile.baseId,
+        tiles: calledFromSeat === "kamicha" ? [calledTile, ...handTiles] : [...handTiles, calledTile],
+        calledTile,
+        calledFrom: Game.PLAYER_SEATS?.[fromPlayerIndex] || "",
+        calledFromSeat,
+        fromPlayerIndex,
+      };
+    };
+
+    const startedAt = new Date().toISOString();
+    paifuReplay = {
+      ...createPaifuReplay(),
+      id: "furo_test_2meld",
+      startedAt,
+      endedAt: "",
+    };
+    paifuHandIndex = 0;
+    paifuStepIndex = 0;
+    lastPaifuSnapshotSignature = "";
+
+    battleState = Game.startNewHand({
+      playerNames: battlePlayerNames(),
+      dealerIndex: 0,
+      initialDealerIndex: 0,
+      roundWind: "east",
+      handNumber: 1,
+      honba: 0,
+      kyotaku: 0,
+    });
+
+    const self = battleState.players[0];
+    const shimocha = battleState.players[1];
+    const kamicha = battleState.players[2];
+
+    self.hand = takeTiles(["m1", "p1", "p2", "p4", "p5_red", "p5_blue", "p6", "p7", "p9", "s1", "s2", "s3", "east", "white"]);
+    shimocha.hand = takeTiles(["m9", "p6", "p7", "s1", "s2", "north", "green"]);
+    kamicha.hand = takeTiles(["m1", "p2", "p4", "s4", "s6", "west", "red"]);
+
+    self.discards = takeTiles(["s8", "south", "p8", "s9", "north", "p1"]).map((tile) => ({ tile }));
+    shimocha.discards = takeTiles(["p2", "s2", "m9", "white", "p7", "s1"]).map((tile) => ({ tile }));
+    kamicha.discards = takeTiles(["s3", "p4", "east", "green", "p9", "s7"]).map((tile) => ({ tile }));
+
+    shimocha.melds = [
+      makePonMeld(1, 0, "p3", "from_self"),
+      makePonMeld(1, 2, "s7", "from_kamicha"),
+    ];
+    kamicha.melds = [
+      makePonMeld(2, 0, "south", "from_self"),
+      makePonMeld(2, 1, "p8", "from_shimocha"),
+    ];
+    self.melds = [];
+
+    battleState.dealTiles = [];
+    battleState.doraIndicators = [takeTile("red")];
+    battleState.uraDoraIndicators = [takeTile("white")];
+    battleState.rinshanTiles = takeTiles(["flower_red", "flower_blue", "p9", "s9"]);
+    battleState.drawWall = pool;
+    battleState.wall = pool.map((tile) => ({ ...tile }));
+    battleState.remainingDraws = battleState.drawWall.length;
+    battleState.currentPlayerIndex = 0;
+    battleState.phase = "discard";
+    battleState.lastAction = {
+      type: "draw",
+      playerIndex: 0,
+      tileId: self.hand[self.hand.length - 1]?.id || "",
+    };
+    battleState.lastEffect = "";
+    battleState.pendingAction = null;
+    battleState.pendingRiichi = null;
+    battleState.debugScenario = "furo-test-2meld";
+    normalizeHanchanTimingFields(battleState, startedAt);
   }
 
   async function initializeAuth() {
@@ -1426,6 +1539,7 @@
     resetBattleEffectState();
     syncPlayersFromInputs();
     playSound("startGame");
+    isFuroDebugScenario = false;
     suppressNextScreenTransitionSound = true;
     appScreen = "playing";
     lastHandResult = null;
@@ -4189,7 +4303,9 @@
     if (isStats) renderStatsScreen();
     if (isSettings) renderSettingsScreen();
     if (isPaifu) renderPaifuPanel();
-    if (isSettlement && !isSettlementPreview) {
+    if (isFuroDebugScenario) {
+      // Display-only debug scene; never overwrite a resumable hanchan save.
+    } else if (isSettlement && !isSettlementPreview) {
       clearInProgressHanchanSave();
     } else if (appScreen === "playing" || appScreen === "result") {
       saveInProgressHanchan();
