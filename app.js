@@ -345,6 +345,8 @@
       loadSharedPaifuFromUrl();
     } else if (urlParams.get("debug") === "furo-test-2meld") {
       setupFuroTestScenario();
+    } else if (urlParams.get("debug") === "kakan-test-1each") {
+      setupKakanTestScenario();
     } else if (hasInProgressHanchanSave()) {
       appScreen = "resume";
     }
@@ -541,6 +543,120 @@
     battleState.pendingAction = null;
     battleState.pendingRiichi = null;
     battleState.debugScenario = "furo-test-2meld";
+    normalizeHanchanTimingFields(battleState, startedAt);
+  }
+
+  function setupKakanTestScenario() {
+    if (!Game || !Tiles?.createTiles) return;
+    isFuroDebugScenario = true;
+    isSettlementPreview = false;
+    isViewingSharedPaifu = false;
+    currentSharedPaifuUrl = "";
+    appScreen = "playing";
+    lastHandResult = null;
+    battleSettlement = null;
+    settlementBreakdownVisible = false;
+    resultTransparent = false;
+    clearCpuTurnTimer();
+    clearRiichiAutoDiscardTimer();
+    clearAfterDiscardTimer();
+    clearResultTransitionTimer();
+    resetBattleEffectState();
+
+    const pool = Tiles.createTiles().map((tile) => ({ ...tile }));
+    const takeTile = (kindId) => {
+      const index = pool.findIndex((tile) => Tiles.tileKindId(tile) === kindId);
+      if (index < 0) throw new Error(`Debug tile not found: ${kindId}`);
+      return pool.splice(index, 1)[0];
+    };
+    const takeTiles = (kindIds) => kindIds.map(takeTile);
+    const calledFromSeatForDebug = (playerIndex, fromPlayerIndex) => {
+      if (fromPlayerIndex === (playerIndex + 2) % 3) return "kamicha";
+      if (fromPlayerIndex === (playerIndex + 1) % 3) return "shimocha";
+      return "toimen";
+    };
+    const makeKakanMeld = (playerIndex, fromPlayerIndex, kindId, suffix) => {
+      const calledTile = takeTile(kindId);
+      const handTiles = takeTiles([kindId, kindId]);
+      const addedTile = takeTile(kindId);
+      const calledFromSeat = calledFromSeatForDebug(playerIndex, fromPlayerIndex);
+      const ponTiles = calledFromSeat === "kamicha"
+        ? [calledTile, ...handTiles]
+        : [...handTiles, calledTile];
+      return {
+        id: `debug_kakan_${kindId}_${suffix}`,
+        type: "kakan",
+        baseId: calledTile.baseId,
+        tiles: [...ponTiles, addedTile],
+        calledTile,
+        addedTile,
+        calledFrom: Game.PLAYER_SEATS?.[fromPlayerIndex] || "",
+        calledFromSeat,
+        fromPlayerIndex,
+      };
+    };
+
+    const startedAt = new Date().toISOString();
+    paifuReplay = {
+      ...createPaifuReplay(),
+      id: "kakan_test_1each",
+      startedAt,
+      endedAt: "",
+    };
+    paifuHandIndex = 0;
+    paifuStepIndex = 0;
+    lastPaifuSnapshotSignature = "";
+
+    battleState = Game.startNewHand({
+      playerNames: battlePlayerNames(),
+      dealerIndex: 0,
+      initialDealerIndex: 0,
+      roundWind: "east",
+      handNumber: 1,
+      honba: 0,
+      kyotaku: 0,
+    });
+
+    const self = battleState.players[0];
+    const shimocha = battleState.players[1];
+    const kamicha = battleState.players[2];
+
+    self.hand = takeTiles(["m1", "m9", "p1", "p4", "p5_red", "p5_blue", "p6", "s1", "s2", "s3", "east"]);
+    shimocha.hand = takeTiles(["p2", "p3", "p7", "s1", "s2", "s6", "north", "white", "green"]);
+    kamicha.hand = takeTiles(["p1", "p6", "p9", "s2", "s3", "s7", "west", "red", "north"]);
+
+    self.discards = takeTiles(["s8", "south", "p8", "s9", "white", "p7"]).map((tile) => ({ tile }));
+    shimocha.discards = takeTiles(["p3", "s4", "m9", "green", "p9", "s1"]).map((tile) => ({ tile }));
+    kamicha.discards = takeTiles(["s6", "p4", "east", "south", "p2", "s7"]).map((tile) => ({ tile }));
+
+    self.melds = [
+      makeKakanMeld(0, 1, "p2", "self_from_shimocha"),
+    ];
+    shimocha.melds = [
+      makeKakanMeld(1, 0, "s4", "shimocha_from_self"),
+    ];
+    kamicha.melds = [
+      makeKakanMeld(2, 1, "south", "kamicha_from_shimocha"),
+    ];
+
+    battleState.dealTiles = [];
+    battleState.doraIndicators = [takeTile("red")];
+    battleState.uraDoraIndicators = [takeTile("white")];
+    battleState.rinshanTiles = takeTiles(["flower_red", "flower_blue", "p9", "s9"]);
+    battleState.drawWall = pool;
+    battleState.wall = pool.map((tile) => ({ ...tile }));
+    battleState.remainingDraws = battleState.drawWall.length;
+    battleState.currentPlayerIndex = 0;
+    battleState.phase = "discard";
+    battleState.lastAction = {
+      type: "draw",
+      playerIndex: 0,
+      tileId: self.hand[self.hand.length - 1]?.id || "",
+    };
+    battleState.lastEffect = "";
+    battleState.pendingAction = null;
+    battleState.pendingRiichi = null;
+    battleState.debugScenario = "kakan-test-1each";
     normalizeHanchanTimingFields(battleState, startedAt);
   }
 
