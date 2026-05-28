@@ -351,6 +351,43 @@
       };
     },
 
+    async loadSharedPaifuUrlMap(hanchanIds = []) {
+      const client = getSupabaseClient();
+      if (!client) return unavailableResult("loadSharedPaifuUrlMap");
+      const ids = [...new Set((Array.isArray(hanchanIds) ? hanchanIds : [hanchanIds]).map(String).filter(Boolean))];
+      if (!ids.length) return { ok: true, data: {} };
+
+      const { data, error } = await client
+        .from(supabaseConfig.sharedPaifusTable)
+        .select("share_id,paifu_json")
+        .eq("is_public", true)
+        .limit(1000);
+
+      if (error) {
+        return { ok: false, error, reason: error.message || "牌譜URLを取得できませんでした" };
+      }
+
+      const idSet = new Set(ids);
+      const map = {};
+      (data || []).forEach((row) => {
+        const paifu =
+          typeof row.paifu_json === "string"
+            ? (() => {
+                try {
+                  return JSON.parse(row.paifu_json);
+                } catch {
+                  return null;
+                }
+              })()
+            : row.paifu_json;
+        const hanchanId = paifu && typeof paifu === "object" ? String(paifu.id || "") : "";
+        if (hanchanId && idSet.has(hanchanId) && row.share_id && !map[hanchanId]) {
+          map[hanchanId] = buildPaifuShareUrl(row.share_id);
+        }
+      });
+      return { ok: true, data: map };
+    },
+
     async getSharedPaifu(input) {
       const shareId = typeof input === "string" ? input : input?.shareId;
       return this.loadSharedPaifu(shareId);
