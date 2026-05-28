@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   "use strict";
 
   const Rules = window.MahjongRules;
@@ -13,6 +13,7 @@
   const AUTO_DISCARD_DELAY_MS = 1300;
   const CPU_DISCARD_DELAY_MS = 1500;
   const RIICHI_AUTO_DISCARD_DELAY_MS = AUTO_DISCARD_DELAY_MS;
+  const RIICHI_EFFECT_BEFORE_DISCARD_MS = 500;
   const AFTER_DISCARD_REACTION_DELAY_MS = 50;
   const PAIFU_REPLAY_INTERVAL_MS = 1000;
   const PAIFU_STORAGE_KEY = "marchao-sanma-last-paifu-v1";
@@ -135,6 +136,8 @@
   let cpuTurnTimer = 0;
   let pendingCpuDiscard = null;
   let riichiAutoDiscardTimer = 0;
+  let riichiDeclarationDiscardTimer = 0;
+  let pendingRiichiDeclarationDiscard = null;
   let afterDiscardTimer = 0;
   let resultTransitionTimer = 0;
   let battleEffectTimer = 0;
@@ -367,6 +370,7 @@
     resultTransparent = false;
     clearCpuTurnTimer();
     clearRiichiAutoDiscardTimer();
+    clearRiichiDeclarationDiscardTimer();
     clearAfterDiscardTimer();
     clearResultTransitionTimer();
     resetBattleEffectState();
@@ -1051,6 +1055,7 @@
     activeBattleEffect = null;
     battleEffectQueue = [];
     lastBattleEffectSignature = "";
+    clearRiichiDeclarationDiscardTimer();
     renderActiveBattleEffect();
   }
 
@@ -1068,6 +1073,12 @@
   function clearRiichiAutoDiscardTimer() {
     window.clearTimeout(riichiAutoDiscardTimer);
     riichiAutoDiscardTimer = 0;
+  }
+
+  function clearRiichiDeclarationDiscardTimer() {
+    window.clearTimeout(riichiDeclarationDiscardTimer);
+    riichiDeclarationDiscardTimer = 0;
+    pendingRiichiDeclarationDiscard = null;
   }
 
   function clearAfterDiscardTimer() {
@@ -1822,6 +1833,56 @@
     return Game.afterPlayerDraw(next);
   }
 
+  function isRiichiDeclarationDiscardChoice(gameState, playerIndex, tileId) {
+    return Boolean(
+      gameState?.phase === "discard" &&
+      gameState.riichiDeclaration?.playerIndex === playerIndex &&
+      gameState.riichiDeclaration.options?.some((option) => option.tileId === tileId)
+    );
+  }
+
+  function executePendingRiichiDeclarationDiscard() {
+    const pending = pendingRiichiDeclarationDiscard;
+    clearRiichiDeclarationDiscardTimer();
+    if (!pending || !battleState || appScreen !== "playing") return;
+    const currentPlayer = battleState.players?.[battleState.currentPlayerIndex];
+    if (
+      battleState.phase !== "discard" ||
+      battleState.currentPlayerIndex !== pending.playerIndex ||
+      currentPlayer?.id !== pending.playerId ||
+      battleState.hanchanId !== pending.stateId ||
+      !isRiichiDeclarationDiscardChoice(battleState, pending.playerIndex, pending.tileId)
+    ) {
+      return;
+    }
+    try {
+      const previousBattleState = battleState;
+      battleState = Game.discardTile(battleState, pending.playerIndex, pending.tileId);
+      playDiscardSoundIfNew(previousBattleState, battleState);
+      renderBattleStateAndScheduleNext();
+    } catch (error) {
+      els.battleStatus.textContent = error.message;
+    }
+  }
+
+  function scheduleRiichiDeclarationDiscard(playerIndex, tileId) {
+    if (!battleState || pendingRiichiDeclarationDiscard) return true;
+    const player = battleState.players?.[playerIndex];
+    if (!player || !isRiichiDeclarationDiscardChoice(battleState, playerIndex, tileId)) return false;
+    pendingRiichiDeclarationDiscard = {
+      playerIndex,
+      playerId: player.id,
+      stateId: battleState.hanchanId,
+      tileId,
+    };
+    showRiichiPreDiscardEffect(playerIndex);
+    riichiDeclarationDiscardTimer = window.setTimeout(
+      executePendingRiichiDeclarationDiscard,
+      RIICHI_EFFECT_BEFORE_DISCARD_MS
+    );
+    return true;
+  }
+
   function handleHumanDiscard(tileId) {
     if (!battleState || appScreen !== "playing") return;
     if (battleState.phase === "actionPending") {
@@ -1834,6 +1895,7 @@
     if (currentPlayer?.isRiichi && !battleState.riichiDeclaration) return;
     const selectedTile = currentPlayer?.hand?.find((tile) => tile.id === tileId);
     if (isDisabledBattleDiscardTile(selectedTile, battleState.currentPlayerIndex)) return;
+    if (scheduleRiichiDeclarationDiscard(battleState.currentPlayerIndex, tileId)) return;
     try {
       const previousBattleState = battleState;
       battleState = Game.discardTile(battleState, battleState.currentPlayerIndex, tileId);
@@ -2064,6 +2126,9 @@
       return;
     }
     const previousBattleState = battleState;
+    if (scheduleRiichiDeclarationDiscard(battleState.currentPlayerIndex, pending.tileId)) {
+      return;
+    }
     battleState = Game.discardTile(battleState, battleState.currentPlayerIndex, pending.tileId);
     playDiscardSoundIfNew(previousBattleState, battleState);
     renderBattleStateAndScheduleNext();
@@ -2073,6 +2138,7 @@
     if (!battleState || !["result", "ryukyoku"].includes(battleState.phase)) return false;
     clearCpuTurnTimer();
     clearRiichiAutoDiscardTimer();
+    clearRiichiDeclarationDiscardTimer();
     clearAfterDiscardTimer();
     if (appScreen === "result") return true;
     if (battleState.phase === "ryukyoku") {
@@ -4600,6 +4666,9 @@
         classes: `marchao ${flowerEffectTone(action.tileId)}`,
       });
     }
+    if (action.type === "riichi") {
+      return flowerItems;
+    }
     const effectText = action.effect || (action.afterKan ? gameState.lastEffect : "") || (action.type === "ryukyoku" ? "流局" : "");
     const actionEffect = effectText
       ? [{ text: effectText, playerIndex, classes: battleEffectClassForAction(action, effectText) }]
@@ -4829,6 +4898,22 @@
     if (!item?.text) return;
     battleEffectQueue.push(item);
     if (!activeBattleEffect) playNextBattleEffect();
+  }
+
+  function showRiichiPreDiscardEffect(playerIndex) {
+    window.clearTimeout(battleEffectTimer);
+    activeBattleEffect = {
+      text: "\u30ea\u30fc\u30c1",
+      playerIndex,
+      classes: "effect-riichi",
+    };
+    renderActiveBattleEffect();
+    playBattleEffectSound(activeBattleEffect);
+    battleEffectTimer = window.setTimeout(() => {
+      activeBattleEffect = null;
+      renderActiveBattleEffect();
+      playNextBattleEffect();
+    }, battleEffectDurationMsForClasses(activeBattleEffect.classes));
   }
 
   function queueRiichiEffectIfJustFinalized(previousGameState, nextGameState) {
