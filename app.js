@@ -38,8 +38,8 @@
     riichi: 0.6,
     pon: 0.6,
     kan: 0.6,
-    tsumo: 0.65,
-    ron: 0.65,
+    tsumo: 0.975,
+    ron: 0.975,
   };
   const SOUND_CATEGORY = {
     startGame: "soundEffect",
