@@ -5077,3 +5077,11 @@ button:disabled:hover,
   bottom: calc(var(--open-tile-width) - var(--kakan-stack-down-offset));
   z-index: 2;
 }
+
+.battle-surface:not(.is-start-screen) .meld-area.kamicha .kamicha-meld .kamicha-kakan-pair .meld-tile-slot.is-vertical .table-tile-img.called-tile {
+  transform: translateX(calc(var(--open-tile-width) * 0.85));
+}
+
+.battle-surface:not(.is-start-screen) .meld-area.kamicha .kamicha-meld .kamicha-kakan-pair .meld-tile-slot.is-vertical .table-tile-img.added-kan-tile {
+  transform: translateX(calc(var(--open-tile-width) * 0.3));
+}
