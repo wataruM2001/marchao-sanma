@@ -1474,14 +1474,29 @@ button {
 
 .opponent-left {
   left: clamp(8px, 2vw, 28px);
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  top: var(--side-player-lane-top);
+  bottom: var(--self-hand-bottom-offset);
+  grid-template-rows: minmax(0, 1fr) auto;
   justify-items: start;
+  align-items: stretch;
 }
 
 .opponent-right {
   right: clamp(8px, 2vw, 28px);
-  grid-template-rows: auto auto minmax(0, 1fr);
+  top: var(--side-player-lane-top);
+  bottom: var(--self-hand-bottom-offset);
+  grid-template-rows: auto minmax(0, 1fr);
   justify-items: end;
+  align-items: stretch;
+}
+
+.opponent-left > .opponent-name,
+.opponent-right > .opponent-name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 
 .opponent-name,
@@ -1507,6 +1522,9 @@ button {
 }
 
 .opponent-left .side-hand {
+  grid-row: 1;
+  align-self: stretch;
+  justify-content: flex-start;
   min-height: 0;
   overflow: hidden;
   align-items: flex-start;
@@ -1697,9 +1715,8 @@ button {
 }
 
 .opponent-left .side-meld-lane {
-  --open-tile-width: clamp(17px, 2vw, 27px);
-  --open-tile-height: calc(var(--open-tile-width) * 1.40625);
   position: static;
+  grid-row: 2;
   align-self: end;
   justify-self: start;
   align-items: flex-start;
@@ -1708,10 +1725,8 @@ button {
 }
 
 .opponent-right .side-meld-lane {
-  --open-tile-width: clamp(17px, 2vw, 27px);
-  --open-tile-height: calc(var(--open-tile-width) * 1.40625);
   position: static;
-  grid-row: 2;
+  grid-row: 1;
   align-self: start;
   justify-self: end;
   align-items: flex-end;
@@ -1720,7 +1735,9 @@ button {
 }
 
 .opponent-right .side-hand {
-  grid-row: 3;
+  grid-row: 2;
+  align-self: stretch;
+  justify-content: flex-end;
   min-height: 0;
   overflow: hidden;
   align-items: flex-end;
@@ -2945,6 +2962,8 @@ input[type="checkbox"] {
   --center-layout-top: clamp(118px, 22vh, 168px);
   --center-layout-upshift: calc(var(--center-river-tile-long) * 1.5);
   --center-layout-downshift: -30px;
+  --side-player-lane-top: calc(var(--center-layout-top) - var(--center-layout-upshift) + var(--center-layout-downshift));
+  --self-hand-bottom-offset: clamp(10px, 2vw, 22px);
   --dora-tile-scale: 0.9;
   --dora-tile-width: calc(var(--center-river-tile-width) * var(--dora-tile-scale));
   --dora-tile-height: calc(var(--center-river-tile-long) * var(--dora-tile-scale));
@@ -3888,6 +3907,7 @@ button:disabled:hover,
     --center-layout-top: 5px;
     --center-layout-upshift: 0px;
     --center-layout-downshift: 0px;
+    --self-hand-bottom-offset: 2px;
     --hand-tile-width: var(--self-hand-landscape-tile-width);
     --draw-tile-gap-ratio: 0.24;
     --draw-tile-gap: calc(var(--hand-tile-width) * var(--draw-tile-gap-ratio));
@@ -4048,8 +4068,6 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .opponent-left .side-meld-lane {
-    --open-tile-width: var(--landscape-tile-width);
-    --open-tile-height: var(--center-river-tile-long);
     position: static;
     padding: 0;
     gap: 0;
@@ -4062,8 +4080,6 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .opponent-right .side-meld-lane {
-    --open-tile-width: var(--landscape-tile-width);
-    --open-tile-height: var(--center-river-tile-long);
     position: static;
     padding: 0;
     gap: 0;
