@@ -1819,6 +1819,7 @@ button {
   width: var(--open-tile-height);
   height: calc(var(--open-tile-width) * 2);
   flex-basis: var(--open-tile-height);
+  overflow: visible;
 }
 
 .meld-area .table-tile-img {
@@ -1886,12 +1887,17 @@ button {
 }
 
 .called-tile-stack .table-tile-img {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
   width: var(--center-river-tile-width, clamp(22px, 2.7vw, 38px));
+  transform: translateX(-50%) rotate(calc(var(--meld-seat-rotation) + 90deg));
+  transform-origin: center center;
 }
 
 .called-tile-stack .added-kan-tile {
   position: absolute;
-  bottom: calc((var(--open-tile-width) - var(--open-tile-height)) / 2 + var(--open-tile-width));
+  bottom: var(--open-tile-width);
   left: 50%;
   transform: translateX(-50%) rotate(calc(var(--meld-seat-rotation) + 90deg));
   z-index: 2;
