@@ -18,6 +18,7 @@
   const PAIFU_STORAGE_KEY = "marchao-sanma-last-paifu-v1";
   const STATS_STORAGE_KEY = "marchaoSanmaStatsV1";
   const IN_PROGRESS_STORAGE_KEY = "marchaoSanmaInProgressV1";
+  const SOUND_SETTINGS_STORAGE_KEY = "marchaoSanmaSoundSettingsV1";
   const SOUND_FILES = {
     startGame: "./sounds/button_decide.mp3",
     discard: "./sounds/discard.mp3",
@@ -39,6 +40,17 @@
     kan: 0.6,
     tsumo: 0.65,
     ron: 0.65,
+  };
+  const SOUND_CATEGORY = {
+    startGame: "soundEffect",
+    discard: "soundEffect",
+    skipPrompt: "soundEffect",
+    screenTransition: "soundEffect",
+    riichi: "voice",
+    pon: "voice",
+    kan: "voice",
+    tsumo: "voice",
+    ron: "voice",
   };
   const STATS_HISTORY_PAGE_SIZE = 10;
   const STATS_RANKING_LIMIT = 10;
@@ -114,6 +126,7 @@
   let battleState = null;
   let appScreen = "start";
   let soundEnabled = false;
+  let soundSettings = loadSoundSettings();
   let lastSoundScreen = "start";
   let suppressNextScreenTransitionSound = false;
   let lastSkipPromptSoundSignature = "";
@@ -238,6 +251,7 @@
     settingsDisplayNameInput: document.getElementById("settingsDisplayNameInput"),
     settingsSaveNameButton: document.getElementById("settingsSaveNameButton"),
     settingsMessage: document.getElementById("settingsMessage"),
+    soundSettingButtons: Array.from(document.querySelectorAll("[data-sound-setting]")),
     resumeRequiredScreen: document.getElementById("resumeRequiredScreen"),
     resumeRequiredButton: document.getElementById("resumeRequiredButton"),
     battleSelfHand: document.getElementById("battleSelfHand"),
@@ -549,10 +563,60 @@
     return userId ? `\u533f\u540d\u30e6\u30fc\u30b6\u30fc${String(userId).slice(-4)}` : "\u533f\u540d\u30e6\u30fc\u30b6\u30fc";
   }
 
+  function defaultSoundSettings() {
+    return {
+      soundEffectsEnabled: true,
+      voiceEffectsEnabled: true,
+    };
+  }
+
+  function loadSoundSettings() {
+    try {
+      const raw = localStorage.getItem(SOUND_SETTINGS_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return {
+        soundEffectsEnabled: parsed?.soundEffectsEnabled !== false,
+        voiceEffectsEnabled: parsed?.voiceEffectsEnabled !== false,
+      };
+    } catch (error) {
+      console.warn("sound settings load failed", error);
+      return defaultSoundSettings();
+    }
+  }
+
+  function saveSoundSettings() {
+    try {
+      localStorage.setItem(SOUND_SETTINGS_STORAGE_KEY, JSON.stringify(soundSettings));
+    } catch (error) {
+      console.warn("sound settings save failed", error);
+    }
+  }
+
+  function updateSoundSetting(key, enabled) {
+    if (!Object.prototype.hasOwnProperty.call(defaultSoundSettings(), key)) return;
+    soundSettings = {
+      ...soundSettings,
+      [key]: Boolean(enabled),
+    };
+    saveSoundSettings();
+    renderSettingsScreen();
+  }
+
+  function renderSoundSettingButtons() {
+    els.soundSettingButtons.forEach((button) => {
+      const key = button.dataset.soundSetting;
+      const value = button.dataset.soundValue === "true";
+      const isActive = Boolean(soundSettings?.[key]) === value;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    });
+  }
+
   function renderSettingsScreen() {
     if (els.settingsDisplayNameInput && document.activeElement !== els.settingsDisplayNameInput) {
       els.settingsDisplayNameInput.value = settingsDisplayName || "";
     }
+    renderSoundSettingButtons();
     if (els.settingsSaveNameButton) {
       els.settingsSaveNameButton.disabled = Boolean(settingsSaveInProgress);
     }
@@ -678,6 +742,9 @@
     if (!soundEnabled) return;
     const src = SOUND_FILES[name];
     if (!src) return;
+    const category = SOUND_CATEGORY[name];
+    if (category === "soundEffect" && !soundSettings.soundEffectsEnabled) return;
+    if (category === "voice" && !soundSettings.voiceEffectsEnabled) return;
     try {
       const audio = new Audio(src);
       audio.volume = SOUND_VOLUME[name] ?? 0.5;
@@ -996,6 +1063,11 @@
     });
     els.settingsDisplayNameInput?.addEventListener("input", () => {
       settingsDisplayName = els.settingsDisplayNameInput.value.slice(0, 8);
+    });
+    els.soundSettingButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        updateSoundSetting(button.dataset.soundSetting, button.dataset.soundValue === "true");
+      });
     });
     els.statsRecentCountInput?.addEventListener("input", () => {
       const records = currentStatsDisplayRecords();
