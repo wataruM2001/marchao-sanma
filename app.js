@@ -753,11 +753,18 @@
 
   function maybePlayScreenTransitionSound() {
     if (appScreen === lastSoundScreen) return;
+    const previousScreen = lastSoundScreen;
+    const nextScreen = appScreen;
     const shouldSuppress = suppressNextScreenTransitionSound;
     suppressNextScreenTransitionSound = false;
-    lastSoundScreen = appScreen;
+    lastSoundScreen = nextScreen;
     if (shouldSuppress) return;
-    playSound("screenTransition");
+    const shouldPlayDecideTransition =
+      (previousScreen === "playing" && nextScreen === "result") ||
+      (previousScreen === "result" && nextScreen === "settlement");
+    if (shouldPlayDecideTransition) {
+      playSound("screenTransition");
+    }
   }
 
   function clearPaifuReplayTimer() {
