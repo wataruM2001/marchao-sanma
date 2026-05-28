@@ -164,6 +164,9 @@
   let statsRankingStatusText = "読み込み前";
   let statsRankingKind = "average_settlement_point";
   let statsRankingMinHanchanCount = 1;
+  let statsPaifuUrlByHanchanId = {};
+  let statsPaifuCopyStatusText = "";
+  let statsPaifuCopyStatusIsError = false;
   let statsOnlineLoadToken = 0;
   let isViewingSharedPaifu = false;
   let currentSharedPaifuUrl = "";
@@ -234,6 +237,7 @@
     statsDataSourceStatus: document.getElementById("statsDataSourceStatus"),
     statsSummaryTable: document.getElementById("statsSummaryTable"),
     statsHistoryTable: document.getElementById("statsHistoryTable"),
+    statsPaifuCopyStatus: document.getElementById("statsPaifuCopyStatus"),
     statsSupabaseStatus: document.getElementById("statsSupabaseStatus"),
     statsSupabaseTable: document.getElementById("statsSupabaseTable"),
     statsRankingStatus: document.getElementById("statsRankingStatus"),
@@ -1390,6 +1394,9 @@
       statsSupabaseRecords = [];
       statsSupabaseLoadState = "loading";
       statsRankingRows = [];
+      statsPaifuUrlByHanchanId = {};
+      statsPaifuCopyStatusText = "";
+      statsPaifuCopyStatusIsError = false;
       statsSupabaseStatusText = "Supabase成績を読み込み中...";
       statsDataSourceStatusText = "";
       statsRankingStatusText = "\u30e9\u30f3\u30ad\u30f3\u30b0\u3092\u8aad\u307f\u8fbc\u307f\u4e2d\u2026";
@@ -1471,6 +1478,11 @@
     });
     els.statsResetConfirmButton?.addEventListener("click", async () => {
       await resetAllStatsForCurrentUser();
+    });
+    els.statsHistoryTable?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-copy-paifu-url]");
+      if (!button || button.disabled) return;
+      copyStatsPaifuUrl(button.dataset.copyPaifuUrl || "");
     });
     els.authForm?.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -2962,6 +2974,69 @@
     }
   }
 
+  function buildPaifuUrlFromShareId(shareId) {
+    if (!shareId) return "";
+    const api = window.paifuShareApi;
+    if (api?.buildShareUrl) return api.buildShareUrl(shareId);
+    if (api?.getSharedUrl) return api.getSharedUrl(shareId);
+    try {
+      const url = new URL(window.location.href);
+      url.search = "";
+      url.hash = "";
+      url.searchParams.set("paifu", shareId);
+      return url.toString();
+    } catch {
+      return `${window.location.origin}${window.location.pathname}?paifu=${encodeURIComponent(shareId)}`;
+    }
+  }
+
+  function paifuUrlFromStoredReplay(recordId) {
+    if (!recordId) return "";
+    try {
+      const replay = JSON.parse(localStorage.getItem(PAIFU_STORAGE_KEY) || "null");
+      if (!replay || String(replay.id || "") !== String(recordId)) return "";
+      return replay.sharedUrl || buildPaifuUrlFromShareId(replay.shareId);
+    } catch {
+      return "";
+    }
+  }
+
+  function statsPaifuUrlForRecord(record = {}) {
+    const id = String(record.id || record.hanchanId || record.hanchan_id || "");
+    return (
+      record.paifuUrl ||
+      record.sharedUrl ||
+      (record.shareId ? buildPaifuUrlFromShareId(record.shareId) : "") ||
+      (id ? statsPaifuUrlByHanchanId[id] : "") ||
+      paifuUrlFromStoredReplay(id)
+    );
+  }
+
+  function renderStatsPaifuUrlCell(record = {}) {
+    const url = statsPaifuUrlForRecord(record);
+    if (!url) {
+      return `<button class="mini-button stats-paifu-copy-button" type="button" disabled>コピー不可</button>`;
+    }
+    return `<button class="mini-button stats-paifu-copy-button" type="button" data-copy-paifu-url="${escapeHtml(url)}">コピー</button>`;
+  }
+
+  async function copyStatsPaifuUrl(url) {
+    if (!url) return;
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard API unavailable");
+      }
+      await navigator.clipboard.writeText(url);
+      statsPaifuCopyStatusText = "コピーしました";
+      statsPaifuCopyStatusIsError = false;
+    } catch (error) {
+      console.error("Failed to copy paifu URL", error);
+      statsPaifuCopyStatusText = "コピーに失敗しました";
+      statsPaifuCopyStatusIsError = true;
+    }
+    renderStatsScreen();
+  }
+
   async function loadSharedPaifuFromUrl() {
     const shareId = new URLSearchParams(window.location.search).get("paifu");
     if (!shareId) return;
@@ -3102,6 +3177,9 @@
 
     statsSupabaseRecords = [];
     statsRankingRows = [];
+    statsPaifuUrlByHanchanId = {};
+    statsPaifuCopyStatusText = "";
+    statsPaifuCopyStatusIsError = false;
     statsSupabaseLoadState = window.statsApi?.isConfigured?.() ? "success" : "unavailable";
     statsSupabaseStatusText = "";
     statsRankingStatusText = "";
@@ -3145,6 +3223,8 @@
       dealInCount: Math.max(0, Math.round(Number(record.dealInCount ?? record.deal_in_count ?? 0) || 0)),
       riichiCount: Math.max(0, Math.round(Number(record.riichiCount ?? record.riichi_count ?? 0) || 0)),
       calledHandCount: Math.max(0, Math.round(Number(record.calledHandCount ?? record.called_hand_count ?? 0) || 0)),
+      shareId: String(record.shareId || record.share_id || ""),
+      sharedUrl: String(record.sharedUrl || record.shared_url || record.paifuUrl || record.paifu_url || ""),
       durationSeconds,
       durationExcludesPaused,
     };
@@ -3475,17 +3555,18 @@
     const header = `
       <thead>
         <tr>
-          <th>\u7d42\u4e86\u65e5\u6642</th>
+          <th>\u65e5\u6642</th>
           <th>\u6642\u9593</th>
           <th>\u7740\u9806</th>
-          <th>\u6700\u7d42\u7d20\u70b9</th>
+          <th>\u7d20\u70b9</th>
           <th>\u53ce\u652f</th>
-          <th>\u795d\u5100\u679a\u6570</th>
+          <th>\u795d\u5100</th>
           <th>\u7dcf\u5c40\u6570</th>
-          <th>\u548c\u4e86\u56de\u6570</th>
-          <th>\u653e\u9283\u56de\u6570</th>
-          <th>\u7acb\u76f4\u56de\u6570</th>
-          <th>\u526f\u9732\u5c40\u6570</th>
+          <th>\u548c\u4e86</th>
+          <th>\u653e\u9283</th>
+          <th>\u7acb\u76f4</th>
+          <th>\u526f\u9732</th>
+          <th>\u724c\u8b5cURL</th>
         </tr>
       </thead>
     `;
@@ -3493,7 +3574,7 @@
       return `
         <table class="stats-table stats-history-table">
           ${header}
-          <tbody><tr><td colspan="11">\u5c65\u6b74\u306f\u3042\u308a\u307e\u305b\u3093</td></tr></tbody>
+          <tbody><tr><td colspan="12">\u5c65\u6b74\u306f\u3042\u308a\u307e\u305b\u3093</td></tr></tbody>
         </table>
       `;
     }
@@ -3514,6 +3595,7 @@
               <td>${formatPlainNumber(record.dealInCount)}</td>
               <td>${formatPlainNumber(record.riichiCount)}</td>
               <td>${formatPlainNumber(record.calledHandCount)}</td>
+              <td>${renderStatsPaifuUrlCell(record)}</td>
             </tr>
           `).join("")}
         </tbody>
@@ -3538,6 +3620,25 @@
     };
   }
 
+  async function refreshStatsPaifuUrlMap(records = []) {
+    const ids = [...new Set((records || []).map((record) => String(record?.id || "")).filter(Boolean))];
+    const localMap = {};
+    ids.forEach((id) => {
+      const url = paifuUrlFromStoredReplay(id);
+      if (url) localMap[id] = url;
+    });
+    statsPaifuUrlByHanchanId = localMap;
+    const api = window.paifuShareApi;
+    if (!ids.length || !api?.loadSharedPaifuUrlMap) return;
+    const result = await api.loadSharedPaifuUrlMap(ids);
+    if (result?.ok) {
+      statsPaifuUrlByHanchanId = {
+        ...localMap,
+        ...(result.data || {}),
+      };
+    }
+  }
+
   async function loadStatsOnlineData() {
     const token = statsOnlineLoadToken + 1;
     statsOnlineLoadToken = token;
@@ -3546,6 +3647,7 @@
       statsSupabaseStatusText = "Supabaseが未設定です";
       statsDataSourceStatusText = "表示中：端末内成績";
       statsRankingStatusText = "Supabase\u304c\u672a\u8a2d\u5b9a\u3067\u3059";
+      statsPaifuUrlByHanchanId = {};
       renderStatsScreen();
       return;
     }
@@ -3565,11 +3667,14 @@
     const ownValue = ownResult.status === "fulfilled" ? ownResult.value : null;
     if (ownValue?.ok) {
       statsSupabaseRecords = (ownValue.data || []).map(supabaseStatRowToRecord);
+      await refreshStatsPaifuUrlMap(statsSupabaseRecords);
+      if (token !== statsOnlineLoadToken) return;
       statsSupabaseLoadState = "success";
       statsSupabaseStatusText = `Supabase保存済み: ${statsSupabaseRecords.length}件`;
       statsDataSourceStatusText = "";
     } else {
       statsSupabaseRecords = [];
+      statsPaifuUrlByHanchanId = {};
       statsSupabaseLoadState = "error";
       statsSupabaseStatusText = ownValue?.reason || ownResult.reason?.message || "Supabase成績を読み込めませんでした";
       statsDataSourceStatusText = "表示中：端末内成績（Supabase取得失敗）";
@@ -3794,6 +3899,11 @@
     if (els.statsRankingStatus) setTextIfChanged(els.statsRankingStatus, statsRankingStatusText);
     if (els.statsSupabaseTable) setHtmlIfChanged(els.statsSupabaseTable, renderSupabaseStatsTable(statsSupabaseRecords));
     if (els.statsRankingTable) setHtmlIfChanged(els.statsRankingTable, renderRankingTable(statsRankingRows));
+    if (els.statsPaifuCopyStatus) {
+      setTextIfChanged(els.statsPaifuCopyStatus, statsPaifuCopyStatusText || "");
+      els.statsPaifuCopyStatus.classList.toggle("is-error", statsPaifuCopyStatusIsError);
+      setHiddenIfChanged(els.statsPaifuCopyStatus, !statsPaifuCopyStatusText);
+    }
     setHiddenIfChanged(els.statsResetButton, !hasRecords);
     if (els.statsRecentCountInput) {
       els.statsRecentCountInput.max = String(Math.max(1, records.length));
