@@ -1833,7 +1833,7 @@ button {
 
 .meld-area.kamicha .kamicha-meld .meld-tile-slot.is-horizontal .table-tile-img {
   position: absolute;
-  left: calc(50% + (var(--open-tile-width) * 0.5));
+  left: calc(50% + (var(--open-tile-width) * 0.4));
   top: 50%;
   transform: translate(-50%, -50%) rotate(90deg);
   transform-origin: center center;
