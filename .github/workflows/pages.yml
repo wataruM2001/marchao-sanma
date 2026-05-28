@@ -30,7 +30,7 @@ jobs:
           set -euo pipefail
           mkdir -p _site
           cp index.html app.js game.js hand-evaluation.js rules.js styles.css supabaseClient.js tiles.js _site/
-          cp -r assets public tiles _site/
+          cp -r assets public tiles sounds _site/
           touch _site/.nojekyll
 
       - name: Configure Pages
