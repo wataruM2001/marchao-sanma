@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>マーチャオサンマ</title>
-  <link rel="stylesheet" href="./styles.css?v=right-flower-left-v60" />
+  <link rel="stylesheet" href="./styles.css?v=sound-settings-v64" />
   </head>
   <body>
     <main class="app-shell">
@@ -209,6 +209,22 @@
                 <span>ユーザー名</span>
                 <input id="settingsDisplayNameInput" type="text" maxlength="8" autocomplete="off" />
               </label>
+              <div class="settings-sound-controls" aria-label="音声設定">
+                <div class="settings-toggle-row">
+                  <span class="settings-toggle-label">効果音</span>
+                  <div class="settings-toggle-group" role="group" aria-label="効果音">
+                    <button class="settings-toggle-button" id="soundEffectsOnButton" type="button" data-sound-setting="soundEffectsEnabled" data-sound-value="true">ON</button>
+                    <button class="settings-toggle-button" id="soundEffectsOffButton" type="button" data-sound-setting="soundEffectsEnabled" data-sound-value="false">OFF</button>
+                  </div>
+                </div>
+                <div class="settings-toggle-row">
+                  <span class="settings-toggle-label">ボイス</span>
+                  <div class="settings-toggle-group" role="group" aria-label="ボイス">
+                    <button class="settings-toggle-button" id="voiceEffectsOnButton" type="button" data-sound-setting="voiceEffectsEnabled" data-sound-value="true">ON</button>
+                    <button class="settings-toggle-button" id="voiceEffectsOffButton" type="button" data-sound-setting="voiceEffectsEnabled" data-sound-value="false">OFF</button>
+                  </div>
+                </div>
+              </div>
               <button class="primary-button settings-save-button" id="settingsSaveNameButton" type="button">保存</button>
               <p class="settings-message" id="settingsMessage" aria-live="polite" hidden></p>
             </article>
@@ -541,6 +557,6 @@
     <script src="./hand-evaluation.js?v=general-yaku-v1"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./supabaseClient.js?v=result-point-label-v21"></script>
-    <script src="./app.js?v=discard-volume-v63"></script>
+    <script src="./app.js?v=sound-settings-v64"></script>
   </body>
 </html>
