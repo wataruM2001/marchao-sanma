@@ -350,6 +350,8 @@
       setupFuroTestScenario();
     } else if (urlParams.get("debug") === "kakan-test-1each") {
       setupKakanTestScenario();
+    } else if (urlParams.get("debug") === "kamicha-kakan-test") {
+      setupKamichaKakanTestScenario();
     } else if (urlParams.get("debug") === "self-kakan-test") {
       setupSelfKakanTestScenario();
     } else if (hasInProgressHanchanSave()) {
@@ -774,6 +776,17 @@
     battleState.pendingRiichi = null;
     battleState.debugScenario = "self-kakan-test";
     normalizeHanchanTimingFields(battleState, startedAt);
+  }
+
+  function setupKamichaKakanTestScenario() {
+    setupKakanTestScenario();
+    if (!battleState?.players) return;
+    battleState.players[0].melds = [];
+    battleState.players[1].melds = [];
+    battleState.debugScenario = "kamicha-kakan-test";
+    if (paifuReplay) {
+      paifuReplay.id = "kamicha_kakan_test";
+    }
   }
 
   async function initializeAuth() {
