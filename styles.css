@@ -1480,6 +1480,8 @@ button {
 
 .opponent-right {
   right: clamp(8px, 2vw, 28px);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  justify-items: end;
 }
 
 .opponent-name,
@@ -1704,8 +1706,20 @@ button {
 }
 
 .opponent-right .side-meld-lane {
-  right: calc(100% + 8px);
-  bottom: 2px;
+  position: static;
+  grid-row: 2;
+  align-self: start;
+  justify-self: end;
+  align-items: flex-end;
+  padding: 0;
+  border-radius: 0;
+}
+
+.opponent-right .side-hand {
+  grid-row: 3;
+  min-height: 0;
+  overflow: hidden;
+  align-items: flex-end;
 }
 
 .meld-group {
@@ -1721,6 +1735,13 @@ button {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: 0;
+}
+
+.meld-area.shimocha .shimocha-meld {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 0;
 }
 
@@ -1757,6 +1778,18 @@ button {
   flex-basis: var(--open-tile-height);
 }
 
+.meld-area.shimocha .shimocha-meld .meld-tile-slot.is-horizontal {
+  width: var(--open-tile-height);
+  height: var(--open-tile-width);
+  flex-basis: var(--open-tile-width);
+}
+
+.meld-area.shimocha .shimocha-meld .meld-tile-slot.is-vertical {
+  width: var(--open-tile-width);
+  height: var(--open-tile-height);
+  flex-basis: var(--open-tile-height);
+}
+
 .meld-tile-slot.is-kakan-stack {
   width: var(--open-tile-height);
   height: calc(var(--open-tile-width) * 2);
@@ -1782,6 +1815,27 @@ button {
 }
 
 .kamicha-kakan-pair {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  width: calc(var(--open-tile-width) * 2);
+  height: var(--open-tile-height);
+  flex: 0 0 var(--open-tile-height);
+}
+
+.meld-area.shimocha .shimocha-meld .meld-tile-slot.is-vertical .table-tile-img {
+  transform: none;
+}
+
+.meld-area.shimocha .shimocha-meld .meld-tile-slot.is-horizontal .table-tile-img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center center;
+}
+
+.shimocha-kakan-pair {
   display: flex;
   align-items: flex-start;
   gap: 0;
@@ -2112,6 +2166,18 @@ button {
 }
 
 .battle-surface:not(.is-start-screen) .meld-area.kamicha .kamicha-meld .meld-tile-slot.is-vertical {
+  width: var(--open-tile-width);
+  height: var(--open-tile-height);
+  flex-basis: var(--open-tile-height);
+}
+
+.battle-surface:not(.is-start-screen) .meld-area.shimocha .shimocha-meld .meld-tile-slot.is-horizontal {
+  width: var(--open-tile-height);
+  height: var(--open-tile-width);
+  flex-basis: var(--open-tile-width);
+}
+
+.battle-surface:not(.is-start-screen) .meld-area.shimocha .shimocha-meld .meld-tile-slot.is-vertical {
   width: var(--open-tile-width);
   height: var(--open-tile-height);
   flex-basis: var(--open-tile-height);
@@ -3987,6 +4053,13 @@ button:disabled:hover,
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .opponent-right .side-flower-lane,
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .opponent-right .side-meld-lane {
     right: calc(100% + 2px);
+  }
+
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .opponent-right .side-meld-lane {
+    position: static;
+    padding: 0;
+    gap: 0;
+    align-items: flex-end;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .self-hand-area {
