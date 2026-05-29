@@ -1,5 +1,5 @@
 :root {
-  --landscape-center-text-version: "v88";
+  --landscape-center-text-version: "v90";
   --felt: #0e4d3f;
   --felt-dark: #08342d;
   --ink: #16211f;
@@ -4114,6 +4114,7 @@ button:disabled:hover,
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .opponent-left .side-flower-lane {
     left: calc(100% + 2px + var(--hand-tile-width));
     bottom: calc(var(--landscape-self-hand-visual-bottom) - 8dvh);
+    transform: translateY(-700px);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .opponent-left .side-meld-lane {
@@ -4133,6 +4134,7 @@ button:disabled:hover,
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .opponent-right .side-flower-lane {
     right: calc(100% + 2px + (var(--hand-tile-width) * 0.75));
     top: calc(var(--landscape-self-hand-visual-top) - 2dvh);
+    transform: translateY(-700px);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .opponent-right .side-meld-lane {
@@ -4216,6 +4218,7 @@ button:disabled:hover,
     bottom: calc(var(--hand-tile-width) * 1.40625 + 33px);
     padding: 2px;
     gap: 1px;
+    transform: translateX(-100px);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .river-left,
