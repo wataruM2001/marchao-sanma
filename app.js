@@ -1534,10 +1534,7 @@
       stopPaifuPlayback();
       movePaifuStep(-1);
     });
-    els.paifuNextButton?.addEventListener("click", () => {
-      stopPaifuPlayback();
-      movePaifuStep(1);
-    });
+    els.paifuNextButton?.addEventListener("click", handlePaifuNextButton);
     els.paifuNextSelfDrawButton?.addEventListener("click", () => {
       stopPaifuPlayback();
       movePaifuSelfDraw(1);
@@ -1564,6 +1561,7 @@
     });
     document.addEventListener("contextmenu", handleContextMenuTsumogiri);
     els.battleSurface?.addEventListener("pointerup", handleLandscapeBlankDoubleTap);
+    els.battleSurface?.addEventListener("pointerup", handlePaifuBlankTap);
     window.addEventListener("pagehide", saveInProgressHanchanBeforeDisconnect);
     window.addEventListener("beforeunload", saveInProgressHanchanBeforeDisconnect);
     window.addEventListener("resize", () => {
@@ -1932,6 +1930,60 @@
         ".settings-screen",
       ].join(", ")
     );
+  }
+
+  function isTouchLikePointerEvent(event) {
+    return event?.pointerType === "touch" || event?.pointerType === "pen";
+  }
+
+  function isPaifuBlankTapTarget(target) {
+    if (!target || !els.battleSurface?.contains(target)) return false;
+    return !target.closest(
+      [
+        ".table-tile-img",
+        ".tile",
+        "[data-discard-tile-id]",
+        "button",
+        "input",
+        "select",
+        "textarea",
+        "label",
+        "a",
+        "[role='button']",
+        ".center-tableau",
+        ".center-table-layout",
+        ".dora-indicator-row",
+        ".discard-river",
+        ".self-hand",
+        ".self-hand-area",
+        ".opponent-hand",
+        ".opponent-name",
+        ".self-name",
+        ".meld-area",
+        ".self-meld-lane",
+        ".side-meld-lane",
+        ".self-flower-lane",
+        ".side-flower-lane",
+        ".battle-action-buttons",
+        ".battle-result-panel",
+        ".battle-settlement-panel",
+        ".paifu-panel",
+        ".rules-screen",
+        ".stats-screen",
+        ".settings-screen",
+        ".battle-effect",
+      ].join(", ")
+    );
+  }
+
+  function handlePaifuBlankTap(event) {
+    if (appScreen !== "paifu") return;
+    if (!isTouchLikePointerEvent(event)) return;
+    if (event.isPrimary === false) return;
+    if (!isPaifuBlankTapTarget(event.target)) return;
+    if (isPaifuAtLast()) return;
+    event.preventDefault();
+    handlePaifuNextButton();
   }
 
   function handleLandscapeBlankDoubleTap(event) {
@@ -4017,6 +4069,11 @@
       const previousHand = paifuReplay.hands[paifuHandIndex - 1];
       setPaifuPosition(paifuHandIndex - 1, Math.max(0, previousHand.snapshots.length - 1));
     }
+  }
+
+  function handlePaifuNextButton() {
+    stopPaifuPlayback();
+    movePaifuStep(1);
   }
 
   function movePaifuToLast() {
