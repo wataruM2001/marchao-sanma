@@ -355,6 +355,8 @@
       setupKamichaKakanTestScenario();
     } else if (urlParams.get("debug") === "self-kakan-test") {
       setupSelfKakanTestScenario();
+    } else if (urlParams.get("debug") === "flower-test-1each") {
+      setupFlowerTestScenario();
     } else if (hasInProgressHanchanSave()) {
       appScreen = "resume";
     }
@@ -787,6 +789,96 @@
     if (paifuReplay) {
       paifuReplay.id = "kamicha_kakan_test";
     }
+  }
+
+  function setupFlowerTestScenario() {
+    if (!Game || !Tiles?.createTiles) return;
+    isFuroDebugScenario = true;
+    isSettlementPreview = false;
+    isViewingSharedPaifu = false;
+    currentSharedPaifuUrl = "";
+    appScreen = "playing";
+    lastHandResult = null;
+    battleSettlement = null;
+    settlementBreakdownVisible = false;
+    resultTransparent = false;
+    clearCpuTurnTimer();
+    clearRiichiAutoDiscardTimer();
+    clearAfterDiscardTimer();
+    clearResultTransitionTimer();
+    resetBattleEffectState();
+
+    const pool = Tiles.createTiles().map((tile) => ({ ...tile }));
+    const takeTile = (kindId) => {
+      const index = pool.findIndex((tile) => Tiles.tileKindId(tile) === kindId);
+      if (index < 0) throw new Error(`Debug tile not found: ${kindId}`);
+      return pool.splice(index, 1)[0];
+    };
+    const takeTiles = (kindIds) => kindIds.map(takeTile);
+
+    const startedAt = new Date().toISOString();
+    paifuReplay = {
+      ...createPaifuReplay(),
+      id: "flower_test_1each",
+      startedAt,
+      endedAt: "",
+    };
+    paifuHandIndex = 0;
+    paifuStepIndex = 0;
+    lastPaifuSnapshotSignature = "";
+
+    battleState = Game.startNewHand({
+      playerNames: battlePlayerNames(),
+      dealerIndex: 0,
+      initialDealerIndex: 0,
+      roundWind: "east",
+      handNumber: 1,
+      honba: 0,
+      kyotaku: 0,
+    });
+
+    const self = battleState.players[0];
+    const shimocha = battleState.players[1];
+    const kamicha = battleState.players[2];
+
+    self.hand = takeTiles(["m1", "m9", "p1", "p3", "p5_red", "p5_blue", "p7", "s1", "s3", "s5_red", "s7", "east", "south", "white"]);
+    shimocha.hand = takeTiles(["p2", "p4", "p6", "p8", "s2", "s4", "s6", "s8", "west", "north", "green", "red", "m1"]);
+    kamicha.hand = takeTiles(["m9", "p1", "p2", "p7", "p9", "s1", "s3", "s5_blue", "s9", "east", "south", "west", "white"]);
+
+    self.flowers = [takeTile("flower_red")];
+    shimocha.flowers = [takeTile("flower_red")];
+    kamicha.flowers = [takeTile("flower_blue")];
+
+    self.discards = takeTiles(["p9", "s9", "north", "p4", "s4", "red"]).map((tile) => ({ tile }));
+    shimocha.discards = takeTiles(["s7", "p8", "m9", "green", "p3", "s2"]).map((tile) => ({ tile }));
+    kamicha.discards = takeTiles(["p6", "s6", "east", "m1", "white", "p2"]).map((tile) => ({ tile }));
+
+    self.melds = [];
+    shimocha.melds = [];
+    kamicha.melds = [];
+    self.drawnTile = null;
+    shimocha.drawnTile = null;
+    kamicha.drawnTile = null;
+
+    battleState.dealTiles = [];
+    battleState.doraIndicators = [takeTile("red")];
+    battleState.uraDoraIndicators = [takeTile("white")];
+    battleState.rinshanTiles = takeTiles(["flower_red", "p9", "s9", "m1"]);
+    battleState.drawWall = pool;
+    battleState.wall = pool.map((tile) => ({ ...tile }));
+    battleState.remainingDraws = battleState.drawWall.length;
+    battleState.currentPlayerIndex = 0;
+    battleState.phase = "discard";
+    battleState.lastAction = {
+      type: "draw",
+      playerIndex: 0,
+      tileId: self.hand[self.hand.length - 1]?.id || "",
+    };
+    battleState.lastEffect = "";
+    battleState.pendingAction = null;
+    battleState.pendingRiichi = null;
+    battleState.debugScenario = "flower-test-1each";
+    normalizeHanchanTimingFields(battleState, startedAt);
   }
 
   async function initializeAuth() {
