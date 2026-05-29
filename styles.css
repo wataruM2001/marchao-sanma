@@ -4001,7 +4001,7 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .round-title-block {
-    top: calc(var(--dora-tile-height) + ((var(--center-panel-size-landscape) - var(--dora-tile-height)) / 2) + 10px);
+    top: calc(var(--dora-tile-height) + ((var(--center-panel-size-landscape) - var(--dora-tile-height)) / 2) - 10px);
     width: calc(var(--center-panel-size-landscape) - 8px);
   }
 
@@ -4042,7 +4042,7 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .landscape-round-line-main {
-    font-size: 20px;
+    font-size: 30px;
     line-height: 1;
     font-weight: 900;
     color: #fff;
@@ -4050,13 +4050,13 @@ button:disabled:hover,
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .landscape-round-line-sub,
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .landscape-round-line-remaining {
-    font-size: 10px;
+    font-size: 20px;
     line-height: 1.1;
     font-weight: 800;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .center-score-display .score-display {
-    font-size: 10px;
+    font-size: 20px;
     line-height: 1.1;
     white-space: nowrap;
     word-break: keep-all;
