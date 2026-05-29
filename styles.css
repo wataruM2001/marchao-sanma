@@ -4045,7 +4045,7 @@ button:disabled:hover,
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .landscape-round-line-main {
-    font-size: 30px;
+    font-size: 25px;
     line-height: 1;
     font-weight: 900;
     color: #fff;
@@ -4053,13 +4053,13 @@ button:disabled:hover,
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .landscape-round-line-sub,
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .landscape-round-line-remaining {
-    font-size: 20px;
+    font-size: 15px;
     line-height: 1.1;
     font-weight: 800;
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .center-score-display .score-display {
-    font-size: 20px;
+    font-size: 15px;
     line-height: 1.1;
     white-space: nowrap;
     word-break: keep-all;
