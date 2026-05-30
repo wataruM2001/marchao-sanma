@@ -1,5 +1,5 @@
 :root {
-  --landscape-center-text-version: "v99";
+  --landscape-center-text-version: "v100";
   --felt: #0e4d3f;
   --felt-dark: #08342d;
   --ink: #16211f;
@@ -3964,8 +3964,8 @@ button:disabled:hover,
     --landscape-side-margin: max(0px, calc(var(--landscape-side-margin-base) - var(--center-river-tile-long)));
     --meld-group-gap: 5.5px;
     --meld-tile-gap: 1.1px;
-    --side-meld-group-gap: 5.75px;
-    --side-meld-tile-gap: 1.15px;
+    --side-meld-group-gap: 5.46px;
+    --side-meld-tile-gap: 1.09px;
     --battle-effect-font-size: clamp(42px, 11vh, 58px);
     --battle-effect-marchao-font-size: clamp(34px, 9vh, 46px);
     --self-flower-left-shift: calc(var(--hand-tile-width) * 2.4);
