@@ -1,5 +1,5 @@
 :root {
-  --landscape-center-text-version: "v102";
+  --landscape-center-text-version: "v103";
   --felt: #0e4d3f;
   --felt-dark: #08342d;
   --ink: #16211f;
@@ -4136,6 +4136,7 @@ button:disabled:hover,
     padding: 0;
     gap: var(--side-meld-group-gap);
     align-items: flex-start;
+    transform: translateX(-15px);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .opponent-right .side-flower-lane,
