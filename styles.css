@@ -1,5 +1,5 @@
 :root {
-  --landscape-center-text-version: "v95";
+  --landscape-center-text-version: "v96";
   --felt: #0e4d3f;
   --felt-dark: #08342d;
   --ink: #16211f;
@@ -3964,6 +3964,8 @@ button:disabled:hover,
     --landscape-side-margin: max(0px, calc(var(--landscape-side-margin-base) - var(--center-river-tile-long)));
     --meld-group-gap: 5.5px;
     --meld-tile-gap: 1.1px;
+    --side-meld-group-gap: 6.05px;
+    --side-meld-tile-gap: 1.21px;
     --battle-effect-font-size: clamp(42px, 11vh, 58px);
     --battle-effect-marchao-font-size: clamp(34px, 9vh, 46px);
     --self-flower-left-shift: calc(var(--hand-tile-width) * 2.4);
@@ -4122,7 +4124,7 @@ button:disabled:hover,
     --open-tile-height: calc(var(--open-tile-width) * 1.40625);
     position: static;
     padding: 0;
-    gap: var(--meld-group-gap);
+    gap: var(--side-meld-group-gap);
     align-items: flex-start;
   }
 
@@ -4142,7 +4144,7 @@ button:disabled:hover,
     --open-tile-height: calc(var(--open-tile-width) * 1.40625);
     position: static;
     padding: 0;
-    gap: var(--meld-group-gap);
+    gap: var(--side-meld-group-gap);
     align-items: flex-end;
   }
 
@@ -4152,7 +4154,7 @@ button:disabled:hover,
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .meld-area.kamicha .kamicha-meld,
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .meld-area.shimocha .shimocha-meld {
-    gap: var(--meld-tile-gap);
+    gap: var(--side-meld-tile-gap);
   }
 
   .battle-surface:not(.is-start-screen):not(.is-rules-screen) .self-hand-area {
