@@ -1,9 +1,9 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>繝槭・繝√Ε繧ｪ繧ｵ繝ｳ繝・/title>
+    <title>マーチャオサンマ</title>
   <link rel="stylesheet" href="./styles-kamicha-meld-left-v103.css" />
   <style id="landscape-flower-position-v94-override">
     @media (max-width: 950px) and (max-height: 520px) and (orientation: landscape) {
@@ -31,190 +31,192 @@
     <main class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">3莠ｺ鮗ｻ髮 / 112迚・/p>
-          <h1>繝槭・繝√Ε繧ｪ繧ｵ繝ｳ繝・/h1>
+          <p class="eyebrow">3人麻雀 / 112牌</p>
+          <h1>マーチャオサンマ</h1>
         </div>
         <div class="header-actions">
-          <button class="ghost-button" id="undoButton" type="button" title="逶ｴ蜑阪・螻繧貞叙繧頑ｶ医☆">竊ｶ</button>
-          <button class="ghost-button" id="resetButton" type="button">繝ｪ繧ｻ繝・ヨ</button>
+          <button class="ghost-button" id="undoButton" type="button" title="直前の局を取り消す">↶</button>
+          <button class="ghost-button" id="resetButton" type="button">リセット</button>
           <div class="auth-panel" id="authPanel" aria-label="Supabase Auth">
-            <span class="auth-status" id="authStatus">譛ｪ繝ｭ繧ｰ繧､繝ｳ</span>
+            <span class="auth-status" id="authStatus">未ログイン</span>
             <form class="auth-form" id="authForm">
-              <input class="auth-email-input" id="authEmailInput" type="email" autocomplete="email" placeholder="繝｡繝ｼ繝ｫ繧｢繝峨Ξ繧ｹ" />
-              <button class="ghost-button auth-login-button" id="authLoginButton" type="submit">繝ｭ繧ｰ繧､繝ｳ</button>
+              <input class="auth-email-input" id="authEmailInput" type="email" autocomplete="email" placeholder="メールアドレス" />
+              <button class="ghost-button auth-login-button" id="authLoginButton" type="submit">ログイン</button>
             </form>
-            <button class="ghost-button auth-logout-button" id="authLogoutButton" type="button" hidden>繝ｭ繧ｰ繧｢繧ｦ繝・/button>
+            <button class="ghost-button auth-logout-button" id="authLogoutButton" type="button" hidden>ログアウト</button>
             <span class="auth-message" id="authMessage" hidden></span>
           </div>
         </div>
       </header>
 
-      <section class="battle-table tool-panel" id="battleTable" aria-label="鮗ｻ髮蟇ｾ螻逕ｻ髱｢">
+      <section class="battle-table tool-panel" id="battleTable" aria-label="麻雀対局画面">
         <div class="battle-surface is-start-screen">
           <div class="table-vignette" aria-hidden="true"></div>
-          <button class="start-settings-button" id="startSettingsButton" type="button" aria-label="險ｭ螳・>笞・/button>
+          <button class="start-settings-button" id="startSettingsButton" type="button" aria-label="設定">⚙</button>
           <div class="battle-effect" id="battleEffect" aria-live="polite"></div>
           <section class="battle-result-panel" id="battleResultPanel" hidden>
-            <h2 id="battleResultTitle">螻邨先棡</h2>
+            <h2 id="battleResultTitle">局結果</h2>
             <div class="battle-result-body" id="battleResultBody"></div>
             <div class="battle-result-actions">
-              <button class="primary-button battle-result-button" id="battleConfirmButton" type="button">遒ｺ隱・/button>
-              <button class="primary-button battle-result-button" id="battleContinueButton" type="button" hidden>邯夊｡・/button>
-              <button class="primary-button battle-result-button" id="battleEndButton" type="button" hidden>邨ゆｺ・/button>
-              <button class="primary-button battle-result-button" id="battleTransparentButton" type="button">逶､髱｢</button>
+              <button class="primary-button battle-result-button" id="battleConfirmButton" type="button">確認</button>
+              <button class="primary-button battle-result-button" id="battleContinueButton" type="button" hidden>続行</button>
+              <button class="primary-button battle-result-button" id="battleEndButton" type="button" hidden>終了</button>
+              <button class="primary-button battle-result-button" id="battleTransparentButton" type="button">盤面</button>
             </div>
           </section>
           <section class="battle-settlement-panel" id="battleSettlementPanel" hidden>
-            <h2>蜊願腰邊ｾ邂・/h2>
+            <h2>半荘精算</h2>
             <div class="battle-settlement-body" id="battleSettlementBody"></div>
             <div class="settlement-button-row">
-              <button class="primary-button battle-result-button settlement-main-button" id="battleSettlementDetailButton" type="button">邊ｾ邂怜・險ｳ</button>
-              <button class="primary-button battle-result-button settlement-main-button" id="battlePaifuButton" type="button">迚瑚ｭ懷盾辣ｧ</button>
-              <button class="primary-button battle-result-button settlement-main-button" id="battleRestartButton" type="button">邨ゆｺ・/button>
+              <button class="primary-button battle-result-button settlement-main-button" id="battleSettlementDetailButton" type="button">精算内訳</button>
+              <button class="primary-button battle-result-button settlement-main-button" id="battlePaifuButton" type="button">牌譜参照</button>
+              <button class="primary-button battle-result-button settlement-main-button" id="battleRestartButton" type="button">終了</button>
             </div>
-            <button class="mini-button battle-result-button" id="battleSharePaifuButton" type="button" hidden>迚瑚ｭ弑RL繧剃ｽ懈・</button>
-            <button class="mini-button battle-result-button" id="battleCopyPaifuUrlButton" type="button" hidden>繧ｳ繝斐・</button>
+            <button class="mini-button battle-result-button" id="battleSharePaifuButton" type="button" hidden>牌譜URLを作成</button>
+            <button class="mini-button battle-result-button" id="battleCopyPaifuUrlButton" type="button" hidden>コピー</button>
             <p class="battle-share-status" id="battleSharePaifuStatus" aria-live="polite" hidden></p>
           </section>
           <section class="paifu-panel paifu-control-bar" id="paifuPanel" hidden>
-            <h2 class="paifu-screen-title" id="paifuTitle">迚瑚ｭ・/h2>
+            <h2 class="paifu-screen-title" id="paifuTitle">牌譜</h2>
             <p class="paifu-step-label" id="paifuStepLabel">-</p>
             <div class="paifu-action-text" id="paifuActionText" hidden>-</div>
             <div class="paifu-controls">
-              <button class="mini-button paifu-nav-button" id="paifuPrevHandButton" type="button">蜑榊ｱ</button>
-              <button class="mini-button paifu-nav-button" id="paifuPrevSelfDrawButton" type="button">蜑榊ｷ｡</button>
-              <button class="mini-button paifu-nav-button" id="paifuPrevButton" type="button">蜑・/button>
-              <button class="mini-button paifu-nav-button" id="paifuNextButton" type="button">谺｡</button>
-              <button class="mini-button paifu-nav-button" id="paifuNextSelfDrawButton" type="button">谺｡蟾｡</button>
-              <button class="mini-button paifu-nav-button" id="paifuNextHandButton" type="button">谺｡螻</button>
-              <button class="mini-button paifu-nav-button" id="paifuToggleHandsButton" type="button" aria-pressed="false">謇狗煙</button>
-              <button class="primary-button paifu-nav-button" id="paifuBackButton" type="button">邨ゆｺ・/button>
+              <button class="mini-button paifu-nav-button" id="paifuPrevHandButton" type="button">前局</button>
+              <button class="mini-button paifu-nav-button" id="paifuPrevSelfDrawButton" type="button">前巡</button>
+              <button class="mini-button paifu-nav-button" id="paifuPrevButton" type="button">前</button>
+              <button class="mini-button paifu-nav-button" id="paifuNextButton" type="button">次</button>
+              <button class="mini-button paifu-nav-button" id="paifuNextSelfDrawButton" type="button">次巡</button>
+              <button class="mini-button paifu-nav-button" id="paifuNextHandButton" type="button">次局</button>
+              <button class="mini-button paifu-nav-button" id="paifuToggleHandsButton" type="button" aria-pressed="false">手牌</button>
+              <button class="primary-button paifu-nav-button" id="paifuBackButton" type="button">終了</button>
             </div>
           </section>
           <section class="rules-screen" id="rulesScreen" hidden>
-            <button class="rules-back-button" id="rulesBackButton" type="button" aria-label="繧ｹ繧ｿ繝ｼ繝育判髱｢縺ｸ謌ｻ繧・>竊・/button>
+            <button class="rules-back-button" id="rulesBackButton" type="button" aria-label="スタート画面へ戻る">←</button>
             <article class="rules-text-panel">
-              <p class="rules-lead">繝槭・繝√Ε繧ｪ繧ｵ繝ｳ繝槭ｒ縲√♀螳ｶ縺ｧ謇玖ｻｽ縺ｫ・・/p>
-              <p>・・蜈ｨ襍､繝ｻ闖ｯ縺ゅｊ繝ｻ繝・Δ謳阪↑縺・・・/p>
-              <p>繝・Φ繝昴ｈ縺城ｫ俶遠轤ｹ縺碁｣帙・莠､縺・∝絢豼逧・↑荳我ｺｺ鮗ｻ髮繧呈･ｽ縺励ａ縺ｾ縺吶・/p>
-              <p>縺輔ｉ縺ｫ縲∫･晏о繝ｻ繝医ン雉槭ｒ螂ｪ縺・粋縺・庶謾ｯ謌ｦ縺ｮ驢埼・蜻ｳ繧よ昴≧蟄伜・蜻ｳ繧上∴縺ｾ縺吶・/p>
-              <p>關ｬ豺ｷ繝ｻ螟ｧ霆願ｼｪ繝ｻ豬√＠蠖ｹ貅繧偵・縺倥ａ縲∫ｴｰ驛ｨ縺ｮ隕∫ｴ縺ｫ繧ゅ％縺繧上ｊ縺ｾ縺励◆縲・/p>
-              <p>謾ｻ繧√※蜍昴■蜿悶ｋ繝槭・繝√Ε繧ｪ繧ｵ繝ｳ繝槭・辷ｽ蠢ｫ諢溘ｒ縺懊・縺泌ｪ閭ｽ縺上□縺輔＞・・/p>
+              <p class="rules-lead">マーチャオサンマを、お家で手軽に！</p>
+              <p>～ 全赤・華あり・ツモ損なし ～</p>
+              <p>テンポよく高打点が飛び交う、刺激的な三人麻雀を楽しめます。</p>
+              <p>さらに、祝儀・トビ賞を奪い合う収支戦の醍醐味も思う存分味わえます。</p>
+              <p>萬混・大車輪・流し役満をはじめ、細部の要素にもこだわりました。</p>
+              <p>攻めて勝ち取るマーチャオサンマの爽快感をぜひご堪能ください！</p>
 
-              <h2>繝ｫ繝ｼ繝ｫ隧ｳ邏ｰ</h2>
+              <h2>ルール詳細</h2>
               <ul>
-                <li>譚ｱ蜊玲姶縲・5000轤ｹ謖√■40000轤ｹ霑斐＠</li>
-                <li>鬆・ｽ咲せ縺ｯ0-20縲√ヨ繝楢ｳ槭・10</li>
-                <li>轤ｹ謨ｰ縺ｯ30隨ｦ蝗ｺ螳壹・000轤ｹ譛ｪ貅蛻・ｊ荳翫￡</li>
-                <li>1譛ｬ蝣ｴ縺ｫ縺､縺阪√Ο繝ｳ繧｢繧ｬ繝ｪ縺ｯ1000轤ｹ蠅励＠縲√ヤ繝｢繧｢繧ｬ繝ｪ縺ｯ1000轤ｹ繧ｪ繝ｼ繝ｫ蠅励＠</li>
-                <li>隕ｪ縺ｯ繝・Φ繝代う騾｣闕・/li>
-                <li>蝟ｰ縺・ち繝ｳ縲∝ｾ御ｻ倥￠縺ゅｊ</li>
-                <li>5遲偵・邏｢縲∬庄迚後・襍､3譫壹・髱・譫壹〒縲√☆縺ｹ縺ｦ繝峨Λ謇ｱ縺・/li>
-                <li>魑ｴ縺咲･晏о縺ｮ1譫・000蜀・嶌蠖薙〒蟇ｾ雎｡縺ｯ荳逋ｺ縲・搨迚後∬｣上ラ繝ｩ</li>
-                <li>蠖ｹ貅逾晏о縺ｯ蝣ｴ縺ｫ8譫壹〒縲∵焚縺亥ｽｹ貅縺ｯ蟇ｾ雎｡螟・/li>
-                <li>繝・Δ繝斐Φ繝輔≠繧・/li>
-                <li>蛹励・蟶ｸ縺ｫ蠖ｹ迚梧桶縺・/li>
-                <li>4譫壻ｽｿ縺・ｸ・ｯｾ蟄舌≠繧・/li>
-                <li>繝輔Μ繝・Φ繝ｪ繝ｼ繝∫ｦ∵ｭ｢</li>
-                <li>繝ｪ繝ｼ繝∝ｾ後・隕矩・＠遖∵ｭ｢</li>
-                <li>繝ｪ繝ｼ繝∝ｾ後・證玲ｧ薙・縲∝ｾ・■縺悟､峨ｏ繧峨↑縺代ｌ縺ｰ莉ｻ諢・/li>
-                <li>繝ｪ繝ｼ繝∝ｾ後・騾√ｊ繧ｫ繝ｳ縲∝嵜螢ｫ辟｡蜿後・證玲ｧ薙Ο繝ｳ荳榊庄</li>
-                <li>繧ｫ繝ｳ縺ｯ谿九ｊ繝・Δ蝗樊焚縺・縲・縺ｮ蝣ｴ蜷井ｸ榊庄</li>
-                <li>繝代が縺ｯ蜈ｨ鬘肴鴛縺・/li>
-                <li>謨ｰ縺亥ｽｹ貅縺ｯ14繝上Φ莉･荳・/li>
-                <li>豬√＠蠖ｹ貅縺ｯ繧｢繧ｬ繝ｪ謇ｱ縺・〒縲・ｳｴ縺九★縲・ｳｴ縺九ｌ縺壹√Μ繝ｼ繝√○縺壹〒豬∝ｱ譎よ・遶・/li>
-                <li>繝繝悶Ο繝ｳ縺ゅｊ縺ｧ萓幄ｨ励∵悽蝣ｴ縲√ヨ繝楢ｳ槭・縺吶∋縺ｦ荳雁ｮｶ蜿悶ｊ</li>
-                <li>蜷檎せ譎ゅ・襍ｷ螳ｶ縺ｫ霑代＞譁ｹ縺九ｉ荳贋ｽ・/li>
-                <li>繧ｪ繝ｼ繝ｩ繧ｹ縺ｮ騾｣闕倥・繝医ャ繝怜ｼｷ蛻ｶ邨ゆｺ・・逹豁｢繧√・逹豁｢繧√≠繧・/li>
-                <li>蟆剰ｻ願ｼｪ縲∽ｸ蛾｢ｨ縲√が繝ｼ繝励Φ繝ｪ繝ｼ繝√↑縺・/li>
+                <li>東南戦、35000点持ち40000点返し</li>
+                <li>順位点は0-20、トビ賞は10</li>
+                <li>点数は30符固定、1000点未満切り上げ</li>
+                <li>1本場につき、ロンアガリは1000点増し、ツモアガリは1000点オール増し</li>
+                <li>親はテンパイ連荘</li>
+                <li>喰いタン、後付けあり</li>
+                <li>5筒、5索、華牌は赤3枚・青1枚で、すべてドラ扱い</li>
+                <li>鳴き祝儀の1枚5000円相当で対象は一発、青牌、裏ドラ</li>
+                <li>役満祝儀は場に8枚で、数え役満は対象外</li>
+                <li>ツモピンフあり</li>
+                <li>北は常に役牌扱い</li>
+                <li>4枚使い七対子あり</li>
+                <li>フリテンリーチ禁止</li>
+                <li>リーチ後の見逃し禁止</li>
+                <li>リーチ後の暗槓は、待ちが変わらなければ任意</li>
+                <li>リーチ後の送りカン、国士無双の暗槓ロン不可</li>
+                <li>カンは残りツモ回数が0、1の場合不可</li>
+                <li>パオは全額払い</li>
+                <li>数え役満は14ハン以上</li>
+                <li>流し役満はアガリ扱いで、鳴かず、鳴かれず、リーチせずで流局時成立</li>
+                <li>ダブロンありで供託、本場、トビ賞はすべて上家取り</li>
+                <li>同点時は起家に近い方から上位</li>
+                <li>オーラスの連荘はトップ強制終了、2着止め、3着止めあり</li>
+                <li>小車輪、三風、オープンリーチなし</li>
               </ul>
 
-              <h2>謗｡逕ｨ蠖ｹ貅</h2>
+              <h2>採用役満</h2>
               <ul>
-                <li>螟ｩ蜥・/li>
-                <li>蝨ｰ蜥・/li>
-                <li>莠ｺ蜥・/li>
-                <li>蝗ｽ螢ｫ辟｡蜿・/li>
-                <li>蝗帶囓蛻ｻ</li>
-                <li>螟ｧ荳牙・</li>
-                <li>蟄嶺ｸ濶ｲ</li>
-                <li>蟆丞屁蝟・/li>
-                <li>螟ｧ蝗帛万</li>
-                <li>蝗帶ｧ灘ｭ・/li>
-                <li>貂・・ｭ</li>
-                <li>荵晁動螳晉㊧</li>
-                <li>邱台ｸ濶ｲ</li>
-                <li>關ｬ豺ｷ</li>
-                <li>螟ｧ霆願ｼｪ(貂・ｸ濶ｲ荳・ｯｾ蟄・</li>
-                <li>豬√＠蠖ｹ貅</li>
+                <li>天和</li>
+                <li>地和</li>
+                <li>人和</li>
+                <li>国士無双</li>
+                <li>四暗刻</li>
+                <li>大三元</li>
+                <li>字一色</li>
+                <li>小四喜</li>
+                <li>大四喜</li>
+                <li>四槓子</li>
+                <li>清老頭</li>
+                <li>九蓮宝燈</li>
+                <li>緑一色</li>
+                <li>萬混</li>
+                <li>大車輪(清一色七対子)</li>
+                <li>流し役満</li>
               </ul>
             </article>
-            <img class="rules-score-table" src="./assets/rules-score-table.png" alt="轤ｹ謨ｰ譌ｩ隕玖｡ｨ" />
+            <img class="rules-score-table" src="./assets/rules-score-table.png" alt="点数早見表" />
           </section>
 
           <section class="stats-screen" id="statsScreen" hidden>
-            <button class="stats-back-button" id="statsBackButton" type="button" aria-label="繧ｹ繧ｿ繝ｼ繝育判髱｢縺ｸ謌ｻ繧・>竊・/button>
+            <button class="stats-back-button" id="statsBackButton" type="button" aria-label="スタート画面へ戻る">←</button>
             <article class="stats-panel">
-              <h2>謌千ｸｾ</h2>
+              <h2>成績</h2>
               <p class="stats-empty-message" id="statsEmptyMessage" hidden>
-                縺ｾ縺謌千ｸｾ縺後≠繧翫∪縺帙ｓ縲・br />
-                蜊願腰繧・蝗樒ｵゆｺ・☆繧九→縲√％縺薙↓謌千ｸｾ縺瑚ｨ倬鹸縺輔ｌ縺ｾ縺吶・              </p>
+                まだ成績がありません。<br />
+                半荘を1回終了すると、ここに成績が記録されます。
+              </p>
               <div class="stats-content" id="statsContent">
                 <section class="stats-section">
                   <div class="stats-section-heading">
-                    <h3>邱丞粋謌千ｸｾ</h3>
+                    <h3>総合成績</h3>
                     <div class="stats-filter-controls">
                       <label class="stats-month-control">
                         
-                        <select id="statsYearSelect" aria-label="謌千ｸｾ縺ｮ蟷ｴ"></select>
-                        <span>蟷ｴ</span>
-                        <select id="statsMonthSelect" aria-label="謌千ｸｾ縺ｮ譛・></select>
-                        <span>譛・/span>
+                        <select id="statsYearSelect" aria-label="成績の年"></select>
+                        <span>年</span>
+                        <select id="statsMonthSelect" aria-label="成績の月"></select>
+                        <span>月</span>
                       </label>
                       <label class="stats-recent-control">
-                        <span>逶ｴ霑・/span>
+                        <span>直近</span>
                         <input id="statsRecentCountInput" type="number" min="1" value="10" />
-                        <span>謌ｦ</span>
+                        <span>戦</span>
                       </label>
                     </div>
                   </div>
-                  <p class="stats-online-status" id="statsDataSourceStatus" hidden>陦ｨ遉ｺ荳ｭ・夂ｫｯ譛ｫ蜀・・邵ｾ</p>
+                  <p class="stats-online-status" id="statsDataSourceStatus" hidden>表示中：端末内成績</p>
                   <div class="stats-table-scroll" id="statsSummaryTable"></div>
                 </section>
                 <section class="stats-section">
                   <div class="stats-section-heading">
-                    <h3>繝ｩ繝ｳ繧ｭ繝ｳ繧ｰ</h3>
+                    <h3>ランキング</h3>
                     <label class="stats-ranking-control">
-                      <span>遞ｮ蛻･</span>
-                      <select id="statsRankingKindSelect" aria-label="繝ｩ繝ｳ繧ｭ繝ｳ繧ｰ遞ｮ蛻･"></select>
+                      <span>種別</span>
+                      <select id="statsRankingKindSelect" aria-label="ランキング種別"></select>
                       <input id="statsRankingMinInput" type="number" min="1" max="999" value="1" aria-label="&#12521;&#12531;&#12461;&#12531;&#12464;&#26368;&#20302;&#21322;&#33624;&#25968;" />
                       <span>&#21322;&#33624;&#20197;&#19978;</span>
                     </label>
                   </div>
-                  <p class="stats-online-status" id="statsRankingStatus">隱ｭ縺ｿ霎ｼ縺ｿ蜑・/p>
+                  <p class="stats-online-status" id="statsRankingStatus">読み込み前</p>
                   <div class="stats-table-scroll" id="statsRankingTable"></div>
                 </section>
                 <section class="stats-section">
-                  <h3>螻･豁ｴ</h3>
+                  <h3>履歴</h3>
                   <div class="stats-table-scroll" id="statsHistoryTable"></div>
                   <p class="stats-copy-status" id="statsPaifuCopyStatus" aria-live="polite" hidden></p>
                   <div class="stats-pagination">
-                    <button class="mini-button stats-page-button" id="statsPrevPageButton" type="button">蜑阪・繝ｼ繧ｸ</button>
+                    <button class="mini-button stats-page-button" id="statsPrevPageButton" type="button">前ページ</button>
                     <span id="statsPageLabel">1 / 1</span>
-                    <button class="mini-button stats-page-button" id="statsNextPageButton" type="button">谺｡繝壹・繧ｸ</button>
+                    <button class="mini-button stats-page-button" id="statsNextPageButton" type="button">次ページ</button>
                   </div>
                 </section>
               </div>
               <div class="stats-reset-area">
-                <button class="primary-button stats-reset-button" id="statsResetButton" type="button">縺吶∋縺ｦ縺ｮ謌千ｸｾ繧偵Μ繧ｻ繝・ヨ</button>
+                <button class="primary-button stats-reset-button" id="statsResetButton" type="button">すべての成績をリセット</button>
                 <div class="stats-reset-confirm" id="statsResetConfirm" hidden>
                   <p>
-                    菫晏ｭ倥＆繧後※縺・ｋ縺吶∋縺ｦ縺ｮ謌千ｸｾ繧貞炎髯､縺励∪縺吶・br />
-                    縺薙・謫堺ｽ懊・蜿悶ｊ豸医○縺ｾ縺帙ｓ縲・br />
-                    譛ｬ蠖薙↓蜑企勁縺励∪縺吶°・・                  </p>
+                    保存されているすべての成績を削除します。<br />
+                    この操作は取り消せません。<br />
+                    本当に削除しますか？
+                  </p>
                   <div class="stats-reset-actions">
-                    <button class="mini-button" id="statsResetCancelButton" type="button">繧ｭ繝｣繝ｳ繧ｻ繝ｫ</button>
-                    <button class="primary-button" id="statsResetConfirmButton" type="button">蜑企勁縺吶ｋ</button>
+                    <button class="mini-button" id="statsResetCancelButton" type="button">キャンセル</button>
+                    <button class="primary-button" id="statsResetConfirmButton" type="button">削除する</button>
                   </div>
                 </div>
               </div>
@@ -222,53 +224,54 @@
           </section>
 
           <section class="settings-screen" id="settingsScreen" hidden>
-            <button class="screen-back-button settings-back-button" id="settingsBackButton" type="button" aria-label="繧ｹ繧ｿ繝ｼ繝育判髱｢縺ｸ謌ｻ繧・>竊・/button>
+            <button class="screen-back-button settings-back-button" id="settingsBackButton" type="button" aria-label="スタート画面へ戻る">←</button>
             <article class="settings-panel">
-              <h2>險ｭ螳・/h2>
+              <h2>設定</h2>
               <label class="settings-name-control">
-                <span>繝ｦ繝ｼ繧ｶ繝ｼ蜷・/span>
+                <span>ユーザー名</span>
                 <input id="settingsDisplayNameInput" type="text" maxlength="8" autocomplete="off" />
               </label>
-              <div class="settings-sound-controls" aria-label="髻ｳ螢ｰ險ｭ螳・>
+              <div class="settings-sound-controls" aria-label="音声設定">
                 <div class="settings-toggle-row">
-                  <span class="settings-toggle-label">蜉ｹ譫憺浹</span>
-                  <div class="settings-toggle-group" role="group" aria-label="蜉ｹ譫憺浹">
+                  <span class="settings-toggle-label">効果音</span>
+                  <div class="settings-toggle-group" role="group" aria-label="効果音">
                     <button class="settings-toggle-button" id="soundEffectsOnButton" type="button" data-sound-setting="soundEffectsEnabled" data-sound-value="true">ON</button>
                     <button class="settings-toggle-button" id="soundEffectsOffButton" type="button" data-sound-setting="soundEffectsEnabled" data-sound-value="false">OFF</button>
                   </div>
                 </div>
                 <div class="settings-toggle-row">
-                  <span class="settings-toggle-label">繝懊う繧ｹ</span>
-                  <div class="settings-toggle-group" role="group" aria-label="繝懊う繧ｹ">
+                  <span class="settings-toggle-label">ボイス</span>
+                  <div class="settings-toggle-group" role="group" aria-label="ボイス">
                     <button class="settings-toggle-button" id="voiceEffectsOnButton" type="button" data-sound-setting="voiceEffectsEnabled" data-sound-value="true">ON</button>
                     <button class="settings-toggle-button" id="voiceEffectsOffButton" type="button" data-sound-setting="voiceEffectsEnabled" data-sound-value="false">OFF</button>
                   </div>
                 </div>
               </div>
-              <button class="primary-button settings-save-button" id="settingsSaveNameButton" type="button">菫晏ｭ・/button>
+              <button class="primary-button settings-save-button" id="settingsSaveNameButton" type="button">保存</button>
               <p class="settings-message" id="settingsMessage" aria-live="polite" hidden></p>
             </article>
           </section>
 
           <section class="resume-required-screen" id="resumeRequiredScreen" hidden>
             <article class="resume-required-panel">
-              <h2>蟇ｾ螻繧貞・髢・/h2>
+              <h2>対局を再開</h2>
               <p>
-                蜑榊屓縺ｮ蟇ｾ螻騾比ｸｭ繝・・繧ｿ縺後≠繧翫∪縺吶・br />
-                縺薙・蟇ｾ螻繧貞・髢九＠縺ｦ縺上□縺輔＞縲・              </p>
-              <button class="primary-button resume-required-button" id="resumeRequiredButton" type="button">蜀埼幕縺吶ｋ</button>
+                前回の対局途中データがあります。<br />
+                この対局を再開してください。
+              </p>
+              <button class="primary-button resume-required-button" id="resumeRequiredButton" type="button">再開する</button>
             </article>
           </section>
 
-          <div class="opponent-hand opponent-left" aria-label="荳雁ｮｶ縺ｮ謇狗煙">
-            <div class="opponent-name" id="battleLeftName">荳雁ｮｶ</div>
+          <div class="opponent-hand opponent-left" aria-label="上家の手牌">
+            <div class="opponent-name" id="battleLeftName">上家</div>
             <div class="side-hand" id="battleLeftHand"></div>
             <div class="side-meld-lane meld-area kamicha" id="battleLeftMelds"></div>
             <div class="side-flower-lane" id="battleLeftFlowers"></div>
           </div>
 
-          <div class="opponent-hand opponent-right" aria-label="荳句ｮｶ縺ｮ謇狗煙">
-            <div class="opponent-name" id="battleRightName">荳句ｮｶ</div>
+          <div class="opponent-hand opponent-right" aria-label="下家の手牌">
+            <div class="opponent-name" id="battleRightName">下家</div>
             <div class="side-hand" id="battleRightHand"></div>
             <div class="side-meld-lane meld-area shimocha" id="battleRightMelds"></div>
             <div class="side-flower-lane" id="battleRightFlowers"></div>
@@ -279,121 +282,121 @@
           <div class="center-tableau">
             <div class="center-row round-info-row">
               <div class="round-title-block">
-                <span id="battleRoundLabel">譚ｱ1螻</span>
-                <span id="battleHonbaKyotakuLabel">0譛ｬ蝣ｴ 萓幄ｨ・ 谿・-</span>
+                <span id="battleRoundLabel">東1局</span>
+                <span id="battleHonbaKyotakuLabel">0本場 供託0 残--</span>
                 <span class="round-info-landscape" id="battleLandscapeRoundInfo" aria-hidden="true"></span>
               </div>
-              <strong id="battleRemainingDraws">谿九ｊ繝・Δ 37</strong>
+              <strong id="battleRemainingDraws">残りツモ 37</strong>
             </div>
             <div class="center-score-display" id="battlePlayerScores"></div>
             <div class="flower-zone">
-              <span>闖ｯ迚・/span>
+              <span>華牌</span>
               <div class="mini-tile-row" id="battleFlowerTiles"></div>
             </div>
             <div class="center-row table-meta">
-              <span id="battleDealerLabel">隕ｪ 閾ｪ蛻・/span>
-              <span id="battleKyotakuLabel">萓幄ｨ・</span>
+              <span id="battleDealerLabel">親 自分</span>
+              <span id="battleKyotakuLabel">供託0</span>
             </div>
-            <span id="battleStatus">蠕・ｩ滉ｸｭ</span>
+            <span id="battleStatus">待機中</span>
           </div>
 
-          <div class="discard-river river-self" id="battleSelfRiver" aria-label="閾ｪ蛻・・謐ｨ縺ｦ迚・></div>
-          <div class="discard-river river-left" id="battleLeftRiver" aria-label="荳雁ｮｶ縺ｮ謐ｨ縺ｦ迚・></div>
-          <div class="discard-river river-right" id="battleRightRiver" aria-label="荳句ｮｶ縺ｮ謐ｨ縺ｦ迚・></div>
+          <div class="discard-river river-self" id="battleSelfRiver" aria-label="自分の捨て牌"></div>
+          <div class="discard-river river-left" id="battleLeftRiver" aria-label="上家の捨て牌"></div>
+          <div class="discard-river river-right" id="battleRightRiver" aria-label="下家の捨て牌"></div>
           </div>
 
-          <div class="self-flower-lane" id="battleSelfFlowers" aria-label="閾ｪ蛻・・闖ｯ迚・></div>
+          <div class="self-flower-lane" id="battleSelfFlowers" aria-label="自分の華牌"></div>
           <div class="self-hand-area">
             <div class="battle-control-row">
-              <button class="primary-button battle-start-button start-menu-button" id="battleStartButton" type="button">蟇ｾ螻髢句ｧ・/button>
-              <button class="primary-button start-menu-button start-menu-secondary" id="startRulesButton" type="button">繝ｫ繝ｼ繝ｫ</button>
-              <button class="primary-button start-menu-button start-menu-secondary" id="startStatsButton" type="button">謌千ｸｾ</button>
-              <div class="battle-action-buttons" id="battleActionButtons" aria-label="蟇ｾ螻繧｢繧ｯ繧ｷ繝ｧ繝ｳ"></div>
+              <button class="primary-button battle-start-button start-menu-button" id="battleStartButton" type="button">対局開始</button>
+              <button class="primary-button start-menu-button start-menu-secondary" id="startRulesButton" type="button">ルール</button>
+              <button class="primary-button start-menu-button start-menu-secondary" id="startStatsButton" type="button">成績</button>
+              <div class="battle-action-buttons" id="battleActionButtons" aria-label="対局アクション"></div>
             </div>
-            <div class="self-name" id="battleSelfName">閾ｪ蛻・/div>
+            <div class="self-name" id="battleSelfName">自分</div>
             <div class="self-hand-line">
-              <div class="self-hand" id="battleSelfHand" aria-label="閾ｪ蛻・・謇狗煙"></div>
+              <div class="self-hand" id="battleSelfHand" aria-label="自分の手牌"></div>
               <div class="self-meld-lane meld-area self" id="battleSelfMelds"></div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="scoreboard" aria-label="繝励Ξ繧､繝､繝ｼ蛻･繧ｹ繧ｳ繧｢">
+      <section class="scoreboard" aria-label="プレイヤー別スコア">
         <article class="player-panel" data-player-card="0">
-          <div class="seat-chip">譚ｱ</div>
+          <div class="seat-chip">東</div>
           <label>
-            <span>繝励Ξ繧､繝､繝ｼ</span>
-            <input id="playerName0" type="text" value="閾ｪ蛻・ />
+            <span>プレイヤー</span>
+            <input id="playerName0" type="text" value="自分" />
           </label>
           <label>
-            <span>謖√■轤ｹ</span>
+            <span>持ち点</span>
             <input id="playerScore0" type="number" step="100" value="35000" />
           </label>
           <div class="player-metrics">
             <div>
-              <span>逾晏о</span>
+              <span>祝儀</span>
               <strong id="bonus0">0</strong>
             </div>
             <div>
-              <span>繝医ン雉・/span>
+              <span>トビ賞</span>
               <strong id="tobi0">0</strong>
             </div>
             <div>
-              <span>繝ｪ繝ｼ繝・/span>
-              <button class="mini-button" data-riichi-button="0" type="button">謌千ｫ・/button>
+              <span>リーチ</span>
+              <button class="mini-button" data-riichi-button="0" type="button">成立</button>
             </div>
           </div>
         </article>
 
         <article class="player-panel" data-player-card="1">
-          <div class="seat-chip">蜊・/div>
+          <div class="seat-chip">南</div>
           <label>
-            <span>繝励Ξ繧､繝､繝ｼ</span>
-            <input id="playerName1" type="text" value="荳句ｮｶ" />
+            <span>プレイヤー</span>
+            <input id="playerName1" type="text" value="下家" />
           </label>
           <label>
-            <span>謖√■轤ｹ</span>
+            <span>持ち点</span>
             <input id="playerScore1" type="number" step="100" value="35000" />
           </label>
           <div class="player-metrics">
             <div>
-              <span>逾晏о</span>
+              <span>祝儀</span>
               <strong id="bonus1">0</strong>
             </div>
             <div>
-              <span>繝医ン雉・/span>
+              <span>トビ賞</span>
               <strong id="tobi1">0</strong>
             </div>
             <div>
-              <span>繝ｪ繝ｼ繝・/span>
-              <button class="mini-button" data-riichi-button="1" type="button">謌千ｫ・/button>
+              <span>リーチ</span>
+              <button class="mini-button" data-riichi-button="1" type="button">成立</button>
             </div>
           </div>
         </article>
 
         <article class="player-panel" data-player-card="2">
-          <div class="seat-chip">隘ｿ</div>
+          <div class="seat-chip">西</div>
           <label>
-            <span>繝励Ξ繧､繝､繝ｼ</span>
-            <input id="playerName2" type="text" value="荳雁ｮｶ" />
+            <span>プレイヤー</span>
+            <input id="playerName2" type="text" value="上家" />
           </label>
           <label>
-            <span>謖√■轤ｹ</span>
+            <span>持ち点</span>
             <input id="playerScore2" type="number" step="100" value="35000" />
           </label>
           <div class="player-metrics">
             <div>
-              <span>逾晏о</span>
+              <span>祝儀</span>
               <strong id="bonus2">0</strong>
             </div>
             <div>
-              <span>繝医ン雉・/span>
+              <span>トビ賞</span>
               <strong id="tobi2">0</strong>
             </div>
             <div>
-              <span>繝ｪ繝ｼ繝・/span>
-              <button class="mini-button" data-riichi-button="2" type="button">謌千ｫ・/button>
+              <span>リーチ</span>
+              <button class="mini-button" data-riichi-button="2" type="button">成立</button>
             </div>
           </div>
         </article>
@@ -402,77 +405,77 @@
       <section class="workbench">
         <form class="tool-panel" id="handForm">
           <div class="panel-title">
-            <h2>螻蜈･蜉・/h2>
-            <p id="paymentPreview">譚｡莉ｶ繧貞・繧後ｋ縺ｨ謾ｯ謇輔＞縺悟・縺ｾ縺・/p>
+            <h2>局入力</h2>
+            <p id="paymentPreview">条件を入れると支払いが出ます</p>
           </div>
           <div class="round-strip" id="roundStatus"></div>
 
           <div class="form-grid">
             <label id="dealerField" hidden>
-              <span>迴ｾ蝨ｨ縺ｮ隕ｪ・域擲螳ｶ・・/span>
+              <span>現在の親（東家）</span>
               <select id="dealerSelect"></select>
             </label>
             <label id="honbaField" hidden>
-              <span>譛ｬ蝣ｴ</span>
+              <span>本場</span>
               <input id="honbaInput" type="number" min="0" max="99" value="0" />
             </label>
             <label id="resultTypeField">
-              <span>螻縺ｮ邨ゆｺ・・螳ｹ</span>
+              <span>局の終了内容</span>
               <select id="winType">
-                <option value="tsumo">繝・Δ繧｢繧ｬ繝ｪ</option>
-                <option value="ron">繝ｭ繝ｳ繧｢繧ｬ繝ｪ</option>
-                <option value="doubleRon">繝繝悶Ο繝ｳ</option>
-                <option value="draw">豬∝ｱ</option>
+                <option value="tsumo">ツモアガリ</option>
+                <option value="ron">ロンアガリ</option>
+                <option value="doubleRon">ダブロン</option>
+                <option value="draw">流局</option>
               </select>
             </label>
             <label id="hanField">
-              <span>繝上Φ謨ｰ</span>
+              <span>ハン数</span>
               <input id="hanInput" type="number" min="1" max="59" value="4" />
             </label>
             <label id="winnerField">
-              <span>繧｢繧ｬ繝ｪ閠・/span>
+              <span>アガリ者</span>
               <select id="winnerSelect"></select>
             </label>
             <label id="secondWinnerField" hidden>
-              <span>繧｢繧ｬ繝ｪ閠・</span>
+              <span>アガリ者2</span>
               <select id="secondWinnerSelect"></select>
             </label>
             <label id="discarderField">
-              <span>謾ｾ驫・・/span>
+              <span>放銃者</span>
               <select id="discarderSelect"></select>
             </label>
             <label id="dealerTenpaiField" hidden>
-              <span>豬∝ｱ譎ゅ・隕ｪ</span>
+              <span>流局時の親</span>
               <select id="dealerTenpaiSelect">
-                <option value="tenpai">閨ｴ迚・/option>
-                <option value="noten">繝弱・繝・Φ</option>
+                <option value="tenpai">聴牌</option>
+                <option value="noten">ノーテン</option>
               </select>
             </label>
           </div>
 
-          <div class="toggle-row" id="tenpaiRow" aria-label="豬∝ｱ譎ゅ・閨ｴ迚瑚・ hidden>
-            <label><input data-tenpai-input="0" type="checkbox" /> <span id="tenpaiLabel0">閾ｪ蛻・閨ｴ迚・/span></label>
-            <label><input data-tenpai-input="1" type="checkbox" /> <span id="tenpaiLabel1">荳句ｮｶ 閨ｴ迚・/span></label>
-            <label><input data-tenpai-input="2" type="checkbox" /> <span id="tenpaiLabel2">荳雁ｮｶ 閨ｴ迚・/span></label>
+          <div class="toggle-row" id="tenpaiRow" aria-label="流局時の聴牌者" hidden>
+            <label><input data-tenpai-input="0" type="checkbox" /> <span id="tenpaiLabel0">自分 聴牌</span></label>
+            <label><input data-tenpai-input="1" type="checkbox" /> <span id="tenpaiLabel1">下家 聴牌</span></label>
+            <label><input data-tenpai-input="2" type="checkbox" /> <span id="tenpaiLabel2">上家 聴牌</span></label>
           </div>
 
           <div class="double-ron-grid" id="doubleRonPanel" hidden>
             <section class="win-detail-panel" aria-labelledby="shimochaWinnerLabel">
               <div class="win-detail-title">
-                <span>荳句ｮｶ縺ｮ繧｢繧ｬ繝ｪ</span>
-                <strong id="shimochaWinnerLabel">荳句ｮｶ</strong>
+                <span>下家のアガリ</span>
+                <strong id="shimochaWinnerLabel">下家</strong>
               </div>
               <label>
-                <span>繝上Φ謨ｰ</span>
+                <span>ハン数</span>
                 <input id="shimochaHanInput" type="number" min="1" max="59" value="4" />
               </label>
-              <div class="toggle-row compact-toggle-row" aria-label="荳句ｮｶ縺ｮ逾晏о">
-                <label><input id="shimochaIppatsuInput" type="checkbox" /> 荳逋ｺ</label>
-                <label><input id="shimochaBlueSouInput" type="checkbox" /> 髱・邏｢</label>
-                <label><input id="shimochaBluePinInput" type="checkbox" /> 髱・遲・/label>
-                <label><input id="shimochaBlueFlowerInput" type="checkbox" /> 髱定庄</label>
+              <div class="toggle-row compact-toggle-row" aria-label="下家の祝儀">
+                <label><input id="shimochaIppatsuInput" type="checkbox" /> 一発</label>
+                <label><input id="shimochaBlueSouInput" type="checkbox" /> 青5索</label>
+                <label><input id="shimochaBluePinInput" type="checkbox" /> 青5筒</label>
+                <label><input id="shimochaBlueFlowerInput" type="checkbox" /> 青華</label>
                 <label class="compact-number">
-                  <span>陬上ラ繝ｩ</span>
+                  <span>裏ドラ</span>
                   <input id="shimochaUraInput" type="number" min="0" max="99" value="0" />
                 </label>
               </div>
@@ -480,70 +483,70 @@
 
             <section class="win-detail-panel" aria-labelledby="kamichaWinnerLabel">
               <div class="win-detail-title">
-                <span>荳雁ｮｶ縺ｮ繧｢繧ｬ繝ｪ</span>
-                <strong id="kamichaWinnerLabel">荳雁ｮｶ</strong>
+                <span>上家のアガリ</span>
+                <strong id="kamichaWinnerLabel">上家</strong>
               </div>
               <label>
-                <span>繝上Φ謨ｰ</span>
+                <span>ハン数</span>
                 <input id="kamichaHanInput" type="number" min="1" max="59" value="4" />
               </label>
-              <div class="toggle-row compact-toggle-row" aria-label="荳雁ｮｶ縺ｮ逾晏о">
-                <label><input id="kamichaIppatsuInput" type="checkbox" /> 荳逋ｺ</label>
-                <label><input id="kamichaBlueSouInput" type="checkbox" /> 髱・邏｢</label>
-                <label><input id="kamichaBluePinInput" type="checkbox" /> 髱・遲・/label>
-                <label><input id="kamichaBlueFlowerInput" type="checkbox" /> 髱定庄</label>
+              <div class="toggle-row compact-toggle-row" aria-label="上家の祝儀">
+                <label><input id="kamichaIppatsuInput" type="checkbox" /> 一発</label>
+                <label><input id="kamichaBlueSouInput" type="checkbox" /> 青5索</label>
+                <label><input id="kamichaBluePinInput" type="checkbox" /> 青5筒</label>
+                <label><input id="kamichaBlueFlowerInput" type="checkbox" /> 青華</label>
                 <label class="compact-number">
-                  <span>陬上ラ繝ｩ</span>
+                  <span>裏ドラ</span>
                   <input id="kamichaUraInput" type="number" min="0" max="99" value="0" />
                 </label>
               </div>
             </section>
           </div>
 
-          <div class="toggle-row" id="bonusRow" aria-label="逾晏о">
-            <label><input id="ippatsuInput" type="checkbox" /> 荳逋ｺ</label>
-            <label><input id="blueSouInput" type="checkbox" /> 髱・邏｢</label>
-            <label><input id="bluePinInput" type="checkbox" /> 髱・遲・/label>
-            <label><input id="blueFlowerInput" type="checkbox" /> 髱定庄</label>
+          <div class="toggle-row" id="bonusRow" aria-label="祝儀">
+            <label><input id="ippatsuInput" type="checkbox" /> 一発</label>
+            <label><input id="blueSouInput" type="checkbox" /> 青5索</label>
+            <label><input id="bluePinInput" type="checkbox" /> 青5筒</label>
+            <label><input id="blueFlowerInput" type="checkbox" /> 青華</label>
             <label class="compact-number">
-              <span>陬上ラ繝ｩ</span>
+              <span>裏ドラ</span>
               <input id="uraInput" type="number" min="0" max="99" value="0" />
             </label>
           </div>
 
           <div class="form-grid" id="oorasuActionField" hidden>
             <label>
-              <span>繧ｪ繝ｼ繝ｩ繧ｹ隕ｪ騾｣闕俶凾</span>
+              <span>オーラス親連荘時</span>
               <select id="oorasuActionSelect">
-                <option value="continue">邯夊｡・/option>
-                <option value="end">邨ゆｺ・/option>
+                <option value="continue">続行</option>
+                <option value="end">終了</option>
               </select>
             </label>
           </div>
 
           <div class="action-row">
-            <button class="primary-button" id="recordButton" type="submit">螻繧定ｨ倬鹸</button>
+            <button class="primary-button" id="recordButton" type="submit">局を記録</button>
           </div>
         </form>
 
         <section class="tool-panel final-panel">
           <div class="panel-title">
-            <h2>蜊願腰邊ｾ邂・/h2>
-            <p>鬆・ｽ阪・繧､繝ｳ繝・+ 逾晏о + 繝医ン雉・/p>
+            <h2>半荘精算</h2>
+            <p>順位ポイント + 祝儀 + トビ賞</p>
           </div>
           <div class="form-grid" id="settlementControls" hidden>
             <label>
-              <span>邨ゆｺ・ｽ｢</span>
+              <span>終了形</span>
               <select id="finishType">
-                <option value="singleTsumo">1蜷阪ヤ繝｢</option>
-                <option value="singleRon">1蜷阪Ο繝ｳ</option>
-                <option value="doubleRon">2蜷阪Ο繝ｳ</option>
-                <option value="oneTenpai">1蜷崎・迚梧ｵ∝ｱ</option>
-                <option value="twoTenpai">2蜷崎・迚梧ｵ∝ｱ</option>
+                <option value="singleTsumo">1名ツモ</option>
+                <option value="singleRon">1名ロン</option>
+                <option value="doubleRon">2名ロン</option>
+                <option value="oneTenpai">1名聴牌流局</option>
+                <option value="twoTenpai">2名聴牌流局</option>
               </select>
             </label>
             <label>
-              <span>繝医ン雉樒佐蠕苓・/span>
+              <span>トビ賞獲得者</span>
               <select id="finishWinnerSelect"></select>
             </label>
           </div>
@@ -554,16 +557,16 @@
       <section class="details-grid">
         <section class="tile-wall tool-panel">
           <div class="panel-title">
-            <h2>菴ｿ逕ｨ迚・/h2>
-            <p id="tileCount">112譫・/p>
+            <h2>使用牌</h2>
+            <p id="tileCount">112枚</p>
           </div>
           <div class="tile-groups" id="tileGroups"></div>
         </section>
 
         <section class="tool-panel history-panel">
           <div class="panel-title">
-            <h2>螻繝ｭ繧ｰ</h2>
-            <p id="historyCount">0螻</p>
+            <h2>局ログ</h2>
+            <p id="historyCount">0局</p>
           </div>
           <ol class="history-list" id="historyList"></ol>
         </section>
