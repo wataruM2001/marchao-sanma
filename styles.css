@@ -1,5 +1,5 @@
 :root {
-  --landscape-center-text-version: "v103";
+  --landscape-center-text-version: "v104";
   --felt: #0e4d3f;
   --felt-dark: #08342d;
   --ink: #16211f;
@@ -3458,6 +3458,7 @@ body {
     --tablet-ui-scale: 1.2;
     --tablet-center-river-base: clamp(28px, 3vw, 42px);
     --tablet-hand-tile-base: clamp(23px, 5.2vw, 70px);
+    --tablet-hand-tile-width: calc(var(--tablet-hand-tile-base) * var(--tablet-ui-scale));
     --center-text-size-base: var(--tablet-center-river-base);
     --center-river-tile-width: calc(var(--tablet-center-river-base) * var(--tablet-ui-scale));
     --center-river-tile-long: calc(var(--center-river-tile-width) * 1.40625);
@@ -3470,8 +3471,15 @@ body {
     --self-river-height: calc(3 * var(--center-river-tile-long));
     --dora-tile-width: calc(var(--center-river-tile-width) * var(--dora-tile-scale));
     --dora-tile-height: calc(var(--center-river-tile-long) * var(--dora-tile-scale));
-    --hand-tile-width: calc(var(--tablet-hand-tile-base) * var(--tablet-ui-scale));
+    --hand-tile-width: calc(var(--tablet-hand-tile-width) * 0.85);
+    --open-tile-width: calc(((var(--tablet-hand-tile-width) + var(--center-river-tile-width)) / 2) * 0.85);
+    --open-tile-height: calc(var(--open-tile-width) * 1.40625);
     --draw-tile-gap: calc(var(--hand-tile-width) * var(--draw-tile-gap-ratio));
+  }
+
+  .battle-surface:not(.is-start-screen) .side-meld-lane {
+    --open-tile-width: calc(((var(--tablet-hand-tile-width) + var(--center-river-tile-width)) / 2) * 0.85);
+    --open-tile-height: calc(var(--open-tile-width) * 1.40625);
   }
 
   .center-score-display .score-display {
