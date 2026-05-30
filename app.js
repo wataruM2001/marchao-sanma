@@ -181,6 +181,7 @@
   let settingsMessageText = "";
   let settingsMessageIsError = false;
   let settingsSaveInProgress = false;
+  let tileImagePreloadPromise = null;
 
   const els = {
     undoButton: document.getElementById("undoButton"),
@@ -339,6 +340,7 @@
   init();
 
   function init() {
+    startTileImagePreload();
     renderTileGroups();
     bindEvents();
     initializeAuth();
@@ -361,6 +363,42 @@
       appScreen = "resume";
     }
     render();
+  }
+
+  function tileImageAttributes() {
+    return `loading="eager" decoding="async" width="128" height="180" draggable="false"`;
+  }
+
+  function tileImagePreloadPaths() {
+    const paths = typeof Tiles?.tileImagePaths === "function" ? Tiles.tileImagePaths() : [];
+    return Array.from(new Set(paths.filter(Boolean)));
+  }
+
+  function preloadSingleTileImage(src) {
+    return new Promise((resolve) => {
+      if (!src || typeof Image !== "function") {
+        resolve();
+        return;
+      }
+      const img = new Image();
+      img.decoding = "async";
+      img.loading = "eager";
+      img.width = 128;
+      img.height = 180;
+      img.onload = () => resolve();
+      img.onerror = () => resolve();
+      img.src = src;
+      if (typeof img.decode === "function") {
+        img.decode().then(resolve).catch(resolve);
+      }
+    });
+  }
+
+  function startTileImagePreload() {
+    if (tileImagePreloadPromise) return tileImagePreloadPromise;
+    const paths = tileImagePreloadPaths();
+    tileImagePreloadPromise = Promise.all(paths.map(preloadSingleTileImage)).catch(() => {});
+    return tileImagePreloadPromise;
   }
 
   function setupSettlementPreview() {
@@ -4368,7 +4406,7 @@
       const tile = doraIndicators[index];
       const src = tile?.image || backImage;
       const label = tile ? tile.name || tile.baseId || tile.id : "ドラ表示牌 裏";
-      return `<img class="table-tile-img dora-indicator-tile" src="${escapeHtml(src)}" alt="${escapeHtml(label)}" loading="lazy" />`;
+      return `<img class="table-tile-img dora-indicator-tile" src="${escapeHtml(src)}" alt="${escapeHtml(label)}" ${tileImageAttributes()} />`;
     }).join("");
   }
 
@@ -4493,11 +4531,11 @@
   function renderResultTile(tile, modifier = "") {
     if (!tile) return "";
     const label = tile.name || tile.baseId || tile.id;
-    return `<img class="result-tile-img ${modifier}" src="${escapeHtml(tile.image)}" alt="${escapeHtml(label)}" loading="lazy" />`;
+    return `<img class="result-tile-img ${modifier}" src="${escapeHtml(tile.image)}" alt="${escapeHtml(label)}" ${tileImageAttributes()} />`;
   }
 
   function renderResultBackTile() {
-    return `<img class="result-tile-img result-back-tile" src="${escapeHtml(Tiles.tileImagePath("blue_back"))}" alt="背面牌" loading="lazy" />`;
+    return `<img class="result-tile-img result-back-tile" src="${escapeHtml(Tiles.tileImagePath("blue_back"))}" alt="背面牌" ${tileImageAttributes()} />`;
   }
 
   function renderFiveResultIndicatorSlots(indicators = [], shouldReveal = true) {
@@ -5379,7 +5417,7 @@
     if (!tile && !useBack) return "";
     const src = useBack ? Tiles.tileImagePath("blue_back") : tile.image;
     const label = useBack ? "裏向き牌" : tile.name || tile.baseId || tile.id;
-    return `<img class="table-tile-img meld-tile ${classes}" src="${escapeHtml(src)}" alt="${escapeHtml(label)}" loading="lazy" />`;
+    return `<img class="table-tile-img meld-tile ${classes}" src="${escapeHtml(src)}" alt="${escapeHtml(label)}" ${tileImageAttributes()} />`;
   }
 
   function renderMeldTile(tile, classes = "", useBack = false) {
@@ -5857,7 +5895,7 @@
     const label = tile.name || definition?.name || definition?.label || tile.baseId || tile.id;
     const data = interactive ? ` data-discard-tile-id="${escapeHtml(tile.id)}"` : "";
     const attributes = extraAttributes ? ` ${extraAttributes}` : "";
-    return `<img class="table-tile-img ${modifier}"${data}${attributes} src="${escapeHtml(tile.image)}" alt="${escapeHtml(label)}" loading="lazy" />`;
+    return `<img class="table-tile-img ${modifier}"${data}${attributes} src="${escapeHtml(tile.image)}" alt="${escapeHtml(label)}" ${tileImageAttributes()} />`;
   }
 
   function renderBackTiles(count, modifier = "", drawnTileId = "") {
@@ -5865,7 +5903,7 @@
       const classes = ["table-back", modifier, drawnTileId && index === count - 1 ? "drawn" : ""]
         .filter(Boolean)
         .join(" ");
-      return `<img class="table-tile-img ${classes}" src="${escapeHtml(Tiles.tileImagePath("blue_back"))}" alt="opponent tile ${index + 1}" loading="lazy" />`;
+      return `<img class="table-tile-img ${classes}" src="${escapeHtml(Tiles.tileImagePath("blue_back"))}" alt="opponent tile ${index + 1}" ${tileImageAttributes()} />`;
     }).join("");
   }
 
@@ -5875,7 +5913,7 @@
     if (!drawnTileId || count <= 0) return renderBackTiles(count, "side");
     const renderBack = (index, isDrawn = false) => {
       const classes = ["table-back", "side", isDrawn ? "drawn" : ""].filter(Boolean).join(" ");
-      return `<img class="table-tile-img ${classes}" src="${escapeHtml(Tiles.tileImagePath("blue_back"))}" alt="opponent tile ${index + 1}" loading="lazy" />`;
+      return `<img class="table-tile-img ${classes}" src="${escapeHtml(Tiles.tileImagePath("blue_back"))}" alt="opponent tile ${index + 1}" ${tileImageAttributes()} />`;
     };
     const normalTiles = Array.from({ length: Math.max(0, count - 1) }, (_, index) => renderBack(index)).join("");
     const drawnTile = renderBack(count - 1, true);
@@ -6290,7 +6328,7 @@
         <h3>背面牌</h3>
         <div class="tiles">
           <span class="tile image-tile back-tile" title="相手手牌表示用">
-            <img src="${escapeHtml(Tiles.tileImagePath("blue_back"))}" alt="背面牌" loading="lazy" />
+            <img src="${escapeHtml(Tiles.tileImagePath("blue_back"))}" alt="背面牌" ${tileImageAttributes()} />
             <small>blue_back</small>
           </span>
         </div>
@@ -6307,7 +6345,7 @@
       .join(" ");
     return `
       <span class="${classes}" title="${escapeHtml(tile.label)} ${count}枚${bonusText}">
-        <img src="${escapeHtml(tile.image)}" alt="${escapeHtml(tile.label)}" loading="lazy" />
+        <img src="${escapeHtml(tile.image)}" alt="${escapeHtml(tile.label)}" ${tileImageAttributes()} />
         <small>${escapeHtml(tile.label)} ×${count}${bonusText}</small>
       </span>
     `;
