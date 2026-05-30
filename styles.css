@@ -1,5 +1,5 @@
 :root {
-  --landscape-center-text-version: "v100";
+  --landscape-center-text-version: "v101";
   --felt: #0e4d3f;
   --felt-dark: #08342d;
   --ink: #16211f;
@@ -5140,4 +5140,18 @@ button:disabled:hover,
 
 .battle-surface:not(.is-start-screen) .meld-area.shimocha .shimocha-meld .shimocha-kakan-pair .meld-tile-slot.is-vertical .table-tile-img.added-kan-tile {
   transform: translateX(calc(var(--open-tile-width) * -0.2));
+}
+
+@media (max-width: 950px) and (max-height: 520px) and (orientation: landscape) {
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .meld-tile-slot.is-kakan-stack .called-tile-stack .table-tile-img.kakan-stack-tile.added-kan-tile {
+    bottom: calc((var(--open-tile-width) * 1.05) - var(--kakan-stack-down-offset));
+  }
+
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .meld-area.kamicha .kamicha-meld .kamicha-kakan-pair .meld-tile-slot.is-vertical .table-tile-img.called-tile {
+    transform: translateX(calc(var(--open-tile-width) * 0.82));
+  }
+
+  .battle-surface:not(.is-start-screen):not(.is-rules-screen) .meld-area.shimocha .shimocha-meld .shimocha-kakan-pair .meld-tile-slot.is-vertical .table-tile-img.called-tile {
+    transform: translateX(calc(var(--open-tile-width) * -0.62));
+  }
 }
