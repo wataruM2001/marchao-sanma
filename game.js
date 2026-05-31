@@ -1194,18 +1194,22 @@
 
   function shouldUseUltraSpecialCpuMode(player, gameState, context = null) {
     const playerIndex = gameState?.players?.indexOf(player) ?? -1;
-    if (playerIndex < 0 || playerIndex === gameState?.dealerIndex) return false;
-    const completedMeldCount = countCompletedMeldsForCpu(player, context);
-    const shanten = estimateShantenCached(player, context);
-    if (completedMeldCount < 2 || shanten > 1) return false;
+    if (playerIndex < 0) return false;
+    const allShanten = estimateShantenCached(player, context);
+    const acceptanceCount = acceptanceTilesForPlayerState(player, gameState, context).length;
     const kamicha = kamichaEntryFor(player, gameState)?.player;
     const shimocha = shimochaEntryFor(player, gameState)?.player;
-    return Boolean(
+    const bothNeighborsDangerous = Boolean(
       kamicha &&
       shimocha &&
       isDangerousPlayer(kamicha, gameState, context) &&
       isDangerousPlayer(shimocha, gameState, context)
     );
+    const conditionA = !(allShanten === 0 && acceptanceCount >= 3) && bothNeighborsDangerous;
+    const conditionB =
+      playerIndex !== gameState?.dealerIndex &&
+      Number(gameState?.remainingDraws) <= 15;
+    return conditionA || conditionB;
   }
 
   function maxCompletedMeldsFromCounts(counts) {
@@ -1404,12 +1408,6 @@
   function chooseUltraSpecialCpuDiscard(player, gameState, random = Math.random, context = null) {
     const candidates = discardCandidatesForPlayer(player, gameState);
     if (candidates.length === 0) return null;
-    const shanten = estimateShantenCached(player, context);
-    const acceptanceCount = acceptanceTilesForPlayerState(player, gameState, context).length;
-    if (shanten === 0 && acceptanceCount >= 4) {
-      return chooseTenpaiKeepingMaxAcceptanceDiscard(candidates, player, gameState, random, context);
-    }
-
     const kamicha = kamichaEntryFor(player, gameState);
     const shimocha = shimochaEntryFor(player, gameState);
     const opponents = [kamicha, shimocha].filter(Boolean);
@@ -1440,9 +1438,11 @@
       return chooseUltraSpecialTieBreaker(dealerRiverTiles, player, gameState, random, context);
     }
 
-    const childOpponent = opponents.find((entry) => entry.index !== dealer?.index);
-    const childRiverTiles = childOpponent
-      ? candidates.filter((tile) => hasSameBaseTileInRiver(tile, childOpponent.player, context))
+    const childOpponents = opponents.filter((entry) => entry.index !== dealer?.index);
+    const childRiverTiles = childOpponents.length > 0
+      ? candidates.filter((tile) =>
+          childOpponents.some((entry) => hasSameBaseTileInRiver(tile, entry.player, context))
+        )
       : [];
     if (childRiverTiles.length > 0) {
       return chooseUltraSpecialTieBreaker(childRiverTiles, player, gameState, random, context);
