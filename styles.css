@@ -1,5 +1,5 @@
 :root {
-  --landscape-center-text-version: "v104";
+  --landscape-center-text-version: "v105";
   --felt: #0e4d3f;
   --felt-dark: #08342d;
   --ink: #16211f;
@@ -3480,6 +3480,15 @@ body {
   .battle-surface:not(.is-start-screen) .side-meld-lane {
     --open-tile-width: calc(((var(--tablet-hand-tile-width) + var(--center-river-tile-width)) / 2) * 0.85);
     --open-tile-height: calc(var(--open-tile-width) * 1.40625);
+  }
+
+  .battle-surface:not(.is-start-screen) .side-hand {
+    --side-tile-width: calc(var(--center-river-tile-width) * 0.75);
+    --side-tile-long: calc(var(--side-tile-width) * 1.40625);
+  }
+
+  .battle-surface:not(.is-start-screen) .self-hand-line {
+    transform: translateX(40px);
   }
 
   .center-score-display .score-display {
