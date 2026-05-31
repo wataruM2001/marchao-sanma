@@ -1523,8 +1523,8 @@
   function chooseCpuPonReaction(player, playerIndex, gameState, discardTile, random = Math.random) {
     if (!player?.isCpu || !canPon(player, discardTile)) return null;
     const context = createCpuCalculationContext(player, gameState);
-    const beforeShanten = estimateShantenCached(player, context);
-    const beforeAcceptanceCount = acceptanceTilesForPlayerState(player, gameState, context).length;
+    const beforeShanten = estimateShantenByBasisCached(player, context, "standard");
+    const beforeAcceptanceCount = acceptanceTilesForPlayerState(player, gameState, context, "standard").length;
     const calledBaseId = tileBaseId(discardTile);
     const virtualPlayer = buildCpuPonVirtualPlayer(player, gameState, playerIndex, discardTile);
     const virtualState = cpuPonVirtualState(gameState, playerIndex, virtualPlayer, calledBaseId);
@@ -1532,11 +1532,11 @@
     const candidates = discardCandidatesForPlayer(virtualPlayer, virtualState);
     const entries = candidates.map((tile) => {
       const afterDiscard = playerAfterDiscard(virtualPlayer, tile);
-      const acceptanceTiles = acceptanceTilesForPlayerState(afterDiscard, virtualState, virtualContext);
+      const acceptanceTiles = acceptanceTilesForPlayerState(afterDiscard, virtualState, virtualContext, "standard");
       return {
         tile,
         afterDiscard,
-        shanten: estimateShantenCached(afterDiscard, virtualContext),
+        shanten: estimateShantenByBasisCached(afterDiscard, virtualContext, "standard"),
         acceptance: acceptanceTiles.length,
         acceptanceTiles,
         edgePriority: edgeDiscardPriority(tile),
@@ -1585,10 +1585,10 @@
     const context = createCpuCalculationContext(player, gameState);
     const matched = candidates.map((candidate) => {
       const afterKan = playerAfterKakanCandidate(player, candidate);
-      const acceptance = acceptanceTilesForPlayerState(afterKan, gameState, context).length;
+      const acceptance = acceptanceTilesForPlayerState(afterKan, gameState, context, "standard").length;
       return {
         candidate,
-        shanten: estimateShantenCached(afterKan, context),
+        shanten: estimateShantenByBasisCached(afterKan, context, "standard"),
         acceptance,
         tieBreaker: random(),
       };
