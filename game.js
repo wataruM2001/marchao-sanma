@@ -399,7 +399,9 @@
 
   function seatWindForIndex(gameState, playerIndex) {
     const winds = ["east", "south", "west"];
-    return winds[(playerIndex - gameState.dealerIndex + 3) % 3] || "west";
+    const index = Number.isInteger(playerIndex) ? playerIndex : 0;
+    const dealerIndex = Number.isInteger(gameState?.dealerIndex) ? gameState.dealerIndex : 0;
+    return winds[((index - dealerIndex) % 3 + 3) % 3] || "west";
   }
 
   function baseTileCandidates() {
