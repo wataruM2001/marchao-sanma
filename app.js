@@ -4297,7 +4297,9 @@
   }
 
   function windText(wind) {
-    return wind === "south" ? "南" : "東";
+    if (wind === "south") return "南";
+    if (wind === "west") return "西";
+    return "東";
   }
 
   function playerPositionLabel(seat) {
@@ -4309,7 +4311,9 @@
 
   function currentSeatWind(playerIndex, dealerIndex) {
     const winds = ["\u6771", "\u5357", "\u897f"];
-    return winds[(playerIndex - dealerIndex + 3) % 3] || "\u897f";
+    const index = Number.isInteger(playerIndex) ? playerIndex : 0;
+    const dealer = Number.isInteger(dealerIndex) ? dealerIndex : 0;
+    return winds[((index - dealer) % 3 + 3) % 3] || "\u897f";
   }
 
   function playerDisplaySeat(player, index) {
