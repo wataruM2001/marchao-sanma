@@ -2019,6 +2019,11 @@
   }
 
   function handleContextMenuTsumogiri(event) {
+    if (appScreen === "paifu") {
+      event.preventDefault();
+      if (!isPaifuAtLast()) handlePaifuNextButton();
+      return;
+    }
     if (appScreen !== "playing") return;
     event.preventDefault();
     runRightClickEquivalentAction();
